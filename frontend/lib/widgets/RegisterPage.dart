@@ -1,14 +1,144 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/SignInPage.dart';
+import 'package:frontend/widgets/CustomTextField.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  String _accountType = 'User';
+  String? _gender;
+  String? _country;
+  String? _language;
+
+  TextEditingController _countrySearchController = TextEditingController();
+  List<String> _searchedCountries = [];
+  bool _isSearchingCountry = false;
+
+  TextEditingController _languageSearchController = TextEditingController();
+  List<String> _searchedLanguages = [];
+  bool _isSearchingLanguage = false;
+
+  Future<List<String>> fetchCountries() async {
+    final response = await http.get(
+      Uri.parse('https://restcountries.com/v3.1/all'),
+    );
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      final countryNames =
+          data
+              .map<String>((item) => item['name']['common'].toString())
+              .toList();
+      countryNames.sort();
+      return countryNames;
+    } else {
+      throw Exception('Failed to load countries');
+    }
+  }
+
+  Future<List<String>> fetchLanguages() async {
+    final response = await http.get(
+      Uri.parse('https://restcountries.com/v3.1/all'),
+    );
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      final Set<String> languages = {};
+      for (var item in data) {
+        final langs = item['languages'];
+        if (langs != null) {
+          languages.addAll(langs.values.map((e) => e.toString()));
+        }
+      }
+      final list = languages.toList();
+      list.sort();
+      return list;
+    } else {
+      throw Exception('Failed to load languages');
+    }
+  }
+
+  Future<void> searchCountries(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchedCountries = [];
+        _isSearchingCountry = false;
+      });
+      return;
+    }
+    setState(() {
+      _isSearchingCountry = true;
+    });
+    final response = await http.get(
+      Uri.parse('https://restcountries.com/v3.1/name/$query'),
+    );
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      final countryNames =
+          data
+              .map<String>((item) => item['name']['common'].toString())
+              .toList();
+      countryNames.sort();
+      setState(() {
+        _searchedCountries = countryNames;
+        _isSearchingCountry = false;
+      });
+    } else {
+      setState(() {
+        _searchedCountries = [];
+        _isSearchingCountry = false;
+      });
+    }
+  }
+
+  Future<void> searchLanguages(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchedLanguages = [];
+        _isSearchingLanguage = false;
+      });
+      return;
+    }
+    setState(() {
+      _isSearchingLanguage = true;
+    });
+
+    final response = await http.get(
+      Uri.parse(
+        'https://raw.githubusercontent.com/haliaeetus/iso-639/master/data/iso_639-1.json',
+      ),
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<String> languages = [];
+      data.forEach((code, lang) {
+        final name = lang['name']?.toString() ?? '';
+        if (name.toLowerCase().contains(query.toLowerCase())) {
+          languages.add(name);
+        }
+      });
+      languages.sort();
+      setState(() {
+        _searchedLanguages = languages;
+        _isSearchingLanguage = false;
+      });
+    } else {
+      setState(() {
+        _searchedLanguages = [];
+        _isSearchingLanguage = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Match SignInPage background gradient
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -116,13 +246,13 @@ class RegisterPage extends StatelessWidget {
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
+                            borderSide: const BorderSide(
                               color: AppColors.islamicGreen200,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
+                            borderSide: const BorderSide(
                               color: AppColors.islamicGreen500,
                               width: 2,
                             ),
@@ -134,7 +264,7 @@ class RegisterPage extends StatelessWidget {
                             vertical: 14,
                           ),
                         ),
-                        value: 'Volunteer',
+                        value: _accountType,
                         items: const [
                           DropdownMenuItem(
                             value: 'Volunteer',
@@ -142,7 +272,13 @@ class RegisterPage extends StatelessWidget {
                           ),
                           DropdownMenuItem(value: 'User', child: Text('User')),
                         ],
-                        onChanged: (value) {},
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _accountType = value;
+                            });
+                          }
+                        },
                         style: TextStyle(
                           color: AppColors.islamicGreen800,
                           fontSize: 16,
@@ -151,36 +287,301 @@ class RegisterPage extends StatelessWidget {
 
                       const SizedBox(height: 24),
 
-                      // Text input fields: Full Name, Username, Email, Password, Confirm Password
-                      const _RegisterTextField(
-                        label: 'Full Name',
-                        hint: 'Enter your full name',
-                      ),
-                      const SizedBox(height: 16),
-                      const _RegisterTextField(
+                      const CustomTextField(
                         label: 'Username',
                         hint: 'Enter your username',
                       ),
                       const SizedBox(height: 16),
-                      const _RegisterTextField(
+
+                      // Gender input
+                      const Text(
+                        'Gender',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.islamicGreen700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.islamicGreen200,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.islamicGreen500,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                        ),
+                        value: _gender,
+                        hint: const Text('Select your gender'),
+                        items: const [
+                          DropdownMenuItem(value: 'Male', child: Text('Male')),
+                          DropdownMenuItem(
+                            value: 'Female',
+                            child: Text('Female'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Other',
+                            child: Text('Other'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _gender = value;
+                          });
+                        },
+                        style: TextStyle(
+                          color: AppColors.islamicGreen800,
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Country input (async, searchable)
+                      const Text(
+                        'Country',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.islamicGreen700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _countrySearchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search for your country',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.islamicGreen200,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.islamicGreen500,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          suffixIcon:
+                              _isSearchingCountry
+                                  ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                  : null,
+                        ),
+                        onChanged: (value) {
+                          searchCountries(value);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+
+                      if (_searchedCountries.isNotEmpty)
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: AppColors.islamicGreen200,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.islamicGreen500.withAlpha(30),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _searchedCountries.length,
+                            itemBuilder: (context, index) {
+                              final country = _searchedCountries[index];
+                              return ListTile(
+                                title: Text(
+                                  country,
+                                  style: TextStyle(
+                                    color: AppColors.islamicGreen800,
+                                  ),
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    _countrySearchController.text = country;
+                                    _country = country;
+                                    _searchedCountries = [];
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+
+                      // Language input (async, searchable)
+                      const Text(
+                        'Language',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.islamicGreen700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _languageSearchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search for your language',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.islamicGreen200,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.islamicGreen500,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          suffixIcon:
+                              _isSearchingLanguage
+                                  ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                  : null,
+                        ),
+                        onChanged: (value) {
+                          searchLanguages(value);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+
+                      if (_searchedLanguages.isNotEmpty)
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: AppColors.islamicGreen200,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.islamicGreen500.withAlpha(30),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _searchedLanguages.length,
+                            itemBuilder: (context, index) {
+                              final language = _searchedLanguages[index];
+                              return ListTile(
+                                title: Text(
+                                  language,
+                                  style: TextStyle(
+                                    color: AppColors.islamicGreen800,
+                                  ),
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    _languageSearchController.text = language;
+                                    _language = language;
+                                    _searchedLanguages = [];
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+
+                      const CustomTextField(
                         label: 'Email Address',
                         hint: 'Enter your email',
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 16),
-                      const _RegisterTextField(
+                      const CustomTextField(
                         label: 'Password',
                         hint: 'Enter your password',
                         obscureText: true,
                       ),
                       const SizedBox(height: 16),
-                      const _RegisterTextField(
+                      const CustomTextField(
                         label: 'Confirm Password',
                         hint: 'Confirm your password',
                         obscureText: true,
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+
+                      // Extra fields for Volunteer
+                      if (_accountType == 'Volunteer') ...[
+                        const CustomTextField(
+                          label: 'Phone Number',
+                          hint: 'Enter your phone number',
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 16),
+                        const CustomTextField(
+                          label: 'City',
+                          hint: 'Enter your city',
+                        ),
+                        const SizedBox(height: 16),
+                        const CustomTextField(
+                          label: 'Skills',
+                          hint: 'List your skills',
+                        ),
+                        const SizedBox(height: 16),
+                        const CustomTextField(
+                          label: 'Why do you want to volunteer?',
+                          hint: 'Tell us why you want to volunteer',
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // Submit Button
                       ElevatedButton(
@@ -203,7 +604,11 @@ class RegisterPage extends StatelessWidget {
                         onPressed: () {
                           // Handle submit
                         },
-                        child: const Text('Create Volunteer Account'),
+                        child: Text(
+                          _accountType == 'Volunteer'
+                              ? 'Create Volunteer Account'
+                              : 'Create User Account',
+                        ),
                       ),
 
                       const SizedBox(height: 16),
@@ -242,7 +647,7 @@ class RegisterPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '- Quran 6:99', //Surah Al-An'am, Ayah 99
+                            '- Quran 6:99',
                             style: TextStyle(
                               color: AppColors.islamicGreen500,
                               fontSize: 12,
@@ -259,65 +664,6 @@ class RegisterPage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _RegisterTextField extends StatelessWidget {
-  final String label;
-  final String hint;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-
-  const _RegisterTextField({
-    required this.label,
-    required this.hint,
-    this.obscureText = false,
-    this.keyboardType,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: AppColors.islamicGreen700,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.islamicGreen200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.islamicGreen500,
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 14,
-            ),
-          ),
-          style: const TextStyle(
-            color: AppColors.islamicGreen800,
-            fontSize: 16,
-          ),
-        ),
-      ],
     );
   }
 }
