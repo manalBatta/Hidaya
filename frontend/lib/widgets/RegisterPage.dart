@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:frontend/widgets/CustomTextField.dart';
+import 'package:file_picker/file_picker.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -25,6 +26,28 @@ class _RegisterPageState extends State<RegisterPage> {
   TextEditingController _languageSearchController = TextEditingController();
   List<String> _searchedLanguages = [];
   bool _isSearchingLanguage = false;
+
+  // New controllers for volunteer extra fields
+  final TextEditingController _bioController = TextEditingController();
+
+  final TextEditingController _certTitleController = TextEditingController();
+  final TextEditingController _certInstitutionController =
+      TextEditingController();
+
+  PlatformFile? _selectedFile;
+
+  Future<void> pickCertificationFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _selectedFile = result.files.first;
+      });
+    }
+  }
 
   Future<List<String>> fetchCountries() async {
     final response = await http.get(
@@ -132,6 +155,50 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() {
         _searchedLanguages = [];
         _isSearchingLanguage = false;
+      });
+    }
+  }
+
+  List<String> _selectedSpokenLanguages = [];
+  TextEditingController _spokenLanguagesController = TextEditingController();
+  List<String> _searchedSpokenLanguages = [];
+  bool _isSearchingSpokenLanguages = false;
+
+  Future<void> searchSpokenLanguages(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchedSpokenLanguages = [];
+        _isSearchingSpokenLanguages = false;
+      });
+      return;
+    }
+    setState(() {
+      _isSearchingSpokenLanguages = true;
+    });
+
+    final response = await http.get(
+      Uri.parse(
+        'https://raw.githubusercontent.com/haliaeetus/iso-639/master/data/iso_639-1.json',
+      ),
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<String> languages = [];
+      data.forEach((code, lang) {
+        final name = lang['name']?.toString() ?? '';
+        if (name.toLowerCase().contains(query.toLowerCase())) {
+          languages.add(name);
+        }
+      });
+      languages.sort();
+      setState(() {
+        _searchedSpokenLanguages = languages;
+        _isSearchingSpokenLanguages = false;
+      });
+    } else {
+      setState(() {
+        _searchedSpokenLanguages = [];
+        _isSearchingSpokenLanguages = false;
       });
     }
   }
@@ -536,7 +603,197 @@ class _RegisterPageState extends State<RegisterPage> {
                             },
                           ),
                         ),
+
                       const SizedBox(height: 16),
+                      // Extra fields for Volunteer
+                      if (_accountType == 'Volunteer') ...[
+                        const SizedBox(height: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Spoken Languages',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.islamicGreen700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _spokenLanguagesController,
+                              decoration: InputDecoration(
+                                hintText: 'Type to search and select languages',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.islamicGreen200,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.islamicGreen500,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 14,
+                                ),
+                                suffixIcon:
+                                    _isSearchingSpokenLanguages
+                                        ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        )
+                                        : null,
+                              ),
+                              onChanged: (value) {
+                                searchSpokenLanguages(value);
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_searchedSpokenLanguages.isNotEmpty)
+                              Container(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 200,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: AppColors.islamicGreen200,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.islamicGreen500
+                                          .withAlpha(30),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: _searchedSpokenLanguages.length,
+                                  itemBuilder: (context, index) {
+                                    final language =
+                                        _searchedSpokenLanguages[index];
+                                    final alreadySelected =
+                                        _selectedSpokenLanguages.contains(
+                                          language,
+                                        );
+                                    return ListTile(
+                                      title: Text(
+                                        language,
+                                        style: TextStyle(
+                                          color:
+                                              alreadySelected
+                                                  ? AppColors.islamicGreen400
+                                                  : AppColors.islamicGreen800,
+                                        ),
+                                      ),
+                                      trailing:
+                                          alreadySelected
+                                              ? const Icon(
+                                                Icons.check,
+                                                color:
+                                                    AppColors.islamicGreen400,
+                                              )
+                                              : null,
+                                      onTap: () {
+                                        setState(() {
+                                          if (!alreadySelected) {
+                                            _selectedSpokenLanguages.add(
+                                              language,
+                                            );
+                                          }
+                                          _spokenLanguagesController.clear();
+                                          _searchedSpokenLanguages = [];
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            if (_selectedSpokenLanguages.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Wrap(
+                                  spacing: 8,
+                                  children:
+                                      _selectedSpokenLanguages
+                                          .map(
+                                            (lang) => Chip(
+                                              label: Text(lang),
+                                              onDeleted: () {
+                                                setState(() {
+                                                  _selectedSpokenLanguages
+                                                      .remove(lang);
+                                                });
+                                              },
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextField(
+                          controller: _bioController,
+                          label: 'Short Bio',
+                          hint: 'Tell us about yourself',
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextField(
+                          controller: _certTitleController,
+                          label: 'Certification Title',
+                          hint: 'e.g., Quran Recitation Level 1',
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextField(
+                          controller: _certInstitutionController,
+                          label: 'Certification Institution / Sheikh',
+                          hint: 'e.g., Sheikh Ahmad Al-Mansour',
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: pickCertificationFile,
+                                icon: const Icon(Icons.upload_file),
+                                label: Text(
+                                  _selectedFile != null
+                                      ? 'Selected: ${_selectedFile!.name}'
+                                      : 'Upload Certification',
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.islamicGreen400,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       const CustomTextField(
                         label: 'Email Address',
@@ -557,31 +814,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
 
                       const SizedBox(height: 16),
-
-                      // Extra fields for Volunteer
-                      if (_accountType == 'Volunteer') ...[
-                        const CustomTextField(
-                          label: 'Phone Number',
-                          hint: 'Enter your phone number',
-                          keyboardType: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 16),
-                        const CustomTextField(
-                          label: 'City',
-                          hint: 'Enter your city',
-                        ),
-                        const SizedBox(height: 16),
-                        const CustomTextField(
-                          label: 'Skills',
-                          hint: 'List your skills',
-                        ),
-                        const SizedBox(height: 16),
-                        const CustomTextField(
-                          label: 'Why do you want to volunteer?',
-                          hint: 'Tell us why you want to volunteer',
-                        ),
-                        const SizedBox(height: 16),
-                      ],
 
                       // Submit Button
                       ElevatedButton(
