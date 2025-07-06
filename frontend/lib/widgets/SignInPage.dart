@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/RegisterPage.dart';
+import 'package:frontend/widgets/CustomTextField.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -12,7 +13,7 @@ class SignInPage extends StatefulWidget {
 class _SignInPageState extends State<SignInPage> {
   final _formKey = GlobalKey<FormState>();
 
-  String _accountType = 'Volunteer';
+  String _accountType = 'User';
   bool _obscurePassword = true;
 
   final _usernameController = TextEditingController();
@@ -22,7 +23,7 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Gradient background similar to your CSS background gradient
+      // Gradient background similar to your CSS background
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -231,29 +232,10 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(height: 20),
 
                             // Username
-                            TextFormField(
+                            CustomTextField(
+                              label: 'Username',
+                              hint: 'Enter your username',
                               controller: _usernameController,
-                              decoration: InputDecoration(
-                                labelText: 'Username',
-                                labelStyle: TextStyle(
-                                  color: AppColors.islamicGreen700,
-                                ),
-                                hintText: 'Enter your username',
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: AppColors.islamicGreen200,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: AppColors.islamicGreen500,
-                                  ),
-                                ),
-                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your username';
@@ -265,30 +247,11 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(height: 16),
 
                             // Email
-                            TextFormField(
+                            CustomTextField(
+                              label: 'Email Address',
+                              hint: 'Enter your email',
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
-                                labelText: 'Email Address',
-                                labelStyle: TextStyle(
-                                  color: AppColors.islamicGreen700,
-                                ),
-                                hintText: 'Enter your email',
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: AppColors.islamicGreen200,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: AppColors.islamicGreen500,
-                                  ),
-                                ),
-                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
