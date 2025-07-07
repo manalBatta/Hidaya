@@ -231,21 +231,6 @@ class _SignInPageState extends State<SignInPage> {
 
                             const SizedBox(height: 20),
 
-                            // Username
-                            CustomTextField(
-                              label: 'Username',
-                              hint: 'Enter your username',
-                              controller: _usernameController,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your username';
-                                }
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
                             // Email
                             CustomTextField(
                               label: 'Email Address',
