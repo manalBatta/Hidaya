@@ -1,10 +1,17 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:frontend/widgets/CustomTextField.dart';
 import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'dart:io' if (dart.library.html) 'dart:html' as html;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -35,19 +42,7 @@ class _RegisterPageState extends State<RegisterPage> {
       TextEditingController();
 
   PlatformFile? _selectedFile;
-
-  Future<void> pickCertificationFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-    );
-
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        _selectedFile = result.files.first;
-      });
-    }
-  }
+  String? _uploadedFileUrl;
 
   Future<List<String>> fetchCountries() async {
     final response = await http.get(
@@ -200,6 +195,64 @@ class _RegisterPageState extends State<RegisterPage> {
         _searchedSpokenLanguages = [];
         _isSearchingSpokenLanguages = false;
       });
+    }
+  }
+
+  Future<void> selectFile() async {
+    final result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      final file = result.files.single;
+
+      setState(() {
+        _selectedFile = file;
+        _uploadedFileUrl = null; // Reset URL on new selection
+      });
+    }
+  }
+
+  Future<void> uploadFile(file) async {
+    Uint8List? fileBytes;
+    final fileName = file.name;
+    // Platform-safe file bytes access
+    if (file.bytes != null) {
+      fileBytes = file.bytes;
+    } else if (file.path != null) {
+      fileBytes = await File(file.path!).readAsBytes();
+    }
+
+    if (fileBytes == null) {
+      print('❌ Unable to read file bytes');
+      return;
+    }
+    try {
+      final response = await Supabase.instance.client.storage
+          .from('certifications') // ✅ use same bucket
+          .uploadBinary(
+            fileName,
+            fileBytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      if (response.isNotEmpty) {
+        print('Upload successful');
+
+        final publicUrl = Supabase.instance.client.storage
+            .from('certifications') // ✅ use same bucket
+            .getPublicUrl(fileName);
+
+        print('🌍 Public URL: $publicUrl');
+      } else {
+        print(' Error uploading: $response');
+      }
+    } catch (e) {
+      print(' Exception during upload: $e');
+    }
+  }
+
+  Future<void> submitForm() async {
+    if (_accountType == 'Volunteer' && _selectedFile != null) {
+      await uploadFile(_selectedFile!);
     }
   }
 
@@ -771,11 +824,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           children: [
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: pickCertificationFile,
+                                onPressed: () async {
+                                  await selectFile();
+                                },
                                 icon: const Icon(Icons.upload_file),
                                 label: Text(
                                   _selectedFile != null
-                                      ? 'Selected: ${_selectedFile!.name}'
+                                      ? (_uploadedFileUrl != null
+                                          ? 'Uploaded: ${_selectedFile!.name}'
+                                          : 'Selected: ${_selectedFile!.name}')
                                       : 'Upload Certification',
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -804,18 +861,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       const CustomTextField(
                         label: 'Password',
                         hint: 'Enter your password',
-                        obscureText: true,
                       ),
                       const SizedBox(height: 16),
-                      const CustomTextField(
-                        label: 'Confirm Password',
-                        hint: 'Confirm your password',
-                        obscureText: true,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Submit Button
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -834,7 +881,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           elevation: 8,
                         ),
                         onPressed: () {
-                          // Handle submit
+                          submitForm();
                         },
                         child: Text(
                           _accountType == 'Volunteer'
