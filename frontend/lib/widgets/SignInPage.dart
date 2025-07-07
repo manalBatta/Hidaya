@@ -20,6 +20,13 @@ class _SignInPageState extends State<SignInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  Future<void> signIn() async {
+    final requestbody = {
+      'email': _emailController.text,
+      'password': _passwordController.text,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,6 +244,7 @@ class _SignInPageState extends State<SignInPage> {
                               hint: 'Enter your email',
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
+                              required: true,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
@@ -253,43 +261,23 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(height: 16),
 
                             // Password with show/hide
-                            TextFormField(
+                            CustomTextField(
                               controller: _passwordController,
+                              label: 'Password',
+                              hint: 'Enter your password',
                               obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                labelStyle: TextStyle(
-                                  color: AppColors.islamicGreen700,
-                                ),
-                                hintText: 'Enter your password',
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: AppColors.islamicGreen200,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: AppColors.islamicGreen500,
-                                  ),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
-                                    color: AppColors.islamicGreen600,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                ),
+                              required: true,
+                              suffixIcon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: AppColors.islamicGreen600,
                               ),
+                              onSuffixIconPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
@@ -327,9 +315,9 @@ class _SignInPageState extends State<SignInPage> {
                                   ),
                                   elevation: 6,
                                 ),
-                                child: const Text(
-                                  'Sign In as Volunteer',
-                                  style: TextStyle(
+                                child: Text(
+                                  'Sign In as $_accountType',
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                     color: Colors.white,
