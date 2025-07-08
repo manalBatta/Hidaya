@@ -5,6 +5,7 @@ import 'package:frontend/widgets/CustomTextField.dart';
 import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -22,6 +23,44 @@ class _SignInPageState extends State<SignInPage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+
+  Future<void> signIn() async {
+    final requestbody = {
+      'email': _emailController.text,
+      'password': _passwordController.text,
+      'role': _accountType,
+    };
+    print('Request Body: ${jsonEncode(requestbody)}');
+         var response = await http.post(Uri.parse(login),
+         headers : {"Content-Type":"application/json"},
+         body: jsonEncode(requestbody));
+       final data = jsonDecode(response.body);
+ if (response.statusCode == 200 && data['status'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login successful')),
+      );
+final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', data['token']);
+    
+    print('Token saved in SharedPreferences');
+
+    }
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'] ?? 'Login failed')),
+      );
+    }
+       
+
+
+
+
+
+
+print('Response body: ${response.body}');
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +279,6 @@ class _SignInPageState extends State<SignInPage> {
                               hint: 'Enter your email',
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              required: true,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
@@ -257,23 +295,43 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(height: 16),
 
                             // Password with show/hide
-                            CustomTextField(
+                            TextFormField(
                               controller: _passwordController,
-                              label: 'Password',
-                              hint: 'Enter your password',
                               obscureText: _obscurePassword,
-                              required: true,
-                              suffixIcon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                color: AppColors.islamicGreen600,
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                labelStyle: TextStyle(
+                                  color: AppColors.islamicGreen700,
+                                ),
+                                hintText: 'Enter your password',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.islamicGreen200,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.islamicGreen500,
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: AppColors.islamicGreen600,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
                               ),
-                              onSuffixIconPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
@@ -316,8 +374,8 @@ class _SignInPageState extends State<SignInPage> {
                                   ),
                                   elevation: 6,
                                 ),
-                                child: const Text(
-                                  'Sign In as Volunteer',
+                                child:  Text(
+                                  'Sign In as $_accountType',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,

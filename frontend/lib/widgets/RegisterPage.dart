@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend/config.dart';
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -21,19 +22,25 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
   String _accountType = 'User';
   String? _gender;
   String? _country;
   String? _language;
 
-  final TextEditingController _countrySearchController = TextEditingController();
+  TextEditingController _countrySearchController = TextEditingController();
   List<String> _searchedCountries = [];
   bool _isSearchingCountry = false;
   bool _obscurePassword = true;
 
-  final TextEditingController _languageSearchController = TextEditingController();
+  TextEditingController _languageSearchController = TextEditingController();
   List<String> _searchedLanguages = [];
   bool _isSearchingLanguage = false;
+
+  // Controllers for required fields
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   // New controllers for volunteer extra fields
   final TextEditingController _bioController = TextEditingController();
@@ -155,8 +162,8 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  final List<String> _selectedSpokenLanguages = [];
-  final TextEditingController _spokenLanguagesController = TextEditingController();
+  List<String> _selectedSpokenLanguages = [];
+  TextEditingController _spokenLanguagesController = TextEditingController();
   List<String> _searchedSpokenLanguages = [];
   bool _isSearchingSpokenLanguages = false;
 
@@ -212,7 +219,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  Future<void> uploadFile(file) async {
+  Future<String> uploadFile(file) async {
     Uint8List? fileBytes;
     final fileName = file.name;
     // Platform-safe file bytes access
@@ -224,7 +231,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (fileBytes == null) {
       print('❌ Unable to read file bytes');
-      return;
+      return '';
     }
     try {
       final response = await Supabase.instance.client.storage
@@ -235,26 +242,159 @@ class _RegisterPageState extends State<RegisterPage> {
             fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
           );
 
-    if (response.isNotEmpty) {
-      print('Upload successful');
+      if (response.isNotEmpty) {
+        print('Upload successful');
 
-      final publicUrl = Supabase.instance.client.storage
-          .from('certifications')
-          .getPublicUrl(fileName);
+        final publicUrl = Supabase.instance.client.storage
+            .from('certifications') // ✅ use same bucket
+            .getPublicUrl(fileName);
 
         print('🌍 Public URL: $publicUrl');
+        return publicUrl;
       } else {
         print(' Error uploading: $response');
       }
     } catch (e) {
       print(' Exception during upload: $e');
     }
+
+    return '';
   }
 
-  Future<void> submitForm() async {
+   Future<void> submitForm() async {
+String certUrl='';
     if (_accountType == 'Volunteer' && _selectedFile != null) {
-      await uploadFile(_selectedFile!);
+      certUrl = await uploadFile(_selectedFile!);
     }
+
+    // Validate all form fields first
+      print("submitForm() called");
+
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+print('HELLO!');
+    // Additional validation for dropdown fields
+    if (_gender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select your gender'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+print('HELLO!');
+
+    if (_country == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select your country'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+print('HELLO!');
+
+    if (_language == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select your language'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+print('HELLO!');
+
+    // Additional validation for volunteer-specific fields
+    if (_accountType == 'Volunteer') {
+      if (_selectedSpokenLanguages.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select at least one spoken language'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+print('HELLO!');
+var accountType='' ;
+    // If all validations pass, proceed with form submission
+    if (_accountType == 'Volunteer' && _selectedFile != null) {
+      final url = await uploadFile(_selectedFile!);
+      if (url.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload certification'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        
+       
+      }
+    }
+ accountType = switch (_accountType) {
+  'Volunteer' => 'volunteer_pending',
+  'User' => 'user',
+  'Admin' => 'admin',
+  _ => 'user',
+};
+print('accountType being sent: $accountType');
+
+ final requestbody = {
+          'username': _usernameController.text,
+          'email': _emailController.text,
+          'password': _passwordController.text,
+          'gender': _gender,
+          'role': accountType,
+          'country': _country,
+          'language': _language,
+          'certification_url': certUrl,
+          'certification_title': _certTitleController.text,
+          'certification_institution': _certInstitutionController.text,
+          'bio': _bioController.text,
+          'spoken_languages': _selectedSpokenLanguages,
+        };
+print('Request Body: ${jsonEncode(requestbody)}');
+         var response = await http.post(Uri.parse(registeration),
+         headers : {"Content-Type":"application/json"},
+
+         body: jsonEncode(requestbody));
+
+             print('Response status: ${response.statusCode}');
+print('Response body: ${response.body}');
+
+if (response.statusCode == 200) {
+  // Server returned OK, try parsing JSON
+ // final responseData = jsonDecode(response.body);
+
+ final data = jsonDecode(response.body);
+ if (response.statusCode == 200 && data['status'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Register successfully done')),
+      );
+    }
+
+
+
+}
+
+
+   
+
+
+    
+
   }
 
   @override
