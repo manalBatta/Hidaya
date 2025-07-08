@@ -25,4 +25,26 @@ class AppColors {
 
   static const islamicCream = Color(0xFFF4EFD8);
   static const islamicWhite = Color(0xFFFFFFFF);
+  
+  // Additional colors used in AskPage
+  static const askPageBackground = Color(0xFFF4FBF8);
+  static const askPagePrivateBackground = Color(0xFFFCF7E8);
+  static const askPageBorder = Color(0xFFE6F3ED);
+  static const askPagePrivateBorder = Color(0xFFE8C181);
+  static const askPageTitle = Color(0xFF104C34);
+  static const askPageSubtitle = Color(0xFF206F4F);
+  static const askPageUrgent = Color(0xFF165A3F);
+  static const askPagePrivateIcon = Color(0xFFD4A574);
+  static const askPageCategoryBackground = Color(0xFFBFE3D5);
+  static const askPageCategoryText = Color(0xFF165A3F);
+  static const askPagePrivacyBorder = Color(0xFF93C5AE);
+  static const askPagePrivacyText = Color(0xFF7F7556);
+  static const askPageHumanBadge = Color(0xFF2D8662);
+  static const askPageAIBackground = Color(0xFFEFF6FF);
+  static const askPageAIBorder = Color(0xFFBFDBFE);
+  static const askPageAIBox = Color(0xFFDCEFFF);
+  static const askPageAIBlue = Color(0xFF2563EB);
+  static const askPageAIDarkBlue = Color(0xFF1E3A8A);
+  static const askPageAIText = Color(0xFF1E40AF);
+  static const askPageAINote = Color(0xFF1D4ED8);
 }
