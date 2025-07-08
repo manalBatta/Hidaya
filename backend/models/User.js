@@ -1,29 +1,68 @@
-const mongoose = require('mongoose');
+const mongoose = require('../config/db');
+const bcrypt = require("bcrypt");
 
-const certificateSchema = new mongoose.Schema({
+const { Schema } = mongoose;
+
+const certificateSchema = new Schema({
   title: String,
   institution: String,
   url: String,
   uploadedAt: Date,
 });
 
-const volunteerProfileSchema = new mongoose.Schema({
-  certificate: certificateSchema,
+const volunteerProfileSchema = new Schema({
+  certificate: certificateSchema, 
   languages: [String],
   bio: String,
 });
 
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
+  userId: { type: String, required: true }, 
   displayName: String,
   gender: { type: String, enum: ['Male', 'Female'] },
   email: { type: String, unique: true },
   password: String,
   country: String,
   city: String,
-  role: { type: String, enum: ['user', 'volunteer_pending', 'certified_volunteer', 'admin'], default: 'user' },
+  role: {
+    type: String,
+    enum: ['user', 'volunteer_pending', 'certified_volunteer', 'admin'],
+    default: 'user',
+  },
   language: String,
   createdAt: { type: Date, default: Date.now },
-  volunteerProfile: volunteerProfileSchema,
+  volunteerProfile: volunteerProfileSchema, 
 });
 
-module.exports = mongoose.model('User', userSchema);
+
+userSchema.pre("save",async function(){
+    var user = this;
+    if(!user.isModified("password")){
+        return
+    }
+    try{
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(user.password,salt);
+        user.password = hash;
+    }catch(err){
+        throw err;
+    }
+});
+
+userSchema.methods.comparePassword = async function (candidatePassword) {
+    try {
+        console.log('----------------no password',this.password);
+        // @ts-ignore
+        const isMatch = await bcrypt.compare(candidatePassword, this.password);
+        return isMatch;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+
+
+
+module.exports = mongoose.model('User', userSchema, 'Users');
