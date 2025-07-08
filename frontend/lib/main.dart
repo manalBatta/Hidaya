@@ -1,14 +1,21 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:frontend/widgets/Navigator.dart';
+import 'package:frontend/widgets/ProfilePage.dart';
+import 'package:frontend/widgets/ResponsiveLayou.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: 'assets/.env');
   await Supabase.initialize(
-    url: 'https://mdkcqahrvtfgdhpvblfk.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ka2NxYWhydnRmZ2RocHZibGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4MTM4NTEsImV4cCI6MjA2NzM4OTg1MX0.RzBLUsggKGS4tx1YRivZoQkGswuZI41hkJqrr2TLNMc', // <-- your Supabase anon key
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   runApp(const HidayaApp());
 }
@@ -18,13 +25,16 @@ class HidayaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Hidaya',
-      theme: ThemeData(
-        useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(),
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
       ),
-      home: SignInPage(),
+    );
+
+    return MaterialApp(
+      home: ResponsiveLayout(userRole: 'user'), // Change role as needed
+      debugShowCheckedModeBanner: false,
     );
   }
 }
