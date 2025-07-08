@@ -51,44 +51,6 @@ class _RegisterPageState extends State<RegisterPage> {
   PlatformFile? _selectedFile;
   String? _uploadedFileUrl;
 
-  Future<List<String>> fetchCountries() async {
-    final response = await http.get(
-      Uri.parse('https://restcountries.com/v3.1/all'),
-    );
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      final countryNames =
-          data
-              .map<String>((item) => item['name']['common'].toString())
-              .toList();
-      countryNames.sort();
-      return countryNames;
-    } else {
-      throw Exception('Failed to load countries');
-    }
-  }
-
-  Future<List<String>> fetchLanguages() async {
-    final response = await http.get(
-      Uri.parse('https://restcountries.com/v3.1/all'),
-    );
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      final Set<String> languages = {};
-      for (var item in data) {
-        final langs = item['languages'];
-        if (langs != null) {
-          languages.addAll(langs.values.map((e) => e.toString()));
-        }
-      }
-      final list = languages.toList();
-      list.sort();
-      return list;
-    } else {
-      throw Exception('Failed to load languages');
-    }
-  }
-
   Future<void> searchCountries(String query) async {
     if (query.isEmpty) {
       setState(() {

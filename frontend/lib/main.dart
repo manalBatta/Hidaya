@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:frontend/widgets/Navigator.dart';
+import 'package:frontend/widgets/ProfilePage.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,13 +21,16 @@ class HidayaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Hidaya',
-      theme: ThemeData(
-        useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(),
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
       ),
-      home: SignInPage(),
+    );
+
+    return MaterialApp(
+      home: MainLayout(userRole: 'user'), // Change role as needed
+      debugShowCheckedModeBanner: false,
     );
   }
 }
