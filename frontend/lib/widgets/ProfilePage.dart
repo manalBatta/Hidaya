@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -10,11 +11,12 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State {
-  final Mapuser = {
-    'role': 'certified_volunteer', // 'user' | 'certified_volunteer' | 'admin'
+  Map<String, dynamic> userObj = {
+    'role':
+        'user', // 'user' | 'certified_volunteer' | 'admin' | 'volunteer_pending'
     'displayName': 'Fatima Al-Zahra',
     'email': 'fatima.alzahra@example.com',
-    'gender': 'Female',
+    'gender': 'Female', //Female, Male, Other
     'location': 'Palestine',
     'language': 'Arabic',
     'certificate': {
@@ -127,20 +129,20 @@ class _ProfilePageState extends State {
   void initState() {
     super.initState();
     _displayNameController = TextEditingController(
-      text: Mapuser['displayName'] as String? ?? '',
+      text: userObj['displayName'] as String? ?? '',
     );
     _emailController = TextEditingController(
-      text: Mapuser['email'] as String? ?? '',
+      text: userObj['email'] as String? ?? '',
     );
-    _gender = Mapuser['gender'] as String?;
+    _gender = userObj['gender'] as String?;
     _locationController = TextEditingController(
-      text: Mapuser['location'] as String? ?? '',
+      text: userObj['location'] as String? ?? '',
     );
     _languageController = TextEditingController(
-      text: Mapuser['language'] as String? ?? '',
+      text: userObj['language'] as String? ?? '',
     );
     _bioController = TextEditingController(
-      text: Mapuser['bio'] as String? ?? '',
+      text: userObj['bio'] as String? ?? '',
     );
   }
 
@@ -493,40 +495,41 @@ class _ProfilePageState extends State {
                           ),
 
                         SizedBox(height: 12),
-                        TextFormField(
-                          controller: _bioController,
-                          decoration: InputDecoration(
-                            labelText: 'Bio',
-                            labelStyle: TextStyle(
-                              color: AppColors.islamicGreen700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            floatingLabelStyle: TextStyle(
-                              color: AppColors.islamicGreen500,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: AppColors.islamicGreen200,
+                        if (userObj['role'] != 'user')
+                          TextFormField(
+                            controller: _bioController,
+                            decoration: InputDecoration(
+                              labelText: 'Bio',
+                              labelStyle: TextStyle(
+                                color: AppColors.islamicGreen700,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
+                              floatingLabelStyle: TextStyle(
                                 color: AppColors.islamicGreen500,
-                                width: 2,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: AppColors.islamicGreen200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: AppColors.islamicGreen500,
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: AppColors.islamicWhite,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
                               ),
                             ),
-                            filled: true,
-                            fillColor: AppColors.islamicWhite,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 14,
-                            ),
+                            maxLines: 2,
                           ),
-                          maxLines: 2,
-                        ),
                       ],
                     ),
                   ),
@@ -559,16 +562,17 @@ class _ProfilePageState extends State {
                     elevation: 4,
                     shadowColor: AppColors.islamicGreen600.withAlpha(128),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     if (_editFormKey.currentState!.validate()) {
                       setState(() {
-                        Mapuser['displayName'] = _displayNameController.text;
-                        Mapuser['email'] = _emailController.text;
-                        Mapuser['gender'] = _gender ?? '';
-                        Mapuser['location'] = _locationController.text;
-                        Mapuser['language'] = _languageController.text;
-                        Mapuser['bio'] = _bioController.text;
+                        userObj['displayName'] = _displayNameController.text;
+                        userObj['email'] = _emailController.text;
+                        userObj['gender'] = _gender ?? '';
+                        userObj['location'] = _locationController.text;
+                        userObj['language'] = _languageController.text;
+                        userObj['bio'] = _bioController.text;
                       });
+                      await updateProfile(userObj);
                       Navigator.of(context).pop();
                     }
                   },
@@ -579,6 +583,107 @@ class _ProfilePageState extends State {
           },
         );
       },
+    );
+  }
+
+  Widget _buildUserInfoSection({
+    bool showEdit = true,
+    bool showButtons = true,
+  }) {
+    return Column(
+      children: [
+        // Avatar
+        Container(
+          width: 96,
+          height: 96,
+          margin: EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.islamicGreen500, AppColors.islamicGreen600],
+            ),
+            borderRadius: BorderRadius.circular(48),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha((0.1 * 255).toInt()),
+                blurRadius: 15,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Icon(Icons.person, size: 48, color: Colors.white),
+        ),
+        // User Info
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text:
+                    userObj['gender'] == 'Female'
+                        ? 'Sister '
+                        : userObj['gender'] == 'Male'
+                        ? 'Brother '
+                        : '',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              TextSpan(
+                text: userObj['displayName'] as String,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.islamicGreen800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        _buildInfoRow(Icons.email, userObj['email'] as String),
+        SizedBox(height: 8),
+        _buildInfoRow(Icons.location_on, userObj['location'] as String),
+        SizedBox(height: 8),
+        _buildInfoRow(Icons.language, userObj['language'] as String),
+        if (showButtons) ...[
+          SizedBox(height: 24),
+          Divider(color: AppColors.islamicGreen200),
+          SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _showEditProfileDialog,
+                  icon: Icon(Icons.edit, size: 16),
+                  label: Text('Edit Profile'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.islamicGreen600,
+                    side: BorderSide(color: AppColors.islamicGreen300),
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await logout();
+                    // Optionally: Navigator.of(context).pushReplacementNamed('/login');
+                  },
+                  icon: Icon(Icons.logout, size: 16),
+                  label: Text('Log Out'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red[700],
+                    side: BorderSide(color: Colors.red[300]!),
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -602,33 +707,26 @@ class _ProfilePageState extends State {
             padding: EdgeInsets.all(16),
             child: Column(
               children: [
-                /* // Header
-                Container(
-                  margin: EdgeInsets.only(bottom: 32),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Profile',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.islamicGreen800,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Manage your account and preferences',
-                        style: TextStyle(color: AppColors.islamicGreen600),
-                      ),
-                    ],
-                  ),
-                ),
- */
                 // Layout
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    if (constraints.maxWidth > 768) {
-                      // Desktop layout
+                    if (constraints.maxWidth > 768 &&
+                        (userObj['role'] == 'volunteer_pending' ||
+                            userObj['role'] == 'user')) {
+                      // Center the profile card for pending volunteer or user
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: 700),
+                            child: _buildLeftColumn(),
+                          ),
+                        ],
+                      );
+                    } else if (constraints.maxWidth > 768 &&
+                        userObj['role'] != 'volunteer_pending' &&
+                        userObj['role'] != 'user') {
+                      // Desktop layout for admin or certified_volunteer
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -691,29 +789,79 @@ class _ProfilePageState extends State {
   }
 
   Widget _buildLeftColumn() {
+    if (userObj['role'] == 'volunteer_pending') {
+      return Column(children: [_buildPendingVolunteerSection()]);
+    }
     return Column(
       children: [
         _buildCommonSection(),
         SizedBox(height: 24),
-        if (Mapuser['role'] == 'admin') _buildAdminSection(),
-        if (Mapuser['role'] == 'user' ||
-            Mapuser['role'] == 'certified_volunteer')
+        if (userObj['role'] == 'admin') _buildAdminSection(),
+        if (userObj['role'] == 'user' ||
+            userObj['role'] == 'certified_volunteer')
           _buildSavedContentSection(),
       ],
     );
   }
 
   Widget _buildRightColumn() {
+    if (userObj['role'] == 'volunteer_pending' || userObj['role'] == 'user') {
+      return SizedBox.shrink();
+    }
     return Column(
       children: [
-        if (Mapuser['role'] == 'certified_volunteer')
+        if (userObj['role'] == 'certified_volunteer')
           _buildCertifiedVolunteerSection(),
-        if (Mapuser['role'] == 'admin') ...[
+        if (userObj['role'] == 'admin') ...[
           _buildCertifiedVolunteerSection(),
           SizedBox(height: 24),
           _buildSavedContentSection(),
         ],
       ],
+    );
+  }
+
+  Widget _buildPendingVolunteerSection() {
+    return Card(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.islamicGreen200),
+      ),
+      elevation: 8,
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildUserInfoSection(showEdit: false, showButtons: false),
+            SizedBox(height: 24),
+            Divider(color: AppColors.islamicGreen200),
+            SizedBox(height: 24),
+            Icon(
+              Icons.hourglass_top,
+              color: AppColors.islamicGold400,
+              size: 40,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Your application to become a Certified Muslim Volunteer is under review.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.islamicGreen700,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'You will be recieved an email once your application is approved.\n\nThank you for your willingness to volunteer and contribute to our community!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.islamicGreen600, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -727,105 +875,7 @@ class _ProfilePageState extends State {
       elevation: 8,
       child: Padding(
         padding: EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Avatar
-            Container(
-              width: 96,
-              height: 96,
-              margin: EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.islamicGreen500,
-                    AppColors.islamicGreen600,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(48),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                    blurRadius: 15,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.person, size: 48, color: Colors.white),
-            ),
-
-            // User Info
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text:
-                        Mapuser['gender'] == 'Female'
-                            ? 'Sister '
-                            : Mapuser['gender'] == 'Male'
-                            ? 'Brother '
-                            : '',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700], // Softer color for title
-                    ),
-                  ),
-                  TextSpan(
-                    text: Mapuser['displayName'] as String,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.islamicGreen800, // Strong color for name
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Details
-            _buildInfoRow(Icons.email, Mapuser['email'] as String),
-            SizedBox(height: 8),
-            _buildInfoRow(Icons.location_on, Mapuser['location'] as String),
-            SizedBox(height: 8),
-            _buildInfoRow(Icons.language, Mapuser['language'] as String),
-
-            SizedBox(height: 24),
-            Divider(color: AppColors.islamicGreen200),
-            SizedBox(height: 24),
-
-            // Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _showEditProfileDialog,
-                    icon: Icon(Icons.edit, size: 16),
-                    label: Text('Edit Profile'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.islamicGreen600,
-                      side: BorderSide(color: AppColors.islamicGreen300),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: Icon(Icons.logout, size: 16),
-                    label: Text('Log Out'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red[700],
-                      side: BorderSide(color: Colors.red[300]!),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        child: _buildUserInfoSection(),
       ),
     );
   }
@@ -895,12 +945,12 @@ class _ProfilePageState extends State {
             children: [
               _buildDetailRow(
                 'Institution',
-                (Mapuser['certificate'] as Map<String, dynamic>)['institution'],
+                (userObj['certificate'] as Map<String, dynamic>)['institution'],
               ),
               SizedBox(height: 16),
               _buildDetailRow(
                 'Certificate Title',
-                (Mapuser['certificate'] as Map<String, dynamic>)['title'],
+                (userObj['certificate'] as Map<String, dynamic>)['title'],
               ),
               SizedBox(height: 16),
               ElevatedButton.icon(
@@ -922,7 +972,7 @@ class _ProfilePageState extends State {
           'Islamic Background',
           Icons.description,
           Text(
-            Mapuser['bio'] as String,
+            userObj['bio'] as String,
             style: TextStyle(color: AppColors.islamicGreen600, height: 1.5),
           ),
         ),
@@ -935,7 +985,7 @@ class _ProfilePageState extends State {
           Wrap(
             spacing: 8,
             children:
-                (Mapuser['languagesSpoken'] as List)
+                (userObj['languagesSpoken'] as List)
                     .map(
                       (lang) => Chip(
                         label: Text(lang),
@@ -1042,7 +1092,7 @@ class _ProfilePageState extends State {
                   child: _buildContentCard(
                     Icons.book,
                     'Saved Lessons',
-                    Mapuser['savedLessons'].toString(),
+                    userObj['savedLessons'].toString(),
                     'lessons saved',
                     AppColors.islamicGreen50,
                     AppColors.islamicGreen600,
@@ -1053,7 +1103,7 @@ class _ProfilePageState extends State {
                   child: _buildContentCard(
                     Icons.help,
                     'My Questions',
-                    Mapuser['savedQuestions'].toString(),
+                    userObj['savedQuestions'].toString(),
                     'questions asked',
                     AppColors.islamicGold50,
                     AppColors.islamicGold400,
@@ -1187,5 +1237,38 @@ class _ProfilePageState extends State {
         ],
       ),
     );
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> updatedData) async {
+    final response = await http.put(
+      Uri.parse('http://your-backend-url/api/user/profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(updatedData),
+    );
+    if (response.statusCode == 200) {
+      // Success: update userObj with returned user info
+      final updatedUser = jsonDecode(response.body);
+      setState(() {
+        userObj = updatedUser;
+      });
+      // Optionally show a success message
+    } else {
+      // Handle error: Optionally show an error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update profile. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> logout() async {
+    print('logged out');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+    // Optionally navigate to login screen or show a message
   }
 }
