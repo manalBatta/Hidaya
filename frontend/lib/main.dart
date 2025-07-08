@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/widgets/Navigator.dart';
 import 'package:frontend/widgets/ProfilePage.dart';
+import 'package:frontend/widgets/ResponsiveLayou.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,7 +30,7 @@ class HidayaApp extends StatelessWidget {
     );
 
     return MaterialApp(
-      home: MainLayout(userRole: 'user'), // Change role as needed
+      home: ResponsiveLayout(userRole: 'admin'), // Change role as needed
       debugShowCheckedModeBanner: false,
     );
   }
