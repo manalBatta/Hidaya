@@ -5,7 +5,7 @@ exports.register = async (req, res, next) => {
     console.log("--- req body ---", req.body);
 
     const {
-      username,
+      displayname,
       email,
       password,
       gender,
@@ -21,7 +21,7 @@ exports.register = async (req, res, next) => {
     } = req.body;
 
     const NewuserData = {
-      username,
+      displayname,
       email,
       password,
       gender,
@@ -36,10 +36,16 @@ exports.register = async (req, res, next) => {
       spoken_languages
     };
 
-    await UserServices.registerUser(NewuserData);
+   const createdUser =await UserServices.registerUser(NewuserData);
 
-    res.json({ status: true, success: 'User registered successfully' });
+const userToReturn = createdUser.toObject();
+delete userToReturn.password;
 
+res.status(201).json({
+  status: true,
+  success: 'User registered successfully',
+  user: userToReturn
+});
   } catch (err) {
     console.log("---> err -->", err);
     next(err);
@@ -67,7 +73,21 @@ if (!user) {
         tokenData = { _id: user._userId, email: user.email, role:user.role };
     
         const token = await UserServices.generateAccessToken(tokenData,"secret","1h")
-        res.status(200).json({ status: true, success: "sendData", token: token });
+        res.status(200).json({ status: true, success: "sendData", token: token ,  user: {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    gender: user.gender,
+    country: user.country,
+    city: user.city,
+    language: user.language,
+    bio: user.bio,
+    spoken_languages: user.spoken_languages,
+    certification_title: user.certification_title,
+    certification_institution: user.certification_institution,
+    certification_url: user.certification_url,
+  }});
 
 }
 
