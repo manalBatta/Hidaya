@@ -5,7 +5,7 @@ exports.register = async (req, res, next) => {
     console.log("--- req body ---", req.body);
 
     const {
-      displayname,
+      displayName,
       email,
       password,
       gender,
@@ -21,7 +21,7 @@ exports.register = async (req, res, next) => {
     } = req.body;
 
     const NewuserData = {
-      displayname,
+      displayName,
       email,
       password,
       gender,
@@ -70,25 +70,94 @@ if (!user) {
     }
          // Creating Token
         let tokenData;
-        tokenData = { _id: user._userId, email: user.email, role:user.role };
+        tokenData = { _id: user.userId, email: user.email, role:user.role };
     
         const token = await UserServices.generateAccessToken(tokenData,"secret","1h")
         res.status(200).json({ status: true, success: "sendData", token: token ,  user: {
-    id: user._id,
-    username: user.username,
+    id: user.userId,
+    username: user.displayName,
     email: user.email,
     role: user.role,
     gender: user.gender,
     country: user.country,
-    city: user.city,
     language: user.language,
-    bio: user.bio,
-    spoken_languages: user.spoken_languages,
-    certification_title: user.certification_title,
-    certification_institution: user.certification_institution,
-    certification_url: user.certification_url,
+    volunteerProfile: user.volunteerProfile,
   }});
 
-}
+};
+exports.updateprofile=async (req , res , next) =>{
+try {
+    const userId = req.userId; // coming from token middleware
+    const {
+      displayName,
+      gender,
+      email,
+      country,
+      language,
+      role,
+      savedQuestions,
+      savedLessons,
+      bio,
+      spoken_languages,
+      certification_title,
+      certification_institution,
+      certification_url
+    } = req.body;
+  
+  if (!role) {
+      return res.status(400).json({ status: false, message: 'Role is required in request body' });
+    }
 
+    // Base data for all users
+    let updateData = {
+      displayName,
+      gender,
+      email,
+      country,
+      language,
+      role
+    };
+  if (role === 'user') {
+      updateData.savedQuestions = savedQuestions || [];
+      updateData.savedLessons = savedLessons || [];
+    }
+
+    if (role === 'certified_volunteer' || role === 'volunteer_pending') {
+      updateData.volunteerProfile = {
+        bio: bio || '',
+        languages: spoken_languages || [],
+        certificate: {
+          title: certification_title || '',
+          institution: certification_institution || '',
+          url: certification_url || '',
+          uploadedAt: new Date()
+        }
+      };
+    }
+console.log("UPDATE DATA", updateData);
+
+const updatedUser = await UserServices.updateUserById(userId, updateData);
+
+    const userToReturn = updatedUser.toObject ? updatedUser.toObject() : updatedUser;
+    delete userToReturn.password;
+
+    return res.status(200).json({
+      status: true,
+      success: 'Profile updated successfully',
+      user: userToReturn
+    });
+
+
+  
+  }
+
+catch (err) {
+    console.log('---> err in updateprofile -->', err);
+    next(err);
+  }
+
+
+
+
+};
 
