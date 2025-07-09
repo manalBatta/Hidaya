@@ -8,7 +8,7 @@ class UserServices {
     try {
       const newUser = new UserModel({
         userId: uuidv4(),
-        displayName: userData.username,
+        displayName: userData.displayName,
         gender: userData.gender,
         email: userData.email,
         password: userData.password,
@@ -17,6 +17,7 @@ class UserServices {
 role: (userData.role || 'user').toLowerCase(),
         language: userData.language,
         createdAt: new Date(), 
+
         volunteerProfile: userData.role === 'volunteer_pending' ? {
           certificate: {
             title: userData.certification_title,
@@ -52,6 +53,24 @@ static async generateAccessToken(tokenData,JWTSecret_Key,JWT_EXPIRE){
         return jwt.sign(tokenData, JWTSecret_Key, { expiresIn: JWT_EXPIRE });
     }
 
+
+    static async updateUserById(userId, updateData){
+  try {
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { userId },      
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+
+    return updatedUser;
+  } catch (err) {
+    throw err;
+  }
+    }
 
 
 

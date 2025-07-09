@@ -23,13 +23,15 @@ const userSchema = new Schema({
   email: { type: String, unique: true },
   password: String,
   country: String,
-  city: String,
   role: {
     type: String,
     enum: ['user', 'volunteer_pending', 'certified_volunteer', 'admin'],
     default: 'user',
   },
   language: String,
+     savedQuestions: [String],
+  savedLessons: [String],
+
   createdAt: { type: Date, default: Date.now },
   volunteerProfile: volunteerProfileSchema, 
 });
