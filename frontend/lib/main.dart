@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:frontend/widgets/ProfilePage.dart';
+import 'package:frontend/widgets/Navigator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
