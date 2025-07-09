@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/providers/UserProvider.dart';
 import 'package:frontend/widgets/Navigator.dart';
 import 'package:frontend/widgets/ProfilePage.dart';
 import 'package:frontend/widgets/ResponsiveLayou.dart';
@@ -17,7 +19,13 @@ void main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-  runApp(const HidayaApp());
+
+  final userProvider = UserProvider();
+  await userProvider.loadUserFromPrefs();
+
+  runApp(
+    ChangeNotifierProvider(create: (_) => userProvider, child: HidayaApp()),
+  );
 }
 
 class HidayaApp extends StatelessWidget {
@@ -32,9 +40,12 @@ class HidayaApp extends StatelessWidget {
       ),
     );
 
-    return MaterialApp(
-      home: ResponsiveLayout(userRole: 'user'), // Change role as needed
-      debugShowCheckedModeBanner: false,
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        return MaterialApp(
+          home: userProvider.isLoggedIn ? ResponsiveLayout() : SignInPage(),
+        );
+      },
     );
   }
 }
