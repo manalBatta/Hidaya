@@ -11,6 +11,7 @@ class UserProvider with ChangeNotifier {
 
   // Set user after login or profile update
   Future<void> setUser(Map<String, dynamic> userData) async {
+    print("setUser called with: $userData");
     _user = userData;
     notifyListeners();
     await _saveUserToPrefs(userData);

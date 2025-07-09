@@ -47,8 +47,9 @@ class _SignInPageState extends State<SignInPage> {
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
+
       print("sign in returned data: $data");
-      Provider.of<UserProvider>(context, listen: false).setUser(data);
+      Provider.of<UserProvider>(context, listen: false).setUser(data['user']);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Login failed')),
