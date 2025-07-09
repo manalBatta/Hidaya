@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend/config.dart';
+import 'package:frontend/widgets/HomePage.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -336,12 +337,12 @@ print('Request Body: ${jsonEncode(requestbody)}');
              print('Response status: ${response.statusCode}');
 print('Response body: ${response.body}');
 
-if (response.statusCode == 200) {
+if (response.statusCode == 201) {
   // Server returned OK, try parsing JSON
  // final responseData = jsonDecode(response.body);
 
  final data = jsonDecode(response.body);
- if (response.statusCode == 200 && data['status'] == true) {
+ if (response.statusCode == 201 && data['status'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Register successfully done')),
       );

@@ -30,7 +30,7 @@ role: (userData.role || 'user').toLowerCase(),
       });
          
       await newUser.save();
-      return { success: true, message: "User registered successfully" };
+return newUser;
     } catch (err) {
       throw err;
     }
