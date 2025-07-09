@@ -15,17 +15,14 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State {
   late Map<String, dynamic> userObj = {
-    'role': 'user',
-    'username': '',
-    'email': '',
+    'displayname': '',
     'gender': '',
+    'email': '',
     'country': '',
     'language': '',
-    'certificate': {'institution': '', 'title': '', 'hasDocument': false},
-    'bio': '',
-    'languagesSpoken': [],
-    'savedLessons': 0,
-    'savedQuestions': 0,
+    'role': '',
+    'savedQuestions': [],
+    'savedLessons': [],
   };
 
   // Controllers for edit form
@@ -127,21 +124,8 @@ class _ProfilePageState extends State {
     super.initState();
     // Get user data from provider
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userObj =
-        userProvider.user ??
-        {
-          'role': '',
-          'username': '',
-          'email': '',
-          'gender': '',
-          'country': '',
-          'language': '',
-          'certificate': {'institution': '', 'title': '', 'hasDocument': false},
-          'bio': '',
-          'languagesSpoken': [],
-          'savedLessons': 0,
-          'savedQuestions': 0,
-        };
+    final role = userProvider.user?['role'] ?? '';
+    userObj = userProvider.user ?? getInitialUserObj(role);
 
     _usernameController = TextEditingController(
       text: userObj['username'] as String? ?? '',
@@ -1278,5 +1262,58 @@ class _ProfilePageState extends State {
         );
       }
     }
+  }
+}
+
+Map<String, dynamic> getInitialUserObj(String role) {
+  if (role == 'certified_volunteer' || role == 'volunteer_pending') {
+    return {
+      'role': role,
+      'username': '',
+      'email': '',
+      'gender': '',
+      'country': '',
+      'language': '',
+      'certificate': {'institution': '', 'title': '', 'hasDocument': false},
+      'bio': '',
+      'languagesSpoken': [],
+      'savedLessons': 0,
+      'savedQuestions': 0,
+    };
+  } else if (role == 'user') {
+    return {
+      'role': 'user',
+      'username': '',
+      'email': '',
+      'gender': '',
+      'country': '',
+      'language': '',
+      'savedLessons': 0,
+      'savedQuestions': 0,
+    };
+  } else if (role == 'admin') {
+    return {
+      'role': 'admin',
+      'username': '',
+      'email': '',
+      'gender': '',
+      'country': '',
+      'language': '',
+      // Add admin-specific fields if needed
+      'savedLessons': 0,
+      'savedQuestions': 0,
+    };
+  } else {
+    // Default fallback
+    return {
+      'role': '',
+      'username': '',
+      'email': '',
+      'gender': '',
+      'country': '',
+      'language': '',
+      'savedLessons': 0,
+      'savedQuestions': 0,
+    };
   }
 }
