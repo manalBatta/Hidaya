@@ -1,5 +1,6 @@
 // lib/widgets/responsive_layout.dart
 import 'package:flutter/material.dart';
+import 'package:frontend/utils/auth_utils.dart';
 import '../constants/colors.dart';
 import 'HomePage.dart';
 import 'AskPage.dart';
@@ -103,7 +104,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
     });
   }
 
-  void _handleAdminAction(String actionId) {
+  void _handleAdminAction(String actionId) async {
     switch (actionId) {
       case 'dashboard':
         print('Navigate to Admin Dashboard');
@@ -115,7 +116,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
         print('Promote Volunteers');
         break;
       case 'logout':
-        print('Logout');
+        await AuthUtils.logout(context);
         break;
     }
   }
