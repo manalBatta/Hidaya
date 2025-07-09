@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
+import 'package:frontend/providers/UserProvider.dart';
 import 'package:frontend/widgets/RegisterPage.dart';
 import 'package:frontend/widgets/CustomTextField.dart';
 import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -24,43 +26,35 @@ class _SignInPageState extends State<SignInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-
   Future<void> signIn() async {
     final requestbody = {
       'email': _emailController.text,
       'password': _passwordController.text,
       'role': _accountType,
     };
-    print('Request Body: ${jsonEncode(requestbody)}');
-         var response = await http.post(Uri.parse(login),
-         headers : {"Content-Type":"application/json"},
-         body: jsonEncode(requestbody));
-       final data = jsonDecode(response.body);
- if (response.statusCode == 200 && data['status'] == true) {
+    var response = await http.post(
+      Uri.parse(login),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(requestbody),
+    );
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200 && data['status'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login successful')),
+        SnackBar(
+          content: Text('Login successful'),
+          backgroundColor: AppColors.islamicGreen500,
+        ),
       );
-final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', data['token']);
-    
-    print('Token saved in SharedPreferences');
-
-    }
-    else {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', data['token']);
+      print("sign in returned data: $data");
+      Provider.of<UserProvider>(context, listen: false).setUser(data);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Login failed')),
       );
     }
-       
-
-
-
-
-
-
-print('Response body: ${response.body}');
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -353,19 +347,20 @@ print('Response body: ${response.body}');
                                 onPressed: () {
                                   if (_formKey.currentState!.validate()) {
                                     // Handle sign in
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    final snackBarKey =
+                                        GlobalKey<ScaffoldMessengerState>();
+                                    snackBarKey.currentState?.showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           'Signing in as $_accountType...',
                                         ),
+                                        duration: Duration(seconds: 10),
                                       ),
                                     );
-                                     signIn();
+                                    signIn();
+                                    snackBarKey.currentState
+                                        ?.hideCurrentSnackBar();
                                   }
-
-                                  
-
-
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.islamicGreen500,
@@ -374,7 +369,7 @@ print('Response body: ${response.body}');
                                   ),
                                   elevation: 6,
                                 ),
-                                child:  Text(
+                                child: Text(
                                   'Sign In as $_accountType',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
