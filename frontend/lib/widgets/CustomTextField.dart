@@ -11,6 +11,7 @@ class CustomTextField extends StatelessWidget {
   final bool required;
   final Widget? suffixIcon;
   final VoidCallback? onSuffixIconPressed;
+  final ValueChanged<String>? onChanged;
 
   const CustomTextField({
     super.key,
@@ -23,6 +24,7 @@ class CustomTextField extends StatelessWidget {
     this.required = false,
     this.suffixIcon,
     this.onSuffixIconPressed,
+    this.onChanged,
   });
 
   @override
@@ -32,6 +34,7 @@ class CustomTextField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: required ? '$label *' : label,
         labelStyle: TextStyle(
