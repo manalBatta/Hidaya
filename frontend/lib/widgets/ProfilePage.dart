@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/providers/UserProvider.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/utils/auth_utils.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -11,32 +14,26 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State {
-  Map<String, dynamic> userObj = {
-    'role':
-        'user', // 'user' | 'certified_volunteer' | 'admin' | 'volunteer_pending'
-    'displayName': 'Fatima Al-Zahra',
-    'email': 'fatima.alzahra@example.com',
-    'gender': 'Female', //Female, Male, Other
-    'location': 'Palestine',
-    'language': 'Arabic',
-    'certificate': {
-      'institution': 'Al-Azhar University',
-      'title': 'Islamic Studies Certification',
-      'hasDocument': true,
-    },
-    'bio':
-        'Dedicated Islamic educator with 5 years of experience in Quranic studies and Islamic jurisprudence.',
-    'languagesSpoken': ['Arabic', 'English', 'Urdu'],
-    'savedLessons': 12,
-    'savedQuestions': 8,
+  late Map<String, dynamic> userObj = {
+    'role': 'user',
+    'username': '',
+    'email': '',
+    'gender': '',
+    'country': '',
+    'language': '',
+    'certificate': {'institution': '', 'title': '', 'hasDocument': false},
+    'bio': '',
+    'languagesSpoken': [],
+    'savedLessons': 0,
+    'savedQuestions': 0,
   };
 
   // Controllers for edit form
   final _editFormKey = GlobalKey<FormState>();
-  late TextEditingController _displayNameController;
+  late TextEditingController _usernameController;
   late TextEditingController _emailController;
   String? _gender;
-  late TextEditingController _locationController;
+  late TextEditingController _countryController;
   late TextEditingController _languageController;
   late TextEditingController _bioController;
 
@@ -128,15 +125,33 @@ class _ProfilePageState extends State {
   @override
   void initState() {
     super.initState();
-    _displayNameController = TextEditingController(
-      text: userObj['displayName'] as String? ?? '',
+    // Get user data from provider
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    userObj =
+        userProvider.user ??
+        {
+          'role': '',
+          'username': '',
+          'email': '',
+          'gender': '',
+          'country': '',
+          'language': '',
+          'certificate': {'institution': '', 'title': '', 'hasDocument': false},
+          'bio': '',
+          'languagesSpoken': [],
+          'savedLessons': 0,
+          'savedQuestions': 0,
+        };
+
+    _usernameController = TextEditingController(
+      text: userObj['username'] as String? ?? '',
     );
     _emailController = TextEditingController(
       text: userObj['email'] as String? ?? '',
     );
     _gender = userObj['gender'] as String?;
-    _locationController = TextEditingController(
-      text: userObj['location'] as String? ?? '',
+    _countryController = TextEditingController(
+      text: userObj['country'] as String? ?? '',
     );
     _languageController = TextEditingController(
       text: userObj['language'] as String? ?? '',
@@ -148,9 +163,9 @@ class _ProfilePageState extends State {
 
   @override
   void dispose() {
-    _displayNameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
-    _locationController.dispose();
+    _countryController.dispose();
     _languageController.dispose();
     _bioController.dispose();
     super.dispose();
@@ -185,7 +200,7 @@ class _ProfilePageState extends State {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
-                          controller: _displayNameController,
+                          controller: _usernameController,
                           decoration: InputDecoration(
                             labelText: 'Display Name',
                             labelStyle: TextStyle(
@@ -321,7 +336,7 @@ class _ProfilePageState extends State {
                         SizedBox(height: 12),
                         // Country input (async, searchable)
                         TextFormField(
-                          controller: _locationController,
+                          controller: _countryController,
                           decoration: InputDecoration(
                             labelText: 'Country *',
                             labelStyle: TextStyle(
@@ -405,7 +420,7 @@ class _ProfilePageState extends State {
                                     ),
                                     onTap: () {
                                       setState(() {
-                                        _locationController.text = country;
+                                        _countryController.text = country;
                                         _searchedCountries = [];
                                       });
                                     },
@@ -565,10 +580,10 @@ class _ProfilePageState extends State {
                   onPressed: () async {
                     if (_editFormKey.currentState!.validate()) {
                       setState(() {
-                        userObj['displayName'] = _displayNameController.text;
+                        userObj['username'] = _usernameController.text;
                         userObj['email'] = _emailController.text;
                         userObj['gender'] = _gender ?? '';
-                        userObj['location'] = _locationController.text;
+                        userObj['country'] = _countryController.text;
                         userObj['language'] = _languageController.text;
                         userObj['bio'] = _bioController.text;
                       });
@@ -630,7 +645,7 @@ class _ProfilePageState extends State {
                 ),
               ),
               TextSpan(
-                text: userObj['displayName'] as String,
+                text: userObj['username'] as String? ?? '',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -641,11 +656,11 @@ class _ProfilePageState extends State {
           ),
         ),
         SizedBox(height: 16),
-        _buildInfoRow(Icons.email, userObj['email'] as String),
+        _buildInfoRow(Icons.email, userObj['email'] as String? ?? ''),
         SizedBox(height: 8),
-        _buildInfoRow(Icons.location_on, userObj['location'] as String),
+        _buildInfoRow(Icons.location_on, userObj['country'] as String? ?? ''),
         SizedBox(height: 8),
-        _buildInfoRow(Icons.language, userObj['language'] as String),
+        _buildInfoRow(Icons.language, userObj['language'] as String? ?? ''),
         if (showButtons) ...[
           SizedBox(height: 24),
           Divider(color: AppColors.islamicGreen200),
@@ -668,7 +683,7 @@ class _ProfilePageState extends State {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    await logout();
+                    await AuthUtils.logout(context);
                     // Optionally: Navigator.of(context).pushReplacementNamed('/login');
                   },
                   icon: Icon(Icons.logout, size: 16),
@@ -972,7 +987,7 @@ class _ProfilePageState extends State {
           'Islamic Background',
           Icons.description,
           Text(
-            userObj['bio'] as String,
+            userObj['bio'] as String? ?? '',
             style: TextStyle(color: AppColors.islamicGreen600, height: 1.5),
           ),
         ),
@@ -1263,12 +1278,5 @@ class _ProfilePageState extends State {
         );
       }
     }
-  }
-
-  Future<void> logout() async {
-    print('logged out');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('jwt_token');
-    // Optionally navigate to login screen or show a message
   }
 }
