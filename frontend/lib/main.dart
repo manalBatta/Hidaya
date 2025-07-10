@@ -10,6 +10,7 @@ import 'package:frontend/widgets/SignInPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +22,9 @@ void main() async {
 
   final userProvider = UserProvider();
   await userProvider.loadUserFromPrefs();
+  Gemini.init(apiKey: dotenv.env['GEMINI_API_KEY']!);
 
+  
   runApp(
     ChangeNotifierProvider(create: (_) => userProvider, child: HidayaApp()),
   );

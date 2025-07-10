@@ -1,7 +1,16 @@
 // lib/pages/ask_page.dart
+// ignore_for_file: avoid_print
+
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
+import 'package:frontend/config.dart';
+import 'package:http/http.dart' as http;
 import '../constants/colors.dart';
 import 'QuestionCard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'dart:async'; // Added for Completer
 
 class Questions extends StatefulWidget {
   @override
@@ -17,10 +26,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   late TabController _tabController;
 
   String _selectedCategory = '';
-  bool _isUrgent = false;
   bool _isPublic = true;
   bool _showSuccessMessage = false;
   String _searchQuery = '';
+  bool _showFailMessage = false;
 
   final List<String> _categories = [
     'Worship',
@@ -235,28 +244,148 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _submitQuestion() {
+  void _submitQuestion() async {
     if (_formKey.currentState!.validate() && _selectedCategory.isNotEmpty) {
-      // Reset form
-      _questionController.clear();
-      setState(() {
-        _selectedCategory = '';
-        _isUrgent = false;
-        _isPublic = true;
-        _showSuccessMessage = true;
-      });
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('token');
+        final tags = await extractTagsFromQuestionGemini(
+          _questionController.text,
+        );
 
-      _successAnimationController.forward();
+        final requestbody = {
+          "text": _questionController.text,
+          "isPublic": _isPublic,
+          "category": _selectedCategory,
+          "tags": tags,
+        };
 
-      Future.delayed(Duration(seconds: 3), () {
-        if (mounted) {
+        print("add question request body: $requestbody");
+        var response = await http.post(
+          Uri.parse(questions),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode(requestbody),
+        );
+        final data = jsonDecode(response.body);
+
+        if (response.statusCode == 200) {
+          if (data['status'] == true) {
+            print('Question submitted successfully');
+
+            // Reset form
+            _questionController.clear();
+            setState(() {
+              _selectedCategory = '';
+              _isPublic = true;
+              _showSuccessMessage = true;
+              _showFailMessage = false;
+            });
+
+            _successAnimationController.forward();
+
+            Future.delayed(Duration(seconds: 3), () {
+              if (mounted) {
+                setState(() {
+                  _showSuccessMessage = false;
+                });
+                _successAnimationController.reset();
+              }
+            });
+          } else {
+            print('Question submission failed');
+            setState(() {
+              _showFailMessage = true;
+              _showSuccessMessage = false;
+            });
+            Future.delayed(Duration(seconds: 3), () {
+              if (mounted) {
+                setState(() {
+                  _showFailMessage = false;
+                });
+              }
+            });
+          }
+        } else {
+          print(response.reasonPhrase);
           setState(() {
+            _showFailMessage = true;
             _showSuccessMessage = false;
           });
-          _successAnimationController.reset();
+          Future.delayed(Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _showFailMessage = false;
+              });
+            }
+          });
         }
-      });
+      } catch (e) {
+        print('Error submitting question: $e');
+        setState(() {
+          _showFailMessage = true;
+          _showSuccessMessage = false;
+        });
+        Future.delayed(Duration(seconds: 3), () {
+          if (mounted) {
+            setState(() {
+              _showFailMessage = false;
+            });
+          }
+        });
+      }
     }
+  }
+
+  Future<List<String>> extractTagsFromQuestionGemini(
+    String questionText,
+  ) async {
+    final prompt =
+        'Extract 3-5 relevant tags (single words or short phrases) from the following question. Return ONLY a JSON array of strings, e.g. ["tag1", "tag2", "tag3"]. Question: "$questionText"';
+
+    final completer = Completer<List<String>>();
+    StringBuffer buffer = StringBuffer();
+
+    Gemini.instance
+        .promptStream(parts: [Part.text(prompt)])
+        .listen(
+          (value) {
+            if (value?.output != null) {
+              buffer.write(value!.output);
+            }
+          },
+          onDone: () {
+            try {
+              final output = buffer.toString();
+              final jsonStart = output.indexOf('[');
+              final jsonEnd = output.lastIndexOf(']');
+              if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+                final jsonString = output.substring(jsonStart, jsonEnd + 1);
+                final List<dynamic> tags = jsonDecode(jsonString);
+                completer.complete(tags.whereType<String>().toList());
+                return;
+              }
+              // Fallback: try to parse the whole output as JSON
+              try {
+                final List<dynamic> tags = jsonDecode(output);
+                completer.complete(tags.whereType<String>().toList());
+              } catch (_) {
+                completer.complete([]);
+              }
+            } catch (e) {
+              print('Error extracting tags from Gemini: $e');
+              completer.complete([]);
+            }
+          },
+          onError: (e) {
+            print('Error extracting tags from Gemini: $e');
+            completer.complete([]);
+          },
+        );
+
+    return completer.future;
   }
 
   List<Map<String, dynamic>> _getFilteredCommunityQuestions() {
@@ -333,6 +462,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   }
 
   Widget _buildSubmissionForm() {
+    bool isValid =
+        _selectedCategory.isNotEmpty &&
+        _questionController.text.trim().isNotEmpty;
+
     return Card(
       color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
       shape: RoundedRectangleBorder(
@@ -398,6 +531,29 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                   );
                 },
               ),
+            if (_showFailMessage)
+              Container(
+                margin: EdgeInsets.only(bottom: 16),
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFE6E6),
+                  border: Border.all(color: Color(0xFFD32F2F)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Color(0xFFD32F2F), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Failed to submit question. Please try again.',
+                      style: TextStyle(
+                        color: Color(0xFFD32F2F),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             Form(
               key: _formKey,
@@ -414,10 +570,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 
                   // Question Input
                   _buildQuestionInput(),
-                  SizedBox(height: 20),
-
-                  // Urgency Checkbox
-                  _buildUrgencyCheckbox(),
                   SizedBox(height: 24),
 
                   // Submit Button
@@ -608,28 +760,9 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             }
             return null;
           },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUrgencyCheckbox() {
-    return Row(
-      children: [
-        Checkbox(
-          value: _isUrgent,
           onChanged: (value) {
-            setState(() {
-              _isUrgent = value ?? false;
-            });
+            setState(() {});
           },
-          activeColor: Color(0xFF2D8662),
-        ),
-        Expanded(
-          child: Text(
-            'This is urgent and needs priority attention',
-            style: TextStyle(color: Color(0xFF165A3F)),
-          ),
         ),
       ],
     );
