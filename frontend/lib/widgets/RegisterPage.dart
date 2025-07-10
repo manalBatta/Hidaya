@@ -306,7 +306,7 @@ class _RegisterPageState extends State<RegisterPage> {
     var requestbody = {};
     if (accountType == 'volunteer_pending') {
       requestbody = {
-        'displayname': _usernameController.text,
+        'displayName': _usernameController.text,
         'gender': _gender,
         'role': accountType,
         'email': _emailController.text,
@@ -321,7 +321,7 @@ class _RegisterPageState extends State<RegisterPage> {
       };
     } else {
       requestbody = {
-        'displayname': _usernameController.text,
+        'displayName': _usernameController.text,
         'gender': _gender,
         'email': _emailController.text,
         'password': _passwordController.text,
@@ -348,9 +348,12 @@ class _RegisterPageState extends State<RegisterPage> {
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body);
       if (response.statusCode == 201 && data['status'] == true) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Register successfully done')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Register successfully done'),
+          ),
+        );
       }
 
       Navigator.push(
