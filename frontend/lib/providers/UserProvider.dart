@@ -13,8 +13,11 @@ class UserProvider with ChangeNotifier {
   Future<void> setUser(Map<String, dynamic> userData) async {
     print("setUser called with: $userData");
     _user = userData;
+    print("User set, isLoggedIn: $isLoggedIn");
     notifyListeners();
+    print("Listeners notified");
     await _saveUserToPrefs(userData);
+    print("User saved to prefs");
   }
 
   // Clear user on logout
