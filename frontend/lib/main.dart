@@ -4,14 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/UserProvider.dart';
-import 'package:frontend/widgets/Navigator.dart';
 import 'package:frontend/widgets/ProfilePage.dart';
 import 'package:frontend/widgets/ResponsiveLayou.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:frontend/widgets/ProfilePage.dart';
-import 'package:frontend/widgets/Navigator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
