@@ -1,9 +1,9 @@
 // lib/widgets/responsive_layout.dart
 import 'package:flutter/material.dart';
 import 'package:frontend/utils/auth_utils.dart';
+import 'package:frontend/widgets/Qustions.dart';
 import '../constants/colors.dart';
 import 'HomePage.dart';
-import 'AskPage.dart';
 import 'LessonsPage.dart';
 import 'ProfilePage.dart';
 
@@ -35,7 +35,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       label: 'Ask',
       icon: Icons.help_outline,
       activeIcon: Icons.help,
-      page: AskPage(),
+      page: Questions(),
     ),
     NavigationItem(
       id: 'lessons',

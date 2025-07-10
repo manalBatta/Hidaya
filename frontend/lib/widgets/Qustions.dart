@@ -1,22 +1,26 @@
 // lib/pages/ask_page.dart
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
+import 'QuestionCard.dart';
 
-class AskPage extends StatefulWidget {
+class Questions extends StatefulWidget {
   @override
-  _AskPageState createState() => _AskPageState();
+  _QuestionsState createState() => _QuestionsState();
 }
 
-class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
+class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _questionController = TextEditingController();
+  final _searchController = TextEditingController();
   late AnimationController _successAnimationController;
   late Animation<double> _successAnimation;
+  late TabController _tabController;
 
   String _selectedCategory = '';
   bool _isUrgent = false;
   bool _isPublic = true;
   bool _showSuccessMessage = false;
+  String _searchQuery = '';
 
   final List<String> _categories = [
     'Worship',
@@ -32,6 +36,114 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
     'Other',
   ];
 
+  // Mock data for tabs
+  final List<Map<String, dynamic>> _communityQuestions = [
+    {
+      'id': 1,
+      'question': 'What is the correct way to perform Wudu before prayer?',
+      'category': 'Worship',
+      'askedBy': 'Sister Aisha',
+      'answeredBy': 'Sheikh Ahmad Ali',
+      'timeAgo': '2 hours ago',
+      'upvotes': 24,
+      'isPublic': true,
+      'responseType': 'human',
+      'isAnswered': true,
+      'excerpt':
+          'Wudu is performed in a specific sequence as taught by Prophet Muhammad (PBUH)...',
+      'isFavorited': false,
+    },
+    {
+      'id': 2,
+      'question': 'Can I pray while traveling and what are the concessions?',
+      'category': 'Prayer',
+      'askedBy': 'Brother Omar',
+      'answeredBy': 'AI Assistant',
+      'timeAgo': '4 hours ago',
+      'upvotes': 18,
+      'isPublic': true,
+      'responseType': 'ai',
+      'isAnswered': true,
+      'excerpt':
+          'Yes, Islam provides several concessions for travelers including shortening prayers...',
+      'isFavorited': false,
+    },
+    {
+      'id': 3,
+      'question':
+          'What are the etiquettes when visiting a mosque for the first time?',
+      'category': 'Etiquette',
+      'askedBy': 'Sister Fatima',
+      'answeredBy': 'Dr. Fatima Al-Zahra',
+      'timeAgo': '6 hours ago',
+      'upvotes': 32,
+      'isPublic': true,
+      'responseType': 'human',
+      'isAnswered': true,
+      'excerpt':
+          'When visiting a mosque, there are several important etiquettes to observe...',
+      'isFavorited': true,
+    },
+    {
+      'id': 4,
+      'question':
+          'How do I balance Islamic principles with modern workplace demands?',
+      'category': 'Daily Life',
+      'askedBy': 'Brother Ahmed',
+      'answeredBy': 'AI Assistant',
+      'timeAgo': '1 day ago',
+      'upvotes': 15,
+      'isPublic': true,
+      'responseType': 'ai',
+      'isAnswered': true,
+      'excerpt':
+          'Balancing faith with work requires clear communication and seeking halal alternatives...',
+      'isFavorited': false,
+    },
+  ];
+
+  final List<Map<String, dynamic>> _myQuestions = [
+    {
+      'id': 101,
+      'question': 'Personal question about family relationships in Islam',
+      'category': 'Family & Marriage',
+      'timeAgo': '3 days ago',
+      'upvotes': 5,
+      'isPublic': false,
+      'responseType': 'human',
+      'isAnswered': true,
+      'answeredBy': 'Sister Khadija Ibrahim',
+    },
+    {
+      'id': 102,
+      'question': 'How to perform Tahajjud prayer correctly?',
+      'category': 'Worship',
+      'timeAgo': '1 week ago',
+      'upvotes': 12,
+      'isPublic': true,
+      'responseType': 'human',
+      'isAnswered': true,
+      'answeredBy': 'Sheikh Ahmad Ali',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _favoriteQuestions = [
+    {
+      'id': 201,
+      'question': 'Understanding the concept of Tawakkul (trust in Allah)',
+      'category': 'Spirituality',
+      'askedBy': 'Brother Yusuf',
+      'answeredBy': 'Dr. Omar Suleiman',
+      'timeAgo': '1 month ago',
+      'upvotes': 89,
+      'isPublic': true,
+      'responseType': 'human',
+      'isAnswered': true,
+      'isFavorited': true,
+    },
+  ];
+
+  // Recent community questions data
   final List<Map<String, dynamic>> _recentQuestions = [
     {
       'id': 1,
@@ -101,6 +213,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _successAnimationController = AnimationController(
       duration: Duration(milliseconds: 500),
       vsync: this,
@@ -116,17 +229,14 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _questionController.dispose();
+    _searchController.dispose();
     _successAnimationController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
   void _submitQuestion() {
     if (_formKey.currentState!.validate() && _selectedCategory.isNotEmpty) {
-      print('Question submitted: ${_questionController.text}');
-      print('Category: $_selectedCategory');
-      print('Urgent: $_isUrgent');
-      print('Public: $_isPublic');
-
       // Reset form
       _questionController.clear();
       setState(() {
@@ -136,10 +246,8 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
         _showSuccessMessage = true;
       });
 
-      // Animate success message
       _successAnimationController.forward();
 
-      // Hide success message after 3 seconds
       Future.delayed(Duration(seconds: 3), () {
         if (mounted) {
           setState(() {
@@ -151,28 +259,50 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
     }
   }
 
+  List<Map<String, dynamic>> _getFilteredCommunityQuestions() {
+    if (_searchQuery.isEmpty) {
+      return _communityQuestions;
+    }
+    return _communityQuestions
+        .where(
+          (q) =>
+              q['question'].toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              q['category'].toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          _buildHeader(),
-          SizedBox(height: 24),
+    return DefaultTabController(
+      length: 3,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            _buildHeader(),
+            SizedBox(height: 24),
 
-          // Submit Question Form
-          _buildSubmissionForm(),
-          SizedBox(height: 24),
+            // Submit Question Form
+            _buildSubmissionForm(),
+            SizedBox(height: 24),
 
-          // Guidelines
-          _buildGuidelines(),
-          SizedBox(height: 24),
+            // Guidelines
+            _buildGuidelines(),
+            SizedBox(height: 24),
 
-          // Recent Questions
-          _buildRecentQuestions(),
-        ],
+            // Recent Questions
+            _buildRecentQuestions(),
+            SizedBox(height: 24),
+
+            // Tabbed Interface
+            _buildTabbedInterface(),
+          ],
+        ),
       ),
     );
   }
@@ -187,14 +317,14 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.bold,
-              color: AppColors.askPageTitle,
+              color: Color(0xFF104C34),
             ),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 8),
           Text(
             'Get guidance from certified Islamic scholars and volunteers',
-            style: TextStyle(color: AppColors.askPageSubtitle),
+            style: TextStyle(color: Color(0xFF206F4F)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -204,7 +334,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
 
   Widget _buildSubmissionForm() {
     return Card(
-      color: Colors.white.withOpacity(0.8),
+      color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: Color(0xFFBFE3D5)),
@@ -243,7 +373,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
                       margin: EdgeInsets.only(bottom: 16),
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Color(0xFFF4FBF8),
+                        color: Color.fromARGB(255, 255, 255, 255),
                         border: Border.all(color: Color(0xFFBFE3D5)),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -251,7 +381,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
                         children: [
                           Icon(
                             Icons.check_circle,
-                            color: AppColors.askPageSubtitle,
+                            color: Color(0xFF206F4F),
                             size: 20,
                           ),
                           SizedBox(width: 8),
@@ -344,10 +474,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
                       _isPublic
                           ? 'Visible to the community and may receive AI responses'
                           : 'Only certified volunteers can view your question',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.askPageSubtitle,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF206F4F)),
                     ),
                   ],
                 ),
@@ -501,7 +628,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
         Expanded(
           child: Text(
             'This is urgent and needs priority attention',
-            style: TextStyle(color: AppColors.askPageUrgent),
+            style: TextStyle(color: Color(0xFF165A3F)),
           ),
         ),
       ],
@@ -633,7 +760,7 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
             SizedBox(height: 16),
 
             ..._recentQuestions
-                .map((question) => _buildQuestionCard(question))
+                .map((question) => QuestionCard(question: question))
                 .toList(),
           ],
         ),
@@ -641,289 +768,285 @@ class _AskPageState extends State<AskPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildQuestionCard(Map<String, dynamic> question) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color:
-                  question['isPublic']
-                      ? AppColors.askPageBackground
-                      : AppColors.askPagePrivateBackground,
-              border: Border.all(
-                color:
-                    question['isPublic']
-                        ? AppColors.askPageBorder
-                        : AppColors.askPagePrivateBorder,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        question['question'],
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.askPageTitle,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          question['isPublic'] ? Icons.lock_open : Icons.lock,
-                          size: 16,
-                          color:
-                              question['isPublic']
-                                  ? AppColors.askPageSubtitle
-                                  : AppColors.askPagePrivateIcon,
-                        ),
-                        SizedBox(width: 4),
-                        _buildResponseTypeIcon(question['responseType']),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: [
-                    _buildCategoryChip(question['category']),
-                    _buildInfoChip(Icons.person, question['askedBy']),
-                    _buildInfoChip(Icons.access_time, question['timeAgo']),
-                  ],
-                ),
-                SizedBox(height: 8),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          '${question['answers']} ${question['answers'] == 1 ? 'answer' : 'answers'}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.askPageSubtitle,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        _buildPrivacyChip(question['isPublic']),
-                      ],
-                    ),
-                    _buildResponseBadge(question['responseType']),
-                  ],
-                ),
-              ],
-            ),
+  Widget _buildTabbedInterface() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Explore Questions & Answers',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF104C34),
           ),
+        ),
+        SizedBox(height: 20),
 
-          // AI Response Card
-          if (question['responseType'] == 'ai' &&
-              question['aiResponse'] != null)
-            Container(
-              margin: EdgeInsets.only(left: 16, top: 12),
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.askPageAIBackground,
-                border: Border.all(color: AppColors.askPageAIBorder),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.askPageAIBox,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.smart_toy,
-                          size: 16,
-                          color: AppColors.askPageAIBlue,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        'AI Response',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.askPageAIDarkBlue,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.askPageAIBlue,
-                      ),
-                    ],
+        Card(
+          color: Colors.white.withOpacity(0.8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Color(0xFFBFE3D5)),
+          ),
+          elevation: 8,
+          child: Column(
+            children: [
+              // Tab Bar
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFFBFE3D5), width: 1),
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    question['aiResponse'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.askPageAIText,
-                      height: 1.5,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.askPageAIBox,
-                      border: Border.all(color: AppColors.askPageAIBorder),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'This response was generated by trusted AI and may be reviewed later by a volunteer.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.askPageAINote,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Check if screen is wide enough to fit all tabs
+                    bool isWideScreen = constraints.maxWidth > 600;
+
+                    return TabBar(
+                      controller: _tabController,
+                      labelColor: Color(0xFF206F4F),
+                      unselectedLabelColor: Color(0xFF45A376),
+                      indicatorColor: Color(0xFF2D8662),
+                      indicatorWeight: 3,
+                      isScrollable: !isWideScreen,
+                      labelPadding:
+                          isWideScreen
+                              ? EdgeInsets.symmetric(horizontal: 16)
+                              : EdgeInsets.symmetric(horizontal: 8),
+                      labelStyle: TextStyle(
+                        fontSize: isWideScreen ? 14 : 13,
                         fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ),
-                ],
+                      unselectedLabelStyle: TextStyle(
+                        fontSize: isWideScreen ? 14 : 13,
+                      ),
+                      tabs: [
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.question_answer, size: 16),
+                              SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Community',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFE6F3ED),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${_communityQuestions.length}',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.person, size: 16),
+                              SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'My Questions',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFE6F3ED),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${_myQuestions.length}',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.favorite, size: 16),
+                              SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Favorites',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFE6F3ED),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${_favoriteQuestions.length}',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildResponseTypeIcon(String responseType) {
-    switch (responseType) {
-      case 'human':
-        return Icon(
-          Icons.verified_user,
-          size: 20,
-          color: AppColors.askPageSubtitle,
-        );
-      case 'ai':
-        return Icon(Icons.smart_toy, size: 20, color: AppColors.askPageAIBlue);
-      default:
-        return Icon(
-          Icons.access_time,
-          size: 20,
-          color: AppColors.askPagePrivateIcon,
-        );
-    }
-  }
-
-  Widget _buildCategoryChip(String category) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.askPageCategoryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.tag, size: 12, color: AppColors.askPageCategoryText),
-          SizedBox(width: 4),
-          Text(
-            category,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.askPageCategoryText,
-            ),
+              // Tab Content
+              Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildCommunityTab(),
+                    _buildMyQuestionsTab(),
+                    _buildFavoritesTab(),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: AppColors.askPageSubtitle),
-        SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(fontSize: 12, color: AppColors.askPageSubtitle),
         ),
       ],
     );
   }
 
-  Widget _buildPrivacyChip(bool isPublic) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color:
-              isPublic
-                  ? AppColors.askPagePrivacyBorder
-                  : AppColors.askPagePrivateBorder,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        isPublic ? '🔓 Public' : '🔒 Private',
-        style: TextStyle(
-          fontSize: 10,
-          color:
-              isPublic
-                  ? AppColors.askPageCategoryText
-                  : AppColors.askPagePrivacyText,
-        ),
+  Widget _buildCommunityTab() {
+    List<Map<String, dynamic>> filteredQuestions =
+        _getFilteredCommunityQuestions();
+
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Search Bar
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search community questions...',
+              prefixIcon: Icon(Icons.search, color: Color(0xFF45A376)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(0xFFBFE3D5)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(0xFFBFE3D5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(0xFF2D8662), width: 2),
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
+          SizedBox(height: 16),
+
+          // Questions List
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredQuestions.length,
+              itemBuilder: (context, index) {
+                return QuestionCard(question: filteredQuestions[index]);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildResponseBadge(String responseType) {
-    Color backgroundColor;
-    Color textColor;
-    String text;
+  Widget _buildMyQuestionsTab() {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child:
+          _myQuestions.isEmpty
+              ? _buildEmptyState(
+                'No questions asked yet',
+                'Start by asking your first question',
+              )
+              : ListView.builder(
+                itemCount: _myQuestions.length,
+                itemBuilder: (context, index) {
+                  return QuestionCard(question: _myQuestions[index]);
+                },
+              ),
+    );
+  }
 
-    switch (responseType) {
-      case 'human':
-        backgroundColor = AppColors.askPageHumanBadge;
-        textColor = AppColors.islamicWhite;
-        text = '✅ Human';
-        break;
-      case 'ai':
-        backgroundColor = AppColors.askPageAIBox;
-        textColor = AppColors.askPageAIText;
-        text = '🤖 AI';
-        break;
-      default:
-        backgroundColor = AppColors.askPagePrivateBorder;
-        textColor = AppColors.askPagePrivacyText;
-        text = 'Pending';
-    }
+  Widget _buildFavoritesTab() {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child:
+          _favoriteQuestions.isEmpty
+              ? _buildEmptyState(
+                'No favorite questions',
+                'Save questions you find helpful',
+              )
+              : ListView.builder(
+                itemCount: _favoriteQuestions.length,
+                itemBuilder: (context, index) {
+                  return QuestionCard(question: _favoriteQuestions[index]);
+                },
+              ),
+    );
+  }
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          color: textColor,
-          fontWeight: FontWeight.w500,
-        ),
+  Widget _buildEmptyState(String title, String subtitle) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.question_answer, size: 64, color: Color(0xFF93C5AE)),
+          SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF104C34),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(color: Color(0xFF206F4F)),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
