@@ -30,7 +30,7 @@ class _SignInPageState extends State<SignInPage> {
     final requestbody = {
       'email': _emailController.text,
       'password': _passwordController.text,
-      'role': _accountType,
+      'role': _accountType == 'volunteer' ? 'volunteer_pending' : 'user',
     };
     var response = await http.post(
       Uri.parse(login),
@@ -47,8 +47,14 @@ class _SignInPageState extends State<SignInPage> {
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
+
       print("sign in returned data: $data");
-      Provider.of<UserProvider>(context, listen: false).setUser(data);
+      print("About to set user in provider...");
+      await Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).setUser(data['user']);
+      print("User set in provider successfully!");
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Login failed')),

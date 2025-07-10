@@ -44,8 +44,15 @@ class HidayaApp extends StatelessWidget {
 
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
+        print("Consumer rebuilt, isLoggedIn: ${userProvider.isLoggedIn}");
+
         return MaterialApp(
-          home: userProvider.isLoggedIn ? ResponsiveLayout() : SignInPage(),
+          home:
+              userProvider.isLoggedIn
+                  ? ResponsiveLayout(
+                    userRole: userProvider.user?['role'] ?? 'user',
+                  )
+                  : SignInPage(),
         );
       },
     );
