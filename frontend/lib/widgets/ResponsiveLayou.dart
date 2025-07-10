@@ -123,6 +123,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
 
   @override
   Widget build(BuildContext context) {
+    print("ResponsiveLayout is being built!");
     return LayoutBuilder(
       builder: (context, constraints) {
         bool isMobile = constraints.maxWidth < 768;

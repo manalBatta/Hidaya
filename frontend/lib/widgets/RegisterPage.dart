@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:frontend/providers/UserProvider.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/SignInPage.dart';
@@ -14,6 +15,7 @@ import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend/config.dart';
 import 'package:frontend/widgets/HomePage.dart';
+import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -224,14 +226,11 @@ class _RegisterPageState extends State<RegisterPage> {
     return '';
   }
 
-   Future<void> submitForm() async {
-String certUrl='';
+  Future<void> submitForm() async {
+    String certUrl = '';
     if (_accountType == 'Volunteer' && _selectedFile != null) {
       certUrl = await uploadFile(_selectedFile!);
     }
-
-    // Validate all form fields first
-      print("submitForm() called");
 
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -242,8 +241,6 @@ String certUrl='';
       );
       return;
     }
-print('HELLO!');
-    // Additional validation for dropdown fields
     if (_gender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -253,7 +250,6 @@ print('HELLO!');
       );
       return;
     }
-print('HELLO!');
 
     if (_country == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -264,7 +260,6 @@ print('HELLO!');
       );
       return;
     }
-print('HELLO!');
 
     if (_language == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -275,7 +270,6 @@ print('HELLO!');
       );
       return;
     }
-print('HELLO!');
 
     // Additional validation for volunteer-specific fields
     if (_accountType == 'Volunteer') {
@@ -289,8 +283,7 @@ print('HELLO!');
         return;
       }
     }
-print('HELLO!');
-var accountType='' ;
+    var accountType = '';
     // If all validations pass, proceed with form submission
     if (_accountType == 'Volunteer' && _selectedFile != null) {
       final url = await uploadFile(_selectedFile!);
@@ -301,63 +294,73 @@ var accountType='' ;
             backgroundColor: Colors.red,
           ),
         );
-      } else {
-        
-       
-      }
+      } else {}
     }
- accountType = switch (_accountType) {
-  'Volunteer' => 'volunteer_pending',
-  'User' => 'user',
-  'Admin' => 'admin',
-  _ => 'user',
-};
-print('accountType being sent: $accountType');
+    accountType = switch (_accountType) {
+      'Volunteer' => 'volunteer_pending',
+      'User' => 'user',
+      _ => 'user',
+    };
+    print('accountType being sent: $accountType');
 
- final requestbody = {
-          'username': _usernameController.text,
-          'email': _emailController.text,
-          'password': _passwordController.text,
-          'gender': _gender,
-          'role': accountType,
-          'country': _country,
-          'language': _language,
-          'certification_url': certUrl,
-          'certification_title': _certTitleController.text,
-          'certification_institution': _certInstitutionController.text,
-          'bio': _bioController.text,
-          'spoken_languages': _selectedSpokenLanguages,
-        };
-print('Request Body: ${jsonEncode(requestbody)}');
-         var response = await http.post(Uri.parse(registeration),
-         headers : {"Content-Type":"application/json"},
+    var requestbody = {};
+    if (accountType == 'volunteer_pending') {
+      requestbody = {
+        'displayName': _usernameController.text,
+        'gender': _gender,
+        'role': accountType,
+        'email': _emailController.text,
+        'password': _passwordController.text,
+        'country': _country,
+        'language': _language,
+        'certification_url': certUrl,
+        'certification_title': _certTitleController.text,
+        'certification_institution': _certInstitutionController.text,
+        'bio': _bioController.text,
+        'spoken_languages': _selectedSpokenLanguages,
+      };
+    } else {
+      requestbody = {
+        'displayName': _usernameController.text,
+        'gender': _gender,
+        'email': _emailController.text,
+        'password': _passwordController.text,
+        'country': _country,
+        'language': _language,
+        'role': accountType,
+        'savedQuestions': [],
+        'savedLessons': [],
+      };
+    }
 
-         body: jsonEncode(requestbody));
+    print('Request Body: ${jsonEncode(requestbody)}');
 
-             print('Response status: ${response.statusCode}');
-print('Response body: ${response.body}');
+    var response = await http.post(
+      Uri.parse(registeration),
+      headers: {"Content-Type": "application/json"},
 
-if (response.statusCode == 201) {
-  // Server returned OK, try parsing JSON
- // final responseData = jsonDecode(response.body);
+      body: jsonEncode(requestbody),
+    );
 
- final data = jsonDecode(response.body);
- if (response.statusCode == 201 && data['status'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Register successfully done')),
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    if (response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 201 && data['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Register successfully done'),
+          ),
+        );
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SignInPage()),
       );
     }
-
-
-
-}
-
-
-   
-
-
-    
-
   }
 
   @override

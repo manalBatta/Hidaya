@@ -1,12 +1,19 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:frontend/config.dart';
 import 'package:frontend/constants/colors.dart';
+import 'package:frontend/widgets/CertificationViewer.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/utils/auth_utils.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'dart:io' if (dart.library.html) 'dart:html' as html;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -15,17 +22,28 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State {
   late Map<String, dynamic> userObj = {
-    'role': 'user',
-    'username': '',
+    'id': '',
+    'displayName': '',
     'email': '',
+    'role': '',
     'gender': '',
     'country': '',
     'language': '',
-    'certificate': {'institution': '', 'title': '', 'hasDocument': false},
-    'bio': '',
-    'languagesSpoken': [],
-    'savedLessons': 0,
-    'savedQuestions': 0,
+    // Volunteer-specific fields (optional, only for volunteers)
+    'volunteerProfile': {
+      'certificate': {
+        'institution': '',
+        'title': '',
+        'url': '',
+        'uploadedAt': '',
+        '_id': '',
+      },
+      'languages': [],
+      'bio': '',
+      '_id': '',
+    },
+    'savedQuestions': [],
+    'savedLessons': [],
   };
 
   // Controllers for edit form
@@ -35,13 +53,27 @@ class _ProfilePageState extends State {
   String? _gender;
   late TextEditingController _countryController;
   late TextEditingController _languageController;
-  late TextEditingController _bioController;
+  TextEditingController? _bioController;
+
+  // Volunteer-specific controllers
+  late TextEditingController _certTitleController;
+  late TextEditingController _certInstitutionController;
+  late TextEditingController _spokenLanguagesController;
+
+  // File handling
+  PlatformFile? _selectedFile;
+  String? _uploadedFileUrl;
 
   List<String> _searchedCountries = [];
   bool _isSearchingCountry = false;
 
   List<String> _searchedLanguages = [];
   bool _isSearchingLanguage = false;
+
+  // Spoken languages for volunteers
+  List<String> _selectedSpokenLanguages = [];
+  List<String> _searchedSpokenLanguages = [];
+  bool _isSearchingSpokenLanguages = false;
 
   Future<void> searchCountries(
     String query,
@@ -122,29 +154,113 @@ class _ProfilePageState extends State {
     }
   }
 
+  Future<void> searchSpokenLanguages(
+    String query,
+    void Function(void Function()) setState,
+  ) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchedSpokenLanguages = [];
+        _isSearchingSpokenLanguages = false;
+      });
+      return;
+    }
+    setState(() {
+      _isSearchingSpokenLanguages = true;
+    });
+
+    final response = await http.get(
+      Uri.parse(
+        'https://raw.githubusercontent.com/haliaeetus/iso-639/master/data/iso_639-1.json',
+      ),
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<String> languages = [];
+      data.forEach((code, lang) {
+        final name = lang['name']?.toString() ?? '';
+        if (name.toLowerCase().contains(query.toLowerCase())) {
+          languages.add(name);
+        }
+      });
+      languages.sort();
+      setState(() {
+        _searchedSpokenLanguages = languages;
+        _isSearchingSpokenLanguages = false;
+      });
+    } else {
+      setState(() {
+        _searchedSpokenLanguages = [];
+        _isSearchingSpokenLanguages = false;
+      });
+    }
+  }
+
+  Future<void> selectFile() async {
+    final result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      final file = result.files.single;
+
+      setState(() {
+        _selectedFile = file;
+        _uploadedFileUrl = null; // Reset URL on new selection
+      });
+    }
+  }
+
+  Future<String> uploadFile(file) async {
+    Uint8List? fileBytes;
+    final fileName = file.name;
+    // Platform-safe file bytes access
+    if (file.bytes != null) {
+      fileBytes = file.bytes;
+    } else if (file.path != null) {
+      fileBytes = await File(file.path!).readAsBytes();
+    }
+
+    if (fileBytes == null) {
+      print('❌ Unable to read file bytes');
+      return '';
+    }
+    try {
+      final response = await Supabase.instance.client.storage
+          .from('certifications') // ✅ use same bucket
+          .uploadBinary(
+            fileName,
+            fileBytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      if (response.isNotEmpty) {
+        print('Upload successful');
+
+        final publicUrl = Supabase.instance.client.storage
+            .from('certifications') // ✅ use same bucket
+            .getPublicUrl(fileName);
+
+        print('🌍 Public URL: $publicUrl');
+        return publicUrl;
+      } else {
+        print(' Error uploading: $response');
+      }
+    } catch (e) {
+      print(' Exception during upload: $e');
+    }
+
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
     // Get user data from provider
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userObj =
-        userProvider.user ??
-        {
-          'role': '',
-          'username': '',
-          'email': '',
-          'gender': '',
-          'country': '',
-          'language': '',
-          'certificate': {'institution': '', 'title': '', 'hasDocument': false},
-          'bio': '',
-          'languagesSpoken': [],
-          'savedLessons': 0,
-          'savedQuestions': 0,
-        };
+    final role = userProvider.user?['role'] ?? '';
+    userObj = userProvider.user ?? getInitialUserObj(role);
 
     _usernameController = TextEditingController(
-      text: userObj['username'] as String? ?? '',
+      text: userObj['displayName'] as String? ?? '',
     );
     _emailController = TextEditingController(
       text: userObj['email'] as String? ?? '',
@@ -156,9 +272,28 @@ class _ProfilePageState extends State {
     _languageController = TextEditingController(
       text: userObj['language'] as String? ?? '',
     );
-    _bioController = TextEditingController(
-      text: userObj['bio'] as String? ?? '',
-    );
+
+    // Initialize volunteer-specific controllers
+    if (userObj['role'] != 'user') {
+      _bioController = TextEditingController(text: _getBioValue());
+      _certTitleController = TextEditingController(
+        text: _getVolunteerField('certificate.title'),
+      );
+      _certInstitutionController = TextEditingController(
+        text: _getVolunteerField('certificate.institution'),
+      );
+      _spokenLanguagesController = TextEditingController();
+
+      // Initialize selected spoken languages
+      _selectedSpokenLanguages = _getVolunteerLanguages();
+    } else {
+      // Initialize with empty controllers for non-volunteer users to avoid null issues
+      _bioController = TextEditingController();
+      _certTitleController = TextEditingController();
+      _certInstitutionController = TextEditingController();
+      _spokenLanguagesController = TextEditingController();
+      _selectedSpokenLanguages = [];
+    }
   }
 
   @override
@@ -167,7 +302,10 @@ class _ProfilePageState extends State {
     _emailController.dispose();
     _countryController.dispose();
     _languageController.dispose();
-    _bioController.dispose();
+    _bioController?.dispose();
+    _certTitleController.dispose();
+    _certInstitutionController.dispose();
+    _spokenLanguagesController.dispose();
     super.dispose();
   }
 
@@ -192,7 +330,7 @@ class _ProfilePageState extends State {
               ),
               content: SizedBox(
                 width: 400,
-                height: 600, // keep this for dialog size
+                height: 800, // increased height for volunteer fields
                 child: SingleChildScrollView(
                   child: Form(
                     key: _editFormKey,
@@ -510,7 +648,7 @@ class _ProfilePageState extends State {
                           ),
 
                         SizedBox(height: 12),
-                        if (userObj['role'] != 'user')
+                        if (userObj['role'] != 'user') ...[
                           TextFormField(
                             controller: _bioController,
                             decoration: InputDecoration(
@@ -545,6 +683,253 @@ class _ProfilePageState extends State {
                             ),
                             maxLines: 2,
                           ),
+                          SizedBox(height: 12),
+
+                          // Spoken Languages
+                          TextFormField(
+                            controller: _spokenLanguagesController,
+                            decoration: InputDecoration(
+                              labelText: 'Spoken Languages *',
+                              labelStyle: TextStyle(
+                                color: AppColors.islamicGreen700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              floatingLabelStyle: TextStyle(
+                                color: AppColors.islamicGreen500,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              hintText: 'Type to search and select languages',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.islamicGreen200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.islamicGreen500,
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                              suffixIcon:
+                                  _isSearchingSpokenLanguages
+                                      ? const Padding(
+                                        padding: EdgeInsets.all(12),
+                                        child: SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      )
+                                      : null,
+                            ),
+                            onChanged: (value) {
+                              searchSpokenLanguages(value, setState);
+                            },
+                          ),
+                          const SizedBox(height: 8),
+
+                          if (_searchedSpokenLanguages.isNotEmpty)
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 200),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: AppColors.islamicGreen200,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.islamicGreen500.withAlpha(
+                                      30,
+                                    ),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _searchedSpokenLanguages.length,
+                                itemBuilder: (context, index) {
+                                  final language =
+                                      _searchedSpokenLanguages[index];
+                                  final alreadySelected =
+                                      _selectedSpokenLanguages.contains(
+                                        language,
+                                      );
+                                  return ListTile(
+                                    title: Text(
+                                      language,
+                                      style: TextStyle(
+                                        color:
+                                            alreadySelected
+                                                ? AppColors.islamicGreen400
+                                                : AppColors.islamicGreen800,
+                                      ),
+                                    ),
+                                    trailing:
+                                        alreadySelected
+                                            ? const Icon(
+                                              Icons.check,
+                                              color: AppColors.islamicGreen400,
+                                            )
+                                            : null,
+                                    onTap: () {
+                                      setState(() {
+                                        if (!alreadySelected) {
+                                          _selectedSpokenLanguages.add(
+                                            language,
+                                          );
+                                        }
+                                        _spokenLanguagesController.clear();
+                                        _searchedSpokenLanguages = [];
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+
+                          if (_selectedSpokenLanguages.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Wrap(
+                                spacing: 8,
+                                children:
+                                    _selectedSpokenLanguages
+                                        .map(
+                                          (lang) => Chip(
+                                            label: Text(lang),
+                                            onDeleted: () {
+                                              setState(() {
+                                                _selectedSpokenLanguages.remove(
+                                                  lang,
+                                                );
+                                              });
+                                            },
+                                          ),
+                                        )
+                                        .toList(),
+                              ),
+                            ),
+
+                          SizedBox(height: 12),
+
+                          // Certificate Title
+                          TextFormField(
+                            controller: _certTitleController,
+                            decoration: InputDecoration(
+                              labelText: 'Certification Title',
+                              labelStyle: TextStyle(
+                                color: AppColors.islamicGreen700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              floatingLabelStyle: TextStyle(
+                                color: AppColors.islamicGreen500,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              hintText: 'e.g., Quran Recitation Level 1',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: AppColors.islamicGreen200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: AppColors.islamicGreen500,
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: AppColors.islamicWhite,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 12),
+
+                          // Certificate Institution
+                          TextFormField(
+                            controller: _certInstitutionController,
+                            decoration: InputDecoration(
+                              labelText: 'Certification Institution / Sheikh',
+                              labelStyle: TextStyle(
+                                color: AppColors.islamicGreen700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              floatingLabelStyle: TextStyle(
+                                color: AppColors.islamicGreen500,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              hintText: 'e.g., Sheikh Ahmad Al-Mansour',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: AppColors.islamicGreen200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: AppColors.islamicGreen500,
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: AppColors.islamicWhite,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 12),
+
+                          // File Upload
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    await selectFile();
+                                  },
+                                  icon: const Icon(Icons.upload_file),
+                                  label: Text(
+                                    _selectedFile != null
+                                        ? (_uploadedFileUrl != null
+                                            ? 'Uploaded: ${_selectedFile!.name}'
+                                            : 'Selected: ${_selectedFile!.name}')
+                                        : 'Upload New Certificate',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.islamicGreen400,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -579,13 +964,82 @@ class _ProfilePageState extends State {
                   ),
                   onPressed: () async {
                     if (_editFormKey.currentState!.validate()) {
+                      // Handle file upload if a new file is selected
+                      String certUrl = '';
+                      if (userObj['role'] != 'user' && _selectedFile != null) {
+                        certUrl = await uploadFile(_selectedFile!);
+                        if (certUrl.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to upload certificate'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                      }
+
                       setState(() {
-                        userObj['username'] = _usernameController.text;
+                        userObj['displayName'] = _usernameController.text;
                         userObj['email'] = _emailController.text;
                         userObj['gender'] = _gender ?? '';
                         userObj['country'] = _countryController.text;
                         userObj['language'] = _languageController.text;
-                        userObj['bio'] = _bioController.text;
+
+                        // Set volunteer-specific fields
+                        if (userObj['role'] != 'user') {
+                          // For volunteers, save to volunteerProfile
+                          if (userObj['volunteerProfile'] != null) {
+                            final volunteerProfile =
+                                userObj['volunteerProfile']
+                                    as Map<String, dynamic>;
+                            volunteerProfile['bio'] =
+                                _bioController?.text ?? '';
+                            volunteerProfile['languages'] =
+                                _selectedSpokenLanguages;
+
+                            // Update certificate information
+                            if (volunteerProfile['certificate'] != null) {
+                              final certificate =
+                                  volunteerProfile['certificate']
+                                      as Map<String, dynamic>;
+                              certificate['title'] =
+                                  _certTitleController?.text ?? '';
+                              certificate['institution'] =
+                                  _certInstitutionController?.text ?? '';
+                              if (certUrl.isNotEmpty) {
+                                certificate['url'] = certUrl;
+                              }
+                            } else {
+                              volunteerProfile['certificate'] = {
+                                'title': _certTitleController?.text ?? '',
+                                'institution':
+                                    _certInstitutionController?.text ?? '',
+                                'url': certUrl.isNotEmpty ? certUrl : '',
+                                'uploadedAt': DateTime.now().toIso8601String(),
+                                '_id': '',
+                              };
+                            }
+                          } else {
+                            // Create volunteerProfile if it doesn't exist
+                            userObj['volunteerProfile'] = {
+                              'bio': _bioController?.text ?? '',
+                              'languages': _selectedSpokenLanguages,
+                              'certificate': {
+                                'title': _certTitleController?.text ?? '',
+                                'institution':
+                                    _certInstitutionController?.text ?? '',
+                                'url': certUrl.isNotEmpty ? certUrl : '',
+                                'uploadedAt': DateTime.now().toIso8601String(),
+                                '_id': '',
+                              },
+                              '_id': '',
+                            };
+                          }
+                        } else if (userObj['role'] == 'user') {
+                          // For regular users, save to top-level bio
+                          userObj['bio'] = '';
+                        }
                       });
                       await updateProfile(userObj);
                       Navigator.of(context).pop();
@@ -645,7 +1099,7 @@ class _ProfilePageState extends State {
                 ),
               ),
               TextSpan(
-                text: userObj['username'] as String? ?? '',
+                text: userObj['displayName'] as String? ?? '',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -960,16 +1414,35 @@ class _ProfilePageState extends State {
             children: [
               _buildDetailRow(
                 'Institution',
-                (userObj['certificate'] as Map<String, dynamic>)['institution'],
+                _getVolunteerField('certificate.institution'),
               ),
               SizedBox(height: 16),
               _buildDetailRow(
                 'Certificate Title',
-                (userObj['certificate'] as Map<String, dynamic>)['title'],
+                _getVolunteerField('certificate.title'),
               ),
               SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  final certificateUrl = _getVolunteerField('certificate.url');
+                  if (certificateUrl.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                CertificationViewer(fileUrl: certificateUrl),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No certificate available to view'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                },
                 icon: Icon(Icons.visibility),
                 label: Text('View Certificate'),
                 style: ElevatedButton.styleFrom(
@@ -987,7 +1460,7 @@ class _ProfilePageState extends State {
           'Islamic Background',
           Icons.description,
           Text(
-            userObj['bio'] as String? ?? '',
+            _getVolunteerField('bio'),
             style: TextStyle(color: AppColors.islamicGreen600, height: 1.5),
           ),
         ),
@@ -999,8 +1472,9 @@ class _ProfilePageState extends State {
           Icons.language,
           Wrap(
             spacing: 8,
+            runSpacing: 8, // Adds vertical space between wrap elements
             children:
-                (userObj['languagesSpoken'] as List)
+                _getVolunteerLanguages()
                     .map(
                       (lang) => Chip(
                         label: Text(lang),
@@ -1107,7 +1581,10 @@ class _ProfilePageState extends State {
                   child: _buildContentCard(
                     Icons.book,
                     'Saved Lessons',
-                    userObj['savedLessons'].toString(),
+                    (userObj['savedLessons'] == null ||
+                            userObj['savedLessons'].isEmpty)
+                        ? 'start saving lessons'
+                        : userObj['savedLessons'].length.toString(),
                     'lessons saved',
                     AppColors.islamicGreen50,
                     AppColors.islamicGreen600,
@@ -1118,7 +1595,10 @@ class _ProfilePageState extends State {
                   child: _buildContentCard(
                     Icons.help,
                     'My Questions',
-                    userObj['savedQuestions'].toString(),
+                    (userObj['savedQuestions'] == null ||
+                            userObj['savedQuestions'].isEmpty)
+                        ? 'start saving questions'
+                        : userObj['savedQuestions'].length.toString(),
                     'questions asked',
                     AppColors.islamicGold50,
                     AppColors.islamicGold400,
@@ -1254,29 +1734,240 @@ class _ProfilePageState extends State {
     );
   }
 
-  Future<void> updateProfile(Map<String, dynamic> updatedData) async {
-    final response = await http.put(
-      Uri.parse('http://your-backend-url/api/user/profile'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(updatedData),
-    );
-    if (response.statusCode == 200) {
-      // Success: update userObj with returned user info
-      final updatedUser = jsonDecode(response.body);
-      setState(() {
-        userObj = updatedUser;
-      });
-      // Optionally show a success message
+  // Helper method to get volunteer profile fields safely
+  String _getVolunteerField(String fieldPath) {
+    if (userObj['volunteerProfile'] == null) {
+      return '';
+    }
+
+    final volunteerProfile =
+        userObj['volunteerProfile'] as Map<String, dynamic>;
+
+    if (fieldPath.contains('.')) {
+      final parts = fieldPath.split('.');
+      final mainField = parts[0];
+      final subField = parts[1];
+
+      if (volunteerProfile[mainField] != null) {
+        final subObject = volunteerProfile[mainField] as Map<String, dynamic>?;
+        return subObject?[subField]?.toString() ?? '';
+      }
     } else {
-      // Handle error: Optionally show an error message
+      return volunteerProfile[fieldPath]?.toString() ?? '';
+    }
+
+    return '';
+  }
+
+  // Helper method to get volunteer languages
+  List<String> _getVolunteerLanguages() {
+    if (userObj['volunteerProfile'] == null) {
+      return [];
+    }
+
+    final volunteerProfile =
+        userObj['volunteerProfile'] as Map<String, dynamic>;
+    final languages = volunteerProfile['languages'] as List<dynamic>?;
+
+    if (languages != null) {
+      return languages.map((lang) => lang.toString()).toList();
+    }
+
+    return [];
+  }
+
+  // Helper method to get bio value for both user and volunteer roles
+  String _getBioValue() {
+    // For volunteers, bio is in volunteerProfile
+    if (userObj['volunteerProfile'] != null) {
+      final volunteerProfile =
+          userObj['volunteerProfile'] as Map<String, dynamic>;
+      return volunteerProfile['bio']?.toString() ?? '';
+    }
+    // For regular users, bio is directly in userObj
+    return userObj['bio']?.toString() ?? '';
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> updatedData) async {
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization':
+          'Bearer ${await SharedPreferences.getInstance().then((value) => value.getString('token'))}',
+    };
+    var request = http.Request('PUT', Uri.parse(profile));
+
+    // Build request body based on user role
+    Map<String, dynamic> requestBody = {
+      "displayName": updatedData['displayName'],
+      "gender": updatedData['gender'],
+      "email": updatedData['email'],
+      "country": updatedData['country'],
+      "language": updatedData['language'],
+      "role": updatedData['role'],
+    };
+
+    // Add role-specific fields
+    String role = updatedData['role'] as String? ?? '';
+    if (role == 'certified_volunteer' ||
+        role == 'volunteer_pending' ||
+        role == 'volunteer') {
+      // Volunteer-specific fields - handle both old and new structure
+      if (updatedData['volunteerProfile'] != null) {
+        // New structure with volunteerProfile
+        final volunteerProfile =
+            updatedData['volunteerProfile'] as Map<String, dynamic>;
+        requestBody["bio"] = volunteerProfile['bio'] ?? '';
+        requestBody["spoken_languages"] = volunteerProfile['languages'] ?? [];
+
+        final certificate =
+            volunteerProfile['certificate'] as Map<String, dynamic>?;
+        requestBody["certification_title"] = certificate?['title'] ?? '';
+        requestBody["certification_institution"] =
+            certificate?['institution'] ?? '';
+        requestBody["certification_url"] = certificate?['url'] ?? '';
+      } else {
+        // Fallback to old structure
+        requestBody["bio"] = updatedData['bio'] ?? '';
+        requestBody["spoken_languages"] = updatedData['languagesSpoken'] ?? [];
+
+        final certificate = updatedData['certificate'] as Map<String, dynamic>?;
+        requestBody["certification_title"] = certificate?['title'] ?? '';
+        requestBody["certification_institution"] =
+            certificate?['institution'] ?? '';
+        requestBody["certification_url"] = certificate?['url'] ?? '';
+      }
+    }
+    // For user and admin roles, only basic fields are sent (no bio, languages, or certificate)
+
+    request.body = json.encode(requestBody);
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      final responseBody = await response.stream.bytesToString();
+      print(responseBody);
+
+      // Success: update userObj with returned user info
+      final responseData = jsonDecode(responseBody);
+      final updatedUser = responseData['user']; // Extract user from response
+
+      // Transform the API response to match frontend structure
+      final transformedUser = {
+        'id': updatedUser['userId'] ?? updatedUser['_id'],
+        'displayName': updatedUser['displayName'],
+        'email': updatedUser['email'],
+        'role': updatedUser['role'],
+        'gender': updatedUser['gender'],
+        'country': updatedUser['country'],
+        'language': updatedUser['language'],
+        'volunteerProfile': updatedUser['volunteerProfile'],
+        'savedQuestions': updatedUser['savedQuestions'] ?? [],
+        'savedLessons': updatedUser['savedLessons'] ?? [],
+      };
+
+      // Only add bio field for non-volunteer users
+      if (updatedUser['role'] == 'user' || updatedUser['role'] == 'admin') {
+        transformedUser['bio'] = updatedUser['bio'] ?? '';
+      }
+
+      setState(() {
+        userObj = transformedUser;
+      });
+
+      // Update the UserProvider with the transformed data
+      await Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).setUser(transformedUser);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      print(response.reasonPhrase);
+      // Handle error: show an error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update profile. Please try again.'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
           ),
         );
       }
     }
+  }
+}
+
+Map<String, dynamic> getInitialUserObj(String role) {
+  if (role == 'certified_volunteer' ||
+      role == 'volunteer_pending' ||
+      role == 'volunteer') {
+    return {
+      'id': '',
+      'displayName': '',
+      'email': '',
+      'role': role,
+      'gender': '',
+      'country': '',
+      'language': '',
+      'volunteerProfile': {
+        'certificate': {
+          'institution': '',
+          'title': '',
+          'url': '',
+          'uploadedAt': '',
+          '_id': '',
+        },
+        'languages': [],
+        'bio': '',
+        '_id': '',
+      },
+      'savedQuestions': [],
+      'savedLessons': [],
+    };
+  } else if (role == 'user') {
+    return {
+      'id': '',
+      'displayName': '',
+      'email': '',
+      'role': 'user',
+      'gender': '',
+      'country': '',
+      'language': '',
+      'savedQuestions': [],
+      'savedLessons': [],
+    };
+  } else if (role == 'admin') {
+    return {
+      'id': '',
+      'displayName': '',
+      'email': '',
+      'role': 'admin',
+      'gender': '',
+      'country': '',
+      'language': '',
+      'savedQuestions': [],
+      'savedLessons': [],
+    };
+  } else {
+    // Default fallback
+    return {
+      'id': '',
+      'displayName': '',
+      'email': '',
+      'role': '',
+      'gender': '',
+      'country': '',
+      'language': '',
+      'savedQuestions': [],
+      'savedLessons': [],
+    };
   }
 }
