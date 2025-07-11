@@ -639,7 +639,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       );
       final data = jsonDecode(response.body);
       //Todo: make sure the country of askedby{country:} is returned
-      print("response: ${response.statusCode}");
+      print("response of get all public questions: ${response.statusCode}");
       print("questions field: ${data['question']}");
       if (response.statusCode == 200) {
         if (data['status'] == true) {
