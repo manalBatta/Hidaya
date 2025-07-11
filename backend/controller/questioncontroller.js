@@ -30,6 +30,7 @@ const questionToReturn = newQuestion.toObject();
 questionToReturn.askedBy={  
       id: userId,
       displayName: user?.displayName || "Anonymous"
+      
     };
 res.status(201).json({
   status: true,
@@ -77,3 +78,22 @@ exports.getquestionandanswers = async (req , res , next) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+exports.getquestionsofaspecificuser = async (req , res , next) => {
+  try{
+const userId = req.userId;
+if (!userId) {
+  return res.status(401).json({ status: false, error: "Unauthorized. userId not found." });
+}
+  console.log("userid is:",userId);
+
+const QuestionsofUser=await UserServices.GetQuestionOfUser(userId);
+ res.status(200).json({
+      status: true,
+      success: "Getting user questions successfully",
+      question: QuestionsofUser
+    });}
+    catch(err){
+      console.error("Error fetching user questions:", err);
+    next(err); 
+  }
+    };
