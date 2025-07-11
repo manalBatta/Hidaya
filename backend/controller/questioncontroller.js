@@ -1,11 +1,13 @@
 const UserServices = require('../services/questionsservices');
+const QuestionModel = require("../models/Questions");
+const AnswerModel = require("../models/Answers");
 
 exports.submitquestion = async (req, res, next) => {
   const userId = req.userId; // coming from token middleware
   try {
     console.log("--- req body ---", req.body);
     const {
-   text, isPublic, category , tags
+   text, isPublic, category , tags, aiAnswer
     } = req.body;
 if (!text || !category) {
       return res.status(400).json({
@@ -18,6 +20,7 @@ if (!text || !category) {
       isPublic,
       category,
       tags,
+      aiAnswer,
       askedBy: req.userId || "anonymous",
     };
 
@@ -46,4 +49,31 @@ res.status(200).json({
   question: allpublicquestions
 });
 
+};
+exports.getquestionandanswers = async (req , res , next) => {
+  const { id } = req.params;
+  try {
+    // Get the question
+    const question = await QuestionModel.findOne({ questionId: id }).lean();
+    if (!question) return res.status(404).json({ error: 'Question not found' });
+
+    const answers = await AnswerModel.find({ questionId: id }).lean();
+
+    // Get the top answer, if it exists
+    let topAnswer = null;
+    if (question.topAnswerId) {
+      topAnswer = await AnswerModel.findOne({ answerId: question.topAnswerId }).lean();
+    }
+
+    res.json({
+      questionId: question.questionId,
+      text: question.text,
+      answers: answers,
+      topAnswer: topAnswer
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
