@@ -8,6 +8,7 @@ import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
 import '../constants/colors.dart';
 import 'QuestionCard.dart';
+import 'AIResponseCard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'dart:async'; // Added for Completer
@@ -46,65 +47,91 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   ];
 
   // Mock data for tabs
-  final List<Map<String, dynamic>> _communityQuestions = [
+  List<Map<String, dynamic>> _communityQuestions = [
     {
-      'id': 1,
-      'question': 'What is the correct way to perform Wudu before prayer?',
-      'category': 'Worship',
-      'askedBy': 'Sister Aisha',
-      'answeredBy': 'Sheikh Ahmad Ali',
-      'timeAgo': '2 hours ago',
-      'upvotes': 24,
+      'questionId': '201',
+      'text': 'What is the correct way to perform Wudu before prayer?',
       'isPublic': true,
+      'askedBy': {'id': 'user-2', 'displayName': 'Sister Aisha'},
+      'createdAt': '2024-07-11T08:00:00.000Z',
+      'aiAnswer': '',
+      'topAnswerId': 'answer-201',
+      'tags': ['wudu', 'prayer', 'worship'],
+      'category': 'Worship',
+      '_id': 'dbid-201',
+      '__v': 0,
+      'timeAgo': '2 hours ago',
+      'answers': 24,
       'responseType': 'human',
       'isAnswered': true,
+      'answeredBy': 'Sheikh Ahmad Ali',
       'excerpt':
           'Wudu is performed in a specific sequence as taught by Prophet Muhammad (PBUH)...',
       'isFavorited': false,
     },
     {
-      'id': 2,
-      'question': 'Can I pray while traveling and what are the concessions?',
-      'category': 'Prayer',
-      'askedBy': 'Brother Omar',
-      'answeredBy': 'AI Assistant',
-      'timeAgo': '4 hours ago',
-      'upvotes': 18,
+      'questionId': '202',
+      'text': 'Can I pray while traveling and what are the concessions?',
       'isPublic': true,
+      'askedBy': {'id': 'user-3', 'displayName': 'Brother Omar'},
+      'createdAt': '2024-07-11T06:00:00.000Z',
+      'aiAnswer':
+          'Yes, Islam provides several concessions for travelers including shortening prayers...',
+      'topAnswerId': '',
+      'tags': ['prayer', 'travel'],
+      'category': 'Prayer',
+      '_id': 'dbid-202',
+      '__v': 0,
+      'timeAgo': '4 hours ago',
+      'answers': 0,
       'responseType': 'ai',
-      'isAnswered': true,
+      'isAnswered': false,
+      'answeredBy': 'AI Assistant',
       'excerpt':
           'Yes, Islam provides several concessions for travelers including shortening prayers...',
       'isFavorited': false,
     },
     {
-      'id': 3,
-      'question':
+      'questionId': '203',
+      'text':
           'What are the etiquettes when visiting a mosque for the first time?',
-      'category': 'Etiquette',
-      'askedBy': 'Sister Fatima',
-      'answeredBy': 'Dr. Fatima Al-Zahra',
-      'timeAgo': '6 hours ago',
-      'upvotes': 32,
       'isPublic': true,
+      'askedBy': {'id': 'user-4', 'displayName': 'Sister Fatima'},
+      'createdAt': '2024-07-11T04:00:00.000Z',
+      'aiAnswer': '',
+      'topAnswerId': 'answer-203',
+      'tags': ['etiquette', 'mosque'],
+      'category': 'Etiquette',
+      '_id': 'dbid-203',
+      '__v': 0,
+      'timeAgo': '6 hours ago',
+      'answers': 32,
       'responseType': 'human',
       'isAnswered': true,
+      'answeredBy': 'Dr. Fatima Al-Zahra',
       'excerpt':
           'When visiting a mosque, there are several important etiquettes to observe...',
       'isFavorited': true,
     },
     {
-      'id': 4,
-      'question':
+      'questionId': '204',
+      'text':
           'How do I balance Islamic principles with modern workplace demands?',
-      'category': 'Daily Life',
-      'askedBy': 'Brother Ahmed',
-      'answeredBy': 'AI Assistant',
-      'timeAgo': '1 day ago',
-      'upvotes': 15,
       'isPublic': true,
+      'askedBy': {'id': 'user-5', 'displayName': 'Brother Ahmed'},
+      'createdAt': '2024-07-10T08:00:00.000Z',
+      'aiAnswer':
+          'Balancing faith with work requires clear communication and seeking halal alternatives...',
+      'topAnswerId': '',
+      'tags': ['daily life', 'workplace', 'Islam'],
+      'category': 'Daily Life',
+      '_id': 'dbid-204',
+      '__v': 0,
+      'timeAgo': '1 day ago',
+      'answers': 0,
       'responseType': 'ai',
-      'isAnswered': true,
+      'isAnswered': false,
+      'answeredBy': 'AI Assistant',
       'excerpt':
           'Balancing faith with work requires clear communication and seeking halal alternatives...',
       'isFavorited': false,
@@ -113,25 +140,43 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 
   final List<Map<String, dynamic>> _myQuestions = [
     {
-      'id': 101,
-      'question': 'Personal question about family relationships in Islam',
-      'category': 'Family & Marriage',
-      'timeAgo': '3 days ago',
-      'upvotes': 5,
+      'questionId': '101',
+      'text': 'Personal question about family relationships in Islam',
       'isPublic': false,
+      'askedBy': {'id': 'user-1', 'displayName': 'Test User'},
+      'createdAt': '2024-07-01T10:00:00.000Z',
+      'aiAnswer':
+          'In Islam, family relationships are based on mutual respect, kindness, and fulfilling each other’s rights and responsibilities.',
+      'topAnswerId': 'answer-101',
+      'tags': ['family', 'relationships', 'Islam'],
+      'category': 'Family & Marriage',
+      '_id': 'dbid-101',
+      '__v': 0,
+      // For UI compatibility
+      'timeAgo': '3 days ago',
+      'answers': 5,
       'responseType': 'human',
       'isAnswered': true,
       'answeredBy': 'Sister Khadija Ibrahim',
     },
     {
-      'id': 102,
-      'question': 'How to perform Tahajjud prayer correctly?',
-      'category': 'Worship',
-      'timeAgo': '1 week ago',
-      'upvotes': 12,
+      'questionId': '102',
+      'text': 'How to perform Tahajjud prayer correctly?',
       'isPublic': true,
-      'responseType': 'human',
-      'isAnswered': true,
+      'askedBy': {'id': 'user-1', 'displayName': 'Test User'},
+      'createdAt': '2024-06-25T08:30:00.000Z',
+      'aiAnswer':
+          'Tahajjud prayer is performed after Isha and before Fajr, preferably in the last third of the night. It consists of at least two rak’ahs and can be prayed in sets of two.',
+      'topAnswerId': '',
+      'tags': ['tahajjud', 'prayer', 'worship'],
+      'category': 'Worship',
+      '_id': 'dbid-102',
+      '__v': 0,
+      // For UI compatibility
+      'timeAgo': '1 week ago',
+      'answers': 0,
+      'responseType': 'ai',
+      'isAnswered': false,
       'answeredBy': 'Sheikh Ahmad Ali',
     },
   ];
@@ -144,7 +189,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'askedBy': 'Brother Yusuf',
       'answeredBy': 'Dr. Omar Suleiman',
       'timeAgo': '1 month ago',
-      'upvotes': 89,
+      'answers': 89,
       'isPublic': true,
       'responseType': 'human',
       'isAnswered': true,
@@ -233,6 +278,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         curve: Curves.elasticOut,
       ),
     );
+    _getCommunityQuestions();
   }
 
   @override
@@ -252,12 +298,15 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         final tags = await extractTagsFromQuestionGemini(
           _questionController.text,
         );
+        // Generate AI answer before submitting
+        final aiAnswer = await generateAIAnswerGemini(_questionController.text);
 
         final requestbody = {
           "text": _questionController.text,
           "isPublic": _isPublic,
           "category": _selectedCategory,
           "tags": tags,
+          "aiAnswer": aiAnswer,
         };
 
         print("add question request body: $requestbody");
@@ -271,9 +320,45 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         );
         final data = jsonDecode(response.body);
 
-        if (response.statusCode == 200) {
+        print("response: ${response.statusCode}");
+        if (response.statusCode == 201) {
           if (data['status'] == true) {
             print('Question submitted successfully');
+            print(data);
+
+            // Add the new question to _myQuestions
+            final newQuestion = data['question'];
+            setState(() {
+              _myQuestions.insert(0, {
+                'questionId':
+                    newQuestion['questionId'] ?? newQuestion['_id'] ?? '',
+                'text': newQuestion['text'] ?? '',
+                'isPublic': newQuestion['isPublic'] ?? true,
+                'askedBy':
+                    newQuestion['askedBy'] ?? {'id': '', 'displayName': ''},
+                'createdAt':
+                    newQuestion['createdAt'] ??
+                    DateTime.now().toIso8601String(),
+                'aiAnswer': newQuestion['aiAnswer'] ?? '',
+                'topAnswerId': newQuestion['topAnswerId'] ?? '',
+                'tags': newQuestion['tags'] ?? [],
+                'category': newQuestion['category'] ?? '',
+                '_id': newQuestion['_id'] ?? '',
+                '__v': newQuestion['__v'] ?? 0,
+                // UI compatibility fields
+                'timeAgo': 'Just now',
+                'answers': 0,
+                'responseType':
+                    (newQuestion['topAnswerId'] == null &&
+                            newQuestion['topAnswerId'].toString().isEmpty)
+                        ? 'ai'
+                        : 'human',
+                'isAnswered':
+                    (newQuestion['topAnswerId'] != null &&
+                        newQuestion['topAnswerId'].toString().isNotEmpty),
+                'answeredBy': newQuestion['askedBy']?['displayName'] ?? '',
+              });
+            });
 
             // Reset form
             _questionController.clear();
@@ -388,6 +473,31 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     return completer.future;
   }
 
+  // Generate AI answer from Gemini for submission
+  Future<String> generateAIAnswerGemini(String questionText) async {
+    final prompt =
+        'Provide a concise, clear Islamic answer to the following question. Question: "$questionText"';
+    StringBuffer buffer = StringBuffer();
+    final completer = Completer<String>();
+    Gemini.instance
+        .promptStream(parts: [Part.text(prompt)])
+        .listen(
+          (value) {
+            if (value?.output != null) {
+              buffer.write(value!.output);
+            }
+          },
+          onDone: () {
+            completer.complete(buffer.toString());
+          },
+          onError: (e) {
+            print('Error fetching AI answer from Gemini: $e');
+            completer.complete('');
+          },
+        );
+    return await completer.future;
+  }
+
   List<Map<String, dynamic>> _getFilteredCommunityQuestions() {
     if (_searchQuery.isEmpty) {
       return _communityQuestions;
@@ -395,12 +505,74 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     return _communityQuestions
         .where(
           (q) =>
-              q['question'].toLowerCase().contains(
-                _searchQuery.toLowerCase(),
-              ) ||
+              q['text'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
               q['category'].toLowerCase().contains(_searchQuery.toLowerCase()),
         )
         .toList();
+  }
+
+  void _getCommunityQuestions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      var response = await http.get(
+        Uri.parse(publicQuestions),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      final data = jsonDecode(response.body);
+
+      print("response: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        if (data['status'] == true) {
+          List<Map<String, dynamic>> updatedQuestions = [];
+          for (var question in data['questions']) {
+            final newQuestion = question;
+            updatedQuestions.add({
+              'questionId':
+                  newQuestion['questionId'] ?? newQuestion['_id'] ?? '',
+              'text': newQuestion['text'] ?? '',
+              'isPublic': newQuestion['isPublic'] ?? true,
+              'askedBy':
+                  newQuestion['askedBy'] ?? {'id': '', 'displayName': ''},
+              'createdAt':
+                  newQuestion['createdAt'] ?? DateTime.now().toIso8601String(),
+              'aiAnswer': newQuestion['aiAnswer'] ?? '',
+              'topAnswerId': newQuestion['topAnswerId'] ?? '',
+              'tags': newQuestion['tags'] ?? [],
+              'category': newQuestion['category'] ?? '',
+              '_id': newQuestion['_id'] ?? '',
+              '__v': newQuestion['__v'] ?? 0,
+              // UI compatibility fields
+              'timeAgo': 'Just now',
+              'answers': 0,
+              'responseType':
+                  (newQuestion['topAnswerId'] == null &&
+                          newQuestion['topAnswerId'].toString().isEmpty)
+                      ? 'ai'
+                      : 'human',
+              'isAnswered':
+                  (newQuestion['topAnswerId'] != null &&
+                      newQuestion['topAnswerId'].toString().isNotEmpty),
+              'answeredBy': newQuestion['askedBy']?['displayName'] ?? '',
+            });
+          }
+          setState(() {
+            _communityQuestions = updatedQuestions;
+          });
+        } else {
+          print("community qustions faild to load");
+        }
+      }
+    } catch (e) {
+      /* setState(() {
+        _communityQuestions = [];
+      }); */
+      print('Error loading community questions: $e');
+    }
   }
 
   @override
@@ -1111,12 +1283,24 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 
           // Questions List
           Expanded(
-            child: ListView.builder(
-              itemCount: filteredQuestions.length,
-              itemBuilder: (context, index) {
-                return QuestionCard(question: filteredQuestions[index]);
-              },
-            ),
+            child:
+                filteredQuestions.isEmpty
+                    ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Text(
+                          'No community questions yet',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                    : ListView.builder(
+                      itemCount: filteredQuestions.length,
+                      itemBuilder: (context, index) {
+                        return QuestionCard(question: filteredQuestions[index]);
+                      },
+                    ),
           ),
         ],
       ),
@@ -1135,7 +1319,9 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               : ListView.builder(
                 itemCount: _myQuestions.length,
                 itemBuilder: (context, index) {
-                  return QuestionCard(question: _myQuestions[index]);
+                  final question = _myQuestions[index];
+                  // No need to generate AI answer here; it is included in the backend response
+                  return QuestionCard(question: question);
                 },
               ),
     );
