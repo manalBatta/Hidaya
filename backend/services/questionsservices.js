@@ -22,6 +22,8 @@ class QuestionServices {
       });
 
       await newQuestion.save();
+      console.log("Saved question:", newQuestion);
+
       return {newQuestion , user };
     } catch (err) {
       throw err;
