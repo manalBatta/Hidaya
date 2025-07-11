@@ -12,6 +12,8 @@ import 'AIResponseCard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'dart:async'; // Added for Completer
+import 'package:provider/provider.dart';
+import '../providers/UserProvider.dart';
 
 class Questions extends StatefulWidget {
   @override
@@ -31,6 +33,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   bool _showSuccessMessage = false;
   String _searchQuery = '';
   bool _showFailMessage = false;
+
+  UserProvider? userProvider;
 
   final List<String> _categories = [
     'Worship',
@@ -181,86 +185,145 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     },
   ];
 
-  final List<Map<String, dynamic>> _favoriteQuestions = [
+  List<Map<String, dynamic>> _favoriteQuestions = [
     {
-      'id': 201,
-      'question': 'Understanding the concept of Tawakkul (trust in Allah)',
+      'questionId': '201',
+      'text': 'Understanding the concept of Tawakkul (trust in Allah)',
+      'isPublic': true,
+      'askedBy': {
+        'id': 'user-201',
+        'displayName': 'Brother Yusuf',
+        'country': 'Palestine',
+      },
+      'createdAt': '2024-06-01T10:00:00.000Z',
+      'aiAnswer': '',
+      'topAnswerId': 'answer-201',
+      'tags': ['tawakkul', 'trust', 'Allah'],
       'category': 'Spirituality',
-      'askedBy': 'Brother Yusuf',
-      'answeredBy': 'Dr. Omar Suleiman',
+      '_id': 'dbid-201',
+      '__v': 0,
       'timeAgo': '1 month ago',
       'answers': 89,
-      'isPublic': true,
       'responseType': 'human',
       'isAnswered': true,
+      'answeredBy': 'Dr. Omar Suleiman',
       'isFavorited': true,
     },
   ];
 
   // Recent community questions data
-  final List<Map<String, dynamic>> _recentQuestions = [
+  List<Map<String, dynamic>> _recentQuestions = [
     {
-      'id': 1,
-      'question': 'What is the correct way to perform Wudu?',
+      'questionId': '301',
+      'text': 'What is the correct way to perform Wudu?',
+      'isPublic': true,
+      'askedBy': {
+        'id': 'user-301',
+        'displayName': 'Sister Aisha',
+        'country': 'Palestine',
+      },
+      'createdAt': '2024-07-11T08:00:00.000Z',
+      'aiAnswer': '',
+      'topAnswerId': 'answer-301',
+      'tags': ['wudu', 'prayer', 'worship'],
       'category': 'Worship',
-      'askedBy': 'Sister Aisha',
+      '_id': 'dbid-301',
+      '__v': 0,
       'timeAgo': '2 hours ago',
-      'answered': true,
       'answers': 3,
-      'isPublic': true,
       'responseType': 'human',
-      'aiResponse': null,
+      'isAnswered': true,
+      'answeredBy': 'Sheikh Ahmad Ali',
     },
     {
-      'id': 2,
-      'question': 'Can I pray while traveling?',
-      'category': 'Prayer',
-      'askedBy': 'Brother Omar',
-      'timeAgo': '4 hours ago',
-      'answered': true,
-      'answers': 1,
+      'questionId': '302',
+      'text': 'Can I pray while traveling?',
       'isPublic': true,
-      'responseType': 'ai',
-      'aiResponse':
+      'askedBy': {
+        'id': 'user-302',
+        'displayName': 'Brother Omar',
+        'country': 'Palestine',
+      },
+      'createdAt': '2024-07-11T06:00:00.000Z',
+      'aiAnswer':
           'Yes, you can pray while traveling. Islam provides accommodations for travelers including shortening prayers (Qasr) and combining certain prayers. The Quran mentions this in verse 4:101. However, it\'s recommended to seek guidance from a certified scholar for your specific travel circumstances.',
-    },
-    {
-      'id': 3,
-      'question': 'What are the etiquettes of visiting a mosque?',
-      'category': 'Etiquette',
-      'askedBy': 'Sister Fatima',
-      'timeAgo': '6 hours ago',
-      'answered': false,
-      'answers': 0,
-      'isPublic': true,
-      'responseType': 'none',
-      'aiResponse': null,
-    },
-    {
-      'id': 4,
-      'question': 'Personal family guidance needed',
-      'category': 'Family & Marriage',
-      'askedBy': 'Anonymous',
-      'timeAgo': '8 hours ago',
-      'answered': true,
+      'topAnswerId': '',
+      'tags': ['prayer', 'travel'],
+      'category': 'Prayer',
+      '_id': 'dbid-302',
+      '__v': 0,
+      'timeAgo': '4 hours ago',
       'answers': 1,
-      'isPublic': false,
-      'responseType': 'human',
-      'aiResponse': null,
+      'responseType': 'ai',
+      'isAnswered': false,
+      'answeredBy': 'AI Assistant',
     },
     {
-      'id': 5,
-      'question':
-          'How should I handle conflicts with Islamic principles at work?',
-      'category': 'Daily Life',
-      'askedBy': 'Brother Ahmed',
-      'timeAgo': '1 day ago',
-      'answered': true,
-      'answers': 0,
+      'questionId': '303',
+      'text': 'What are the etiquettes of visiting a mosque?',
       'isPublic': true,
-      'responseType': 'ai',
-      'aiResponse':
+      'askedBy': {
+        'id': 'user-303',
+        'displayName': 'Sister Fatima',
+        'country': 'Palestine',
+      },
+      'createdAt': '2024-07-11T04:00:00.000Z',
+      'aiAnswer': '',
+      'topAnswerId': 'answer-303',
+      'tags': ['etiquette', 'mosque'],
+      'category': 'Etiquette',
+      '_id': 'dbid-303',
+      '__v': 0,
+      'timeAgo': '6 hours ago',
+      'answers': 0,
+      'responseType': 'human',
+      'isAnswered': true,
+      'answeredBy': 'Dr. Fatima Al-Zahra',
+    },
+    {
+      'questionId': '304',
+      'text': 'Personal family guidance needed',
+      'isPublic': false,
+      'askedBy': {
+        'id': 'user-304',
+        'displayName': 'Anonymous',
+        'country': 'Palestine',
+      },
+      'createdAt': '2024-07-11T03:00:00.000Z',
+      'aiAnswer': '',
+      'topAnswerId': 'answer-304',
+      'tags': ['family', 'guidance'],
+      'category': 'Family & Marriage',
+      '_id': 'dbid-304',
+      '__v': 0,
+      'timeAgo': '8 hours ago',
+      'answers': 1,
+      'responseType': 'human',
+      'isAnswered': true,
+      'answeredBy': 'Anonymous',
+    },
+    {
+      'questionId': '305',
+      'text': 'How should I handle conflicts with Islamic principles at work?',
+      'isPublic': true,
+      'askedBy': {
+        'id': 'user-305',
+        'displayName': 'Brother Ahmed',
+        'country': 'Palestine',
+      },
+      'createdAt': '2024-07-10T08:00:00.000Z',
+      'aiAnswer':
           'Balancing Islamic principles with workplace requirements can be challenging. The key is open communication with your employer about your religious needs, seeking halal alternatives when possible, and consulting with Islamic scholars for guidance on specific situations. Remember that Islam emphasizes both fulfilling your obligations and maintaining your faith.',
+      'topAnswerId': '',
+      'tags': ['work', 'Islamic principles', 'conflict'],
+      'category': 'Daily Life',
+      '_id': 'dbid-305',
+      '__v': 0,
+      'timeAgo': '1 day ago',
+      'answers': 0,
+      'responseType': 'ai',
+      'isAnswered': false,
+      'answeredBy': 'AI Assistant',
     },
   ];
 
@@ -278,7 +341,18 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         curve: Curves.elasticOut,
       ),
     );
-    _getCommunityQuestions();
+    // Get userProvider after first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      userProvider = Provider.of<UserProvider>(context, listen: false);
+      _getCommunityAndRecentQuestions();
+      getFavoriteQuestions();
+    });
+    _tabController.addListener(() {
+      if (_tabController.index == 0 && _tabController.indexIsChanging) {
+        _getCommunityAndRecentQuestions();
+        getFavoriteQuestions();
+      }
+    });
   }
 
   @override
@@ -295,6 +369,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       try {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('token');
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
         final tags = await extractTagsFromQuestionGemini(
           _questionController.text,
         );
@@ -511,10 +586,49 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         .toList();
   }
 
-  void _getCommunityQuestions() async {
+  // Helper: Sort community questions by tag similarity, freshness, location, answers
+  List<Map<String, dynamic>> sortCommunityQuestions(
+    List<Map<String, dynamic>> questions,
+    String userCountry,
+    List<String> userTags,
+  ) {
+    int tagSimilarity(List<String> qTags) {
+      if (userTags.isEmpty || qTags.isEmpty) return 0;
+      return qTags.where((tag) => userTags.contains(tag)).length;
+    }
+
+    int locationScore(String? qCountry) {
+      if (qCountry == null) return 0;
+      return qCountry.toLowerCase() == userCountry.toLowerCase() ? 1 : 0;
+    }
+
+    int freshnessScore(String createdAt) {
+      final date = DateTime.tryParse(createdAt) ?? DateTime(1970);
+      return -date.millisecondsSinceEpoch;
+    }
+
+    questions.sort((a, b) {
+      int tagA = tagSimilarity(List<String>.from(a['tags'] ?? []));
+      int tagB = tagSimilarity(List<String>.from(b['tags'] ?? []));
+      int locA = locationScore(a['askedBy']?['country']);
+      int locB = locationScore(b['askedBy']?['country']);
+      int freshA = freshnessScore(a['createdAt'] ?? '');
+      int freshB = freshnessScore(b['createdAt'] ?? '');
+      int ansA = a['answers'] ?? 0;
+      int ansB = b['answers'] ?? 0;
+      // Weighted sum (adjust weights as needed)
+      int scoreA = tagA * 100 + locA * 50 + freshA ~/ 1000000 + ansA;
+      int scoreB = tagB * 100 + locB * 50 + freshB ~/ 1000000 + ansB;
+      return scoreB.compareTo(scoreA);
+    });
+    return questions;
+  }
+
+  void _getCommunityAndRecentQuestions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       var response = await http.get(
         Uri.parse(publicQuestions),
@@ -524,55 +638,196 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         },
       );
       final data = jsonDecode(response.body);
-
+      //Todo: make sure the country of askedby{country:} is returned
       print("response: ${response.statusCode}");
+      print("questions field: ${data['question']}");
       if (response.statusCode == 200) {
         if (data['status'] == true) {
-          List<Map<String, dynamic>> updatedQuestions = [];
-          for (var question in data['questions']) {
-            final newQuestion = question;
-            updatedQuestions.add({
-              'questionId':
-                  newQuestion['questionId'] ?? newQuestion['_id'] ?? '',
-              'text': newQuestion['text'] ?? '',
-              'isPublic': newQuestion['isPublic'] ?? true,
-              'askedBy':
-                  newQuestion['askedBy'] ?? {'id': '', 'displayName': ''},
-              'createdAt':
-                  newQuestion['createdAt'] ?? DateTime.now().toIso8601String(),
-              'aiAnswer': newQuestion['aiAnswer'] ?? '',
-              'topAnswerId': newQuestion['topAnswerId'] ?? '',
-              'tags': newQuestion['tags'] ?? [],
-              'category': newQuestion['category'] ?? '',
-              '_id': newQuestion['_id'] ?? '',
-              '__v': newQuestion['__v'] ?? 0,
-              // UI compatibility fields
-              'timeAgo': 'Just now',
-              'answers': 0,
-              'responseType':
-                  (newQuestion['topAnswerId'] == null &&
-                          newQuestion['topAnswerId'].toString().isEmpty)
-                      ? 'ai'
-                      : 'human',
-              'isAnswered':
-                  (newQuestion['topAnswerId'] != null &&
-                      newQuestion['topAnswerId'].toString().isNotEmpty),
-              'answeredBy': newQuestion['askedBy']?['displayName'] ?? '',
+          final questions = data['question'];
+          print("questions field: $questions");
+          if (questions is List) {
+            List<Map<String, dynamic>> updatedQuestions = [];
+            for (var question in questions) {
+              // askedBy is a String or Map in backend, convert to Map for UI
+              final askedByRaw = question['askedBy'];
+              Map<String, dynamic> askedBy;
+              if (askedByRaw is String) {
+                askedBy = {'id': askedByRaw, 'displayName': askedByRaw};
+              } else if (askedByRaw is Map) {
+                askedBy = {
+                  'id': askedByRaw['id'] ?? '',
+                  'displayName': askedByRaw['displayName'] ?? '',
+                  'country': askedByRaw['country'] ?? '',
+                };
+              } else {
+                askedBy = {'id': '', 'displayName': '', 'country': ''};
+              }
+              updatedQuestions.add({
+                'questionId': question['questionId'] ?? question['_id'] ?? '',
+                'text': question['text'] ?? '',
+                'isPublic': question['isPublic'] ?? true,
+                'askedBy': askedBy,
+                'createdAt':
+                    question['createdAt'] ?? DateTime.now().toIso8601String(),
+                'aiAnswer': question['aiAnswer'] ?? '',
+                'topAnswerId': question['topAnswerId'] ?? '',
+                'tags': question['tags'] ?? [],
+                'category': question['category'] ?? '',
+                '_id': question['_id'] ?? '',
+                '__v': question['__v'] ?? 0,
+                // UI compatibility fields
+                'timeAgo': 'Just now',
+                'answers': 0,
+                'responseType':
+                    (question['topAnswerId'] == null ||
+                            question['topAnswerId'].toString().isEmpty)
+                        ? 'ai'
+                        : 'human',
+                'isAnswered':
+                    (question['topAnswerId'] != null &&
+                        question['topAnswerId'].toString().isNotEmpty),
+                'answeredBy': askedBy['displayName'],
+              });
+            }
+            // Extract tags from all questions in _myQuestions
+            final Set<String> userTagsSet = {};
+            for (final q in _myQuestions) {
+              final tags = q['tags'];
+              if (tags is List) {
+                userTagsSet.addAll(tags.map((e) => e.toString()));
+              }
+            }
+            List<String> userTags = userTagsSet.toList();
+            updatedQuestions = sortCommunityQuestions(
+              updatedQuestions,
+              userProvider.user!['country'] ?? '',
+              userTags,
+            );
+            setState(() {
+              _communityQuestions = updatedQuestions;
+              _recentQuestions = List<Map<String, dynamic>>.from(
+                updatedQuestions,
+              )..sort((a, b) {
+                final aDate =
+                    DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+                final bDate =
+                    DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+                return bDate.compareTo(aDate); // descending: newest first
+              });
             });
+            print("recomended questions to user $updatedQuestions");
+          } else {
+            setState(() {
+              _communityQuestions = [];
+              _recentQuestions = [];
+            });
+            print('No questions found or questions is not a List.');
+            return;
           }
-          setState(() {
-            _communityQuestions = updatedQuestions;
-          });
         } else {
           print("community qustions faild to load");
         }
       }
     } catch (e) {
-      /* setState(() {
+      setState(() {
         _communityQuestions = [];
-      }); */
+        _recentQuestions = [];
+      });
       print('Error loading community questions: $e');
     }
+  }
+
+  // Get favorite questions for the user by matching savedQuestions IDs with questions in _recentQuestions and _communityQuestions
+  void getFavoriteQuestions() async {
+    if (userProvider == null) return;
+    final savedIds = (userProvider!.user?['savedQuestions'] ?? []) as List?;
+    if (savedIds == null || savedIds.isEmpty) {
+      print("no saved questions for this user");
+      setState(() {
+        _favoriteQuestions = [];
+      });
+      return;
+    }
+    final Set<String> idSet = savedIds.map((e) => e.toString()).toSet();
+    // Combine recent and community questions for search
+    final allQuestions = [..._recentQuestions];
+    // Use a set to avoid duplicates
+    final Set<String> seen = {};
+    final List<Map<String, dynamic>> favorites = [];
+    for (final q in allQuestions) {
+      final qid = q['questionId'] ?? q['_id'] ?? '';
+      if (idSet.contains(qid) && !seen.contains(qid)) {
+        favorites.add(q);
+        seen.add(qid);
+      }
+    }
+    // For any missing favorite IDs, fetch from backend
+    final missingIds = idSet.difference(seen);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    //Todo:check this request to get favorite private questions
+    for (final id in missingIds) {
+      try {
+        final response = await http.get(
+          Uri.parse('question/$id'),
+          headers: {
+            "Content-Type": "application/json",
+            if (token != null) "Authorization": "Bearer $token",
+          },
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['status'] == true && data['question'] != null) {
+            final question = data['question'];
+            // askedBy may be a String or Map
+            final askedByRaw = question['askedBy'];
+            Map<String, dynamic> askedBy;
+            if (askedByRaw is String) {
+              askedBy = {'id': askedByRaw, 'displayName': askedByRaw};
+            } else if (askedByRaw is Map) {
+              askedBy = {
+                'id': askedByRaw['id'] ?? '',
+                'displayName': askedByRaw['displayName'] ?? '',
+                'country': askedByRaw['country'] ?? '',
+              };
+            } else {
+              askedBy = {'id': '', 'displayName': '', 'country': ''};
+            }
+            favorites.add({
+              'questionId': question['questionId'] ?? question['_id'] ?? '',
+              'text': question['text'] ?? '',
+              'isPublic': question['isPublic'] ?? true,
+              'askedBy': askedBy,
+              'createdAt':
+                  question['createdAt'] ?? DateTime.now().toIso8601String(),
+              'aiAnswer': question['aiAnswer'] ?? '',
+              'topAnswerId': question['topAnswerId'] ?? '',
+              'tags': question['tags'] ?? [],
+              'category': question['category'] ?? '',
+              '_id': question['_id'] ?? '',
+              '__v': question['__v'] ?? 0,
+              // UI compatibility fields
+              'timeAgo': 'Just now',
+              'answers': 0,
+              'responseType':
+                  (question['topAnswerId'] == null ||
+                          question['topAnswerId'].toString().isEmpty)
+                      ? 'ai'
+                      : 'human',
+              'isAnswered':
+                  (question['topAnswerId'] != null &&
+                      question['topAnswerId'].toString().isNotEmpty),
+              'answeredBy': askedBy['displayName'],
+            });
+          }
+        }
+      } catch (e) {
+        print('Error fetching favorite question $id: $e');
+      }
+    }
+    setState(() {
+      _favoriteQuestions = favorites;
+    });
   }
 
   @override
@@ -1296,9 +1551,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                       ),
                     )
                     : ListView.builder(
-                      itemCount: filteredQuestions.length,
+                      itemCount: _communityQuestions.length,
                       itemBuilder: (context, index) {
-                        return QuestionCard(question: filteredQuestions[index]);
+                        final question = _communityQuestions[index];
+                        return QuestionCard(question: question);
                       },
                     ),
           ),
