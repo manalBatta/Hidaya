@@ -424,12 +424,12 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             _buildGuidelines(),
             SizedBox(height: 24),
 
-            // Recent Questions
-            _buildRecentQuestions(),
-            SizedBox(height: 24),
-
             // Tabbed Interface
             _buildTabbedInterface(),
+            SizedBox(height: 24),
+
+            // Recent Questions
+            _buildRecentQuestions(),
           ],
         ),
       ),
@@ -440,6 +440,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Ask Your Question',
@@ -448,7 +449,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               fontWeight: FontWeight.bold,
               color: Color(0xFF104C34),
             ),
-            textAlign: TextAlign.center,
+            textAlign: TextAlign.start,
           ),
           SizedBox(height: 8),
           Text(
@@ -823,10 +824,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             ),
             SizedBox(height: 12),
             ...[
-                  'Be specific and clear in your question',
-                  'Provide context if your situation is unique',
-                  'Choose the most appropriate category',
-                  'Be respectful and patient for responses',
+                  'Every question is welcome!',
+                  ' Ask with sincerity and respect.,'
+                      'Be clear and focused.',
+                  'Choose the most relevant category.',
                 ]
                 .map(
                   (guideline) => Padding(
