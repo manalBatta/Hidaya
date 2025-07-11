@@ -5,4 +5,4 @@ final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
 final questions = url + "questions"; //to get all questions
-final publicQuestions = url + "public/questions";//to get public questions  
+final publicQuestions = url + "public-questions";//to get public questions  
