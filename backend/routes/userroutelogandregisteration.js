@@ -17,7 +17,7 @@ router.post("/answers",authMiddleware,AnswerController.submitanswerbyvolunteer);
 router.put("/answers/vote",authMiddleware,AnswerController.voteonanswer);
 router.post("/flags",authMiddleware,FlagController.flagitem);
 router.get("/myquestion",authMiddleware,QuestionController.getquestionsofaspecificuser);
-
+router.post("/saveQuestion",authMiddleware,QuestionController.savequestion);
 
 
 

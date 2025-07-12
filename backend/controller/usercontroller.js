@@ -101,6 +101,8 @@ exports.login = async (req, res, next) => {
       gender: user.gender,
       country: user.country,
       language: user.language,
+    savedQuestions: user.savedQuestions,
+    savedLessons: user.savedLessons,
       volunteerProfile: user.volunteerProfile,
     },
   });
