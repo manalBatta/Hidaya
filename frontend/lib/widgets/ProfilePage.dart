@@ -378,6 +378,7 @@ class _ProfilePageState extends State {
                         SizedBox(height: 12),
                         TextFormField(
                           controller: _emailController,
+                          readOnly: true,
                           decoration: InputDecoration(
                             labelText: 'Email',
                             labelStyle: TextStyle(
