@@ -26,6 +26,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   final _searchController = TextEditingController();
   late AnimationController _successAnimationController;
   late Animation<double> _successAnimation;
+  late AnimationController _failAnimationController;
+  late Animation<double> _failAnimation;
   late TabController _tabController;
 
   String _selectedCategory = '';
@@ -56,43 +58,63 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'questionId': '201',
       'text': 'What is the correct way to perform Wudu before prayer?',
       'isPublic': true,
-      'askedBy': {'id': 'user-2', 'displayName': 'Sister Aisha'},
+      'askedBy': {
+        'id': 'user-2',
+        'displayName': 'Sister Aisha',
+        'country': 'Palestine',
+      },
       'createdAt': '2024-07-11T08:00:00.000Z',
       'aiAnswer': '',
-      'topAnswerId': 'answer-201',
+      'topAnswer': {
+        'answerId': 'answer-201',
+        'questionId': '201',
+        'answeredBy': {
+          'userId': 'user-sheikh-201',
+          'displayName': 'Sheikh Ahmad Ali',
+          'gender': 'Male',
+          'email': 'sheikh.ahmad@example.com',
+          'country': 'Egypt',
+          'role': 'scholar',
+          'language': 'Arabic',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'Wudu is performed in a specific sequence as taught by Prophet Muhammad (PBUH). Start by washing your hands, then rinse your mouth and nose, wash your face, arms up to elbows, wipe your head, and finally wash your feet up to ankles. Each step should be done three times except for wiping the head.',
+        'createdAt': '2024-07-11T08:30:00.000Z',
+        'language': 'english',
+        'upvotesCount': '24',
+      },
       'tags': ['wudu', 'prayer', 'worship'],
       'category': 'Worship',
       '_id': 'dbid-201',
-      '__v': 0,
       'timeAgo': '2 hours ago',
       'answers': 24,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Sheikh Ahmad Ali',
-      'excerpt':
-          'Wudu is performed in a specific sequence as taught by Prophet Muhammad (PBUH)...',
       'isFavorited': false,
     },
     {
       'questionId': '202',
       'text': 'Can I pray while traveling and what are the concessions?',
       'isPublic': true,
-      'askedBy': {'id': 'user-3', 'displayName': 'Brother Omar'},
+      'askedBy': {
+        'id': 'user-3',
+        'displayName': 'Brother Omar',
+        'country': 'Palestine',
+      },
       'createdAt': '2024-07-11T06:00:00.000Z',
       'aiAnswer':
           'Yes, Islam provides several concessions for travelers including shortening prayers...',
-      'topAnswerId': '',
+      'topAnswer': null,
       'tags': ['prayer', 'travel'],
       'category': 'Prayer',
       '_id': 'dbid-202',
-      '__v': 0,
       'timeAgo': '4 hours ago',
       'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
-      'answeredBy': 'AI Assistant',
-      'excerpt':
-          'Yes, Islam provides several concessions for travelers including shortening prayers...',
       'isFavorited': false,
     },
     {
@@ -100,10 +122,34 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'text':
           'What are the etiquettes when visiting a mosque for the first time?',
       'isPublic': true,
-      'askedBy': {'id': 'user-4', 'displayName': 'Sister Fatima'},
+      'askedBy': {
+        'id': 'user-4',
+        'displayName': 'Sister Fatima',
+        'country': 'Palestine',
+      },
       'createdAt': '2024-07-11T04:00:00.000Z',
       'aiAnswer': '',
-      'topAnswerId': 'answer-203',
+      'topAnswer': {
+        'answerId': 'answer-203',
+        'questionId': '203',
+        'answeredBy': {
+          'userId': 'user-fatima-203',
+          'displayName': 'Dr. Fatima Al-Zahra',
+          'gender': 'Female',
+          'email': 'fatima.alzahra@example.com',
+          'country': 'Saudi Arabia',
+          'role': 'scholar',
+          'language': 'Arabic',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'When visiting a mosque for the first time, observe these etiquettes: 1) Enter with your right foot, 2) Remove your shoes before entering, 3) Dress modestly and appropriately, 4) Maintain silence and respect, 5) Avoid walking in front of someone praying, 6) Greet others with "Assalamu alaikum", 7) Follow the mosque\'s specific rules and customs.',
+        'createdAt': '2024-07-11T04:30:00.000Z',
+        'language': 'english',
+        'upvotesCount': '32',
+      },
       'tags': ['etiquette', 'mosque'],
       'category': 'Etiquette',
       '_id': 'dbid-203',
@@ -112,9 +158,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'answers': 32,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Dr. Fatima Al-Zahra',
-      'excerpt':
-          'When visiting a mosque, there are several important etiquettes to observe...',
       'isFavorited': true,
     },
     {
@@ -122,11 +165,15 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'text':
           'How do I balance Islamic principles with modern workplace demands?',
       'isPublic': true,
-      'askedBy': {'id': 'user-5', 'displayName': 'Brother Ahmed'},
+      'askedBy': {
+        'id': 'user-5',
+        'displayName': 'Brother Ahmed',
+        'country': 'Palestine',
+      },
       'createdAt': '2024-07-10T08:00:00.000Z',
       'aiAnswer':
           'Balancing faith with work requires clear communication and seeking halal alternatives...',
-      'topAnswerId': '',
+      'topAnswer': null,
       'tags': ['daily life', 'workplace', 'Islam'],
       'category': 'Daily Life',
       '_id': 'dbid-204',
@@ -135,53 +182,76 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
-      'answeredBy': 'AI Assistant',
-      'excerpt':
-          'Balancing faith with work requires clear communication and seeking halal alternatives...',
       'isFavorited': false,
     },
   ];
 
-  final List<Map<String, dynamic>> _myQuestions = [
+  List<Map<String, dynamic>> _myQuestions = [
     {
       'questionId': '101',
       'text': 'Personal question about family relationships in Islam',
       'isPublic': false,
-      'askedBy': {'id': 'user-1', 'displayName': 'Test User'},
+      'askedBy': {
+        'id': 'user-1',
+        'displayName': 'Test User',
+        'country': 'United States',
+      },
       'createdAt': '2024-07-01T10:00:00.000Z',
       'aiAnswer':
-          'In Islam, family relationships are based on mutual respect, kindness, and fulfilling each other’s rights and responsibilities.',
-      'topAnswerId': 'answer-101',
+          'In Islam, family relationships are based on mutual respect, kindness, and fulfilling each other\'s rights and responsibilities.',
+      'topAnswer': {
+        'answerId': 'answer-101',
+        'questionId': '101',
+        'answeredBy': {
+          'userId': 'user-khadija-101',
+          'displayName': 'Sister Khadija Ibrahim',
+          'gender': 'Female',
+          'email': 'khadija.ibrahim@example.com',
+          'country': 'Morocco',
+          'role': 'scholar',
+          'language': 'Arabic',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'In Islam, family relationships are built on mutual respect, kindness, and fulfilling each other\'s rights and responsibilities. The Prophet Muhammad (PBUH) emphasized treating family members with compassion and understanding. Communication, patience, and forgiveness are key principles in maintaining healthy family bonds.',
+        'createdAt': '2024-07-01T11:00:00.000Z',
+        'language': 'english',
+        'upvotesCount': '5',
+      },
       'tags': ['family', 'relationships', 'Islam'],
       'category': 'Family & Marriage',
       '_id': 'dbid-101',
       '__v': 0,
-      // For UI compatibility
       'timeAgo': '3 days ago',
       'answers': 5,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Sister Khadija Ibrahim',
+      'isFavorited': false,
     },
     {
       'questionId': '102',
       'text': 'How to perform Tahajjud prayer correctly?',
       'isPublic': true,
-      'askedBy': {'id': 'user-1', 'displayName': 'Test User'},
+      'askedBy': {
+        'id': 'user-1',
+        'displayName': 'Test User',
+        'country': 'United States',
+      },
       'createdAt': '2024-06-25T08:30:00.000Z',
       'aiAnswer':
-          'Tahajjud prayer is performed after Isha and before Fajr, preferably in the last third of the night. It consists of at least two rak’ahs and can be prayed in sets of two.',
-      'topAnswerId': '',
+          'Tahajjud prayer is performed after Isha and before Fajr, preferably in the last third of the night. It consists of at least two rak\'ahs and can be prayed in sets of two.',
+      'topAnswer': null,
       'tags': ['tahajjud', 'prayer', 'worship'],
       'category': 'Worship',
       '_id': 'dbid-102',
       '__v': 0,
-      // For UI compatibility
       'timeAgo': '1 week ago',
       'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
-      'answeredBy': 'Sheikh Ahmad Ali',
+      'isFavorited': false,
     },
   ];
 
@@ -197,16 +267,34 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       },
       'createdAt': '2024-06-01T10:00:00.000Z',
       'aiAnswer': '',
-      'topAnswerId': 'answer-201',
+      'topAnswer': {
+        'answerId': 'answer-201',
+        'questionId': '201',
+        'answeredBy': {
+          'userId': 'user-omar-201',
+          'displayName': 'Dr. Omar Suleiman',
+          'gender': 'Male',
+          'email': 'omar.suleiman@example.com',
+          'country': 'United States',
+          'role': 'scholar',
+          'language': 'English',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'Tawakkul (trust in Allah) is a fundamental concept in Islam that means placing complete trust in Allah while taking the necessary means and actions. It involves doing your best in any situation, making dua (supplication), and then accepting whatever outcome Allah decrees. The Prophet Muhammad (PBUH) said: "If you were to rely upon Allah with the reliance He is due, He would provide for you just as He provides for the birds."',
+        'createdAt': '2024-06-01T11:00:00.000Z',
+        'language': 'english',
+        'upvotesCount': '89',
+      },
       'tags': ['tawakkul', 'trust', 'Allah'],
       'category': 'Spirituality',
       '_id': 'dbid-201',
-      '__v': 0,
       'timeAgo': '1 month ago',
       'answers': 89,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Dr. Omar Suleiman',
       'isFavorited': true,
     },
   ];
@@ -224,16 +312,35 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       },
       'createdAt': '2024-07-11T08:00:00.000Z',
       'aiAnswer': '',
-      'topAnswerId': 'answer-301',
+      'topAnswer': {
+        'answerId': 'answer-301',
+        'questionId': '301',
+        'answeredBy': {
+          'userId': 'user-sheikh-301',
+          'displayName': 'Sheikh Ahmad Ali',
+          'gender': 'Male',
+          'email': 'sheikh.ahmad@example.com',
+          'country': 'Egypt',
+          'role': 'scholar',
+          'language': 'Arabic',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'Wudu (ablution) is performed in a specific sequence: 1) Wash hands three times, 2) Rinse mouth and nose three times, 3) Wash face three times, 4) Wash arms up to elbows three times, 5) Wipe head once, 6) Wash feet up to ankles three times. Each step should be done thoroughly and with intention.',
+        'createdAt': '2024-07-11T08:30:00.000Z',
+        'language': 'english',
+        'upvotesCount': '3',
+      },
       'tags': ['wudu', 'prayer', 'worship'],
       'category': 'Worship',
       '_id': 'dbid-301',
-      '__v': 0,
       'timeAgo': '2 hours ago',
       'answers': 3,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Sheikh Ahmad Ali',
+      'isFavorited': false,
     },
     {
       'questionId': '302',
@@ -247,7 +354,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'createdAt': '2024-07-11T06:00:00.000Z',
       'aiAnswer':
           'Yes, you can pray while traveling. Islam provides accommodations for travelers including shortening prayers (Qasr) and combining certain prayers. The Quran mentions this in verse 4:101. However, it\'s recommended to seek guidance from a certified scholar for your specific travel circumstances.',
-      'topAnswerId': '',
+      'topAnswer': null,
       'tags': ['prayer', 'travel'],
       'category': 'Prayer',
       '_id': 'dbid-302',
@@ -256,7 +363,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'answers': 1,
       'responseType': 'ai',
       'isAnswered': false,
-      'answeredBy': 'AI Assistant',
+      'isFavorited': false,
     },
     {
       'questionId': '303',
@@ -269,7 +376,27 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       },
       'createdAt': '2024-07-11T04:00:00.000Z',
       'aiAnswer': '',
-      'topAnswerId': 'answer-303',
+      'topAnswer': {
+        'answerId': 'answer-303',
+        'questionId': '303',
+        'answeredBy': {
+          'userId': 'user-fatima-303',
+          'displayName': 'Sister Fatima Al-Zahra',
+          'gender': 'Female',
+          'email': 'fatima.alzahra@example.com',
+          'country': 'Saudi Arabia',
+          'role': 'scholar',
+          'language': 'Arabic',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'When visiting a mosque, observe these etiquettes: 1) Enter with your right foot, 2) Remove shoes before entering, 3) Dress modestly, 4) Maintain silence and respect, 5) Avoid walking in front of someone praying, 6) Greet others with "Assalamu alaikum", 7) Follow the mosque\'s specific rules.',
+        'createdAt': '2024-07-11T04:30:00.000Z',
+        'language': 'english',
+        'upvotesCount': '0',
+      },
       'tags': ['etiquette', 'mosque'],
       'category': 'Etiquette',
       '_id': 'dbid-303',
@@ -278,7 +405,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'answers': 0,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Dr. Fatima Al-Zahra',
+      'isFavorited': false,
     },
     {
       'questionId': '304',
@@ -291,7 +418,27 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       },
       'createdAt': '2024-07-11T03:00:00.000Z',
       'aiAnswer': '',
-      'topAnswerId': 'answer-304',
+      'topAnswer': {
+        'answerId': 'answer-304',
+        'questionId': '304',
+        'answeredBy': {
+          'userId': 'user-buale-304',
+          'displayName': 'Buale',
+          'gender': 'Male',
+          'email': 'buale@example.com',
+          'country': 'Somalia',
+          'role': 'scholar',
+          'language': 'Somali',
+          'savedQuestions': [],
+          'savedLessons': [],
+          'createdAt': {'\$date': '2024-01-01T00:00:00.000Z'},
+        },
+        'text':
+            'For personal family guidance, I recommend seeking advice from a local Islamic scholar or counselor who can provide specific guidance based on your situation. Islam emphasizes family harmony, communication, and mutual respect. Consider scheduling a private consultation for detailed advice.',
+        'createdAt': '2024-07-11T03:30:00.000Z',
+        'language': 'english',
+        'upvotesCount': '1',
+      },
       'tags': ['family', 'guidance'],
       'category': 'Family & Marriage',
       '_id': 'dbid-304',
@@ -300,7 +447,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'answers': 1,
       'responseType': 'human',
       'isAnswered': true,
-      'answeredBy': 'Anonymous',
+      'isFavorited': false,
     },
     {
       'questionId': '305',
@@ -314,16 +461,15 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'createdAt': '2024-07-10T08:00:00.000Z',
       'aiAnswer':
           'Balancing Islamic principles with workplace requirements can be challenging. The key is open communication with your employer about your religious needs, seeking halal alternatives when possible, and consulting with Islamic scholars for guidance on specific situations. Remember that Islam emphasizes both fulfilling your obligations and maintaining your faith.',
-      'topAnswerId': '',
+      'topAnswer': null,
       'tags': ['work', 'Islamic principles', 'conflict'],
       'category': 'Daily Life',
       '_id': 'dbid-305',
-      '__v': 0,
       'timeAgo': '1 day ago',
       'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
-      'answeredBy': 'AI Assistant',
+      'isFavorited': false,
     },
   ];
 
@@ -341,16 +487,31 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         curve: Curves.elasticOut,
       ),
     );
+    _failAnimationController = AnimationController(
+      duration: Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _failAnimation = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _failAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
     // Get userProvider after first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       userProvider = Provider.of<UserProvider>(context, listen: false);
       _getCommunityAndRecentQuestions();
+      _getMyQuestions();
       getFavoriteQuestions();
     });
     _tabController.addListener(() {
+      if (!mounted) return;
       if (_tabController.index == 0 && _tabController.indexIsChanging) {
         _getCommunityAndRecentQuestions();
         getFavoriteQuestions();
+      } else if (_tabController.index == 1 && _tabController.indexIsChanging) {
+        _getMyQuestions();
       }
     });
   }
@@ -360,6 +521,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     _questionController.dispose();
     _searchController.dispose();
     _successAnimationController.dispose();
+    _failAnimationController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -401,39 +563,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             print('Question submitted successfully');
             print(data);
 
-            // Add the new question to _myQuestions
-            final newQuestion = data['question'];
-            setState(() {
-              _myQuestions.insert(0, {
-                'questionId':
-                    newQuestion['questionId'] ?? newQuestion['_id'] ?? '',
-                'text': newQuestion['text'] ?? '',
-                'isPublic': newQuestion['isPublic'] ?? true,
-                'askedBy':
-                    newQuestion['askedBy'] ?? {'id': '', 'displayName': ''},
-                'createdAt':
-                    newQuestion['createdAt'] ??
-                    DateTime.now().toIso8601String(),
-                'aiAnswer': newQuestion['aiAnswer'] ?? '',
-                'topAnswerId': newQuestion['topAnswerId'] ?? '',
-                'tags': newQuestion['tags'] ?? [],
-                'category': newQuestion['category'] ?? '',
-                '_id': newQuestion['_id'] ?? '',
-                '__v': newQuestion['__v'] ?? 0,
-                // UI compatibility fields
-                'timeAgo': 'Just now',
-                'answers': 0,
-                'responseType':
-                    (newQuestion['topAnswerId'] == null &&
-                            newQuestion['topAnswerId'].toString().isEmpty)
-                        ? 'ai'
-                        : 'human',
-                'isAnswered':
-                    (newQuestion['topAnswerId'] != null &&
-                        newQuestion['topAnswerId'].toString().isNotEmpty),
-                'answeredBy': newQuestion['askedBy']?['displayName'] ?? '',
-              });
-            });
+            // Refresh my questions to include the new question
+            if (mounted) {
+              _getMyQuestions();
+            }
 
             // Reset form
             _questionController.clear();
@@ -460,11 +593,13 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               _showFailMessage = true;
               _showSuccessMessage = false;
             });
+            _failAnimationController.forward();
             Future.delayed(Duration(seconds: 3), () {
               if (mounted) {
                 setState(() {
                   _showFailMessage = false;
                 });
+                _failAnimationController.reset();
               }
             });
           }
@@ -474,11 +609,13 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             _showFailMessage = true;
             _showSuccessMessage = false;
           });
+          _failAnimationController.forward();
           Future.delayed(Duration(seconds: 3), () {
             if (mounted) {
               setState(() {
                 _showFailMessage = false;
               });
+              _failAnimationController.reset();
             }
           });
         }
@@ -488,11 +625,13 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
           _showFailMessage = true;
           _showSuccessMessage = false;
         });
+        _failAnimationController.forward();
         Future.delayed(Duration(seconds: 3), () {
           if (mounted) {
             setState(() {
               _showFailMessage = false;
             });
+            _failAnimationController.reset();
           }
         });
       }
@@ -550,16 +689,37 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 
   // Generate AI answer from Gemini for submission
   Future<String> generateAIAnswerGemini(String questionText) async {
-    final prompt =
-        'Provide a concise, clear Islamic answer to the following question. Question: "$questionText"';
+    final prompt = '''
+Provide a concise, clear Islamic answer to the following question.
+Use proper spacing between all words and punctuation.
+Format the response in a clear, readable manner with correct grammar and spacing.
+Question: "$questionText"
+''';
+
     StringBuffer buffer = StringBuffer();
     final completer = Completer<String>();
+    String previousOutput = '';
+
     Gemini.instance
         .promptStream(parts: [Part.text(prompt)])
         .listen(
           (value) {
             if (value?.output != null) {
-              buffer.write(value!.output);
+              final current = value?.output?.trim() ?? '';
+              final lastChar =
+                  previousOutput.isNotEmpty
+                      ? previousOutput[previousOutput.length - 1]
+                      : '';
+
+              // Add a space if needed
+              if (lastChar.isNotEmpty &&
+                  !lastChar.contains(RegExp(r'[ \n\r\t.,;:!?(){}[\]]')) &&
+                  !current.startsWith(RegExp(r'[ \n\r\t.,;:!?(){}[\]]'))) {
+                buffer.write(' ');
+              }
+
+              buffer.write(current);
+              previousOutput = current;
             }
           },
           onDone: () {
@@ -570,6 +730,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             completer.complete('');
           },
         );
+
     return await completer.future;
   }
 
@@ -638,9 +799,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         },
       );
       final data = jsonDecode(response.body);
-      //Todo: make sure the country of askedby{country:} is returned
-      print("response of get all public questions: ${response.statusCode}");
-      print("questions field: ${data['question']}");
+      print("all questions : ${data['question']}");
       if (response.statusCode == 200) {
         if (data['status'] == true) {
           final questions = data['question'];
@@ -670,23 +829,16 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                 'createdAt':
                     question['createdAt'] ?? DateTime.now().toIso8601String(),
                 'aiAnswer': question['aiAnswer'] ?? '',
-                'topAnswerId': question['topAnswerId'] ?? '',
+                'topAnswer': question['topAnswer'] ?? null,
                 'tags': question['tags'] ?? [],
                 'category': question['category'] ?? '',
                 '_id': question['_id'] ?? '',
-                '__v': question['__v'] ?? 0,
                 // UI compatibility fields
                 'timeAgo': 'Just now',
                 'answers': 0,
                 'responseType':
-                    (question['topAnswerId'] == null ||
-                            question['topAnswerId'].toString().isEmpty)
-                        ? 'ai'
-                        : 'human',
-                'isAnswered':
-                    (question['topAnswerId'] != null &&
-                        question['topAnswerId'].toString().isNotEmpty),
-                'answeredBy': askedBy['displayName'],
+                    (question['topAnswer'] == null) ? 'ai' : 'human',
+                'isAnswered': (question['topAnswer'] != null),
               });
             }
             // Extract tags from all questions in _myQuestions
@@ -703,24 +855,29 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               userProvider.user!['country'] ?? '',
               userTags,
             );
-            setState(() {
-              _communityQuestions = updatedQuestions;
-              _recentQuestions = List<Map<String, dynamic>>.from(
-                updatedQuestions,
-              )..sort((a, b) {
-                final aDate =
-                    DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
-                final bDate =
-                    DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
-                return bDate.compareTo(aDate); // descending: newest first
+
+            if (mounted) {
+              setState(() {
+                _communityQuestions = updatedQuestions;
+                _recentQuestions = List<Map<String, dynamic>>.from(
+                  updatedQuestions,
+                )..sort((a, b) {
+                  final aDate =
+                      DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+                  final bDate =
+                      DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+                  return bDate.compareTo(aDate); // descending: newest first
+                });
               });
-            });
+            }
             print("recomended questions to user $updatedQuestions");
           } else {
-            setState(() {
-              _communityQuestions = [];
-              _recentQuestions = [];
-            });
+            if (mounted) {
+              setState(() {
+                _communityQuestions = [];
+                _recentQuestions = [];
+              });
+            }
             print('No questions found or questions is not a List.');
             return;
           }
@@ -729,11 +886,148 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
-      setState(() {
-        _communityQuestions = [];
-        _recentQuestions = [];
-      });
+      if (mounted) {
+        setState(() {
+          _communityQuestions = [];
+          _recentQuestions = [];
+        });
+      }
       print('Error loading community questions: $e');
+    }
+  }
+
+  // Get user's own questions
+  void _getMyQuestions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      var response = await http.get(
+        Uri.parse(myquestions),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      final data = jsonDecode(response.body);
+      print("my questions response: $data");
+
+      if (response.statusCode == 200) {
+        if (data['status'] == true) {
+          final questions = data['question'];
+          if (questions is List) {
+            List<Map<String, dynamic>> updatedMyQuestions = [];
+            for (var question in questions) {
+              // askedBy is a String or Map in backend, convert to Map for UI
+              final askedByRaw = question['askedBy'];
+              Map<String, dynamic> askedBy;
+              if (askedByRaw is String) {
+                askedBy = {'id': askedByRaw, 'displayName': askedByRaw};
+              } else if (askedByRaw is Map) {
+                askedBy = {
+                  'id': askedByRaw['id'] ?? '',
+                  'displayName': askedByRaw['displayName'] ?? '',
+                  'country': askedByRaw['country'] ?? '',
+                };
+              } else {
+                askedBy = {'id': '', 'displayName': '', 'country': ''};
+              }
+
+              updatedMyQuestions.add({
+                'questionId': question['questionId'] ?? question['_id'] ?? '',
+                'text': question['text'] ?? '',
+                'isPublic': question['isPublic'] ?? true,
+                'askedBy': askedBy,
+                'createdAt':
+                    question['createdAt'] ?? DateTime.now().toIso8601String(),
+                'aiAnswer': question['aiAnswer'] ?? '',
+                'topAnswer': question['topAnswer'] ?? null,
+                'tags': question['tags'] ?? [],
+                'category': question['category'] ?? '',
+                '_id': question['_id'] ?? '',
+                '__v': question['__v'] ?? 0,
+                // UI compatibility fields
+                'timeAgo': _calculateTimeAgo(question['createdAt']),
+                'answers': question['answers'] ?? 0,
+                'responseType':
+                    (question['topAnswer'] == null) ? 'ai' : 'human',
+                'isAnswered': (question['topAnswer'] != null),
+                'isFavorited':
+                    false, // User's own questions are not favorited by default
+              });
+            }
+
+            // Sort by creation date (newest first)
+            updatedMyQuestions.sort((a, b) {
+              final aDate =
+                  DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+              final bDate =
+                  DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+              return bDate.compareTo(aDate); // descending: newest first
+            });
+
+            if (mounted) {
+              setState(() {
+                _myQuestions = updatedMyQuestions;
+              });
+            }
+            print("my questions loaded: ${updatedMyQuestions.length}");
+          } else {
+            if (mounted) {
+              setState(() {
+                _myQuestions = [];
+              });
+            }
+            print('No my questions found or questions is not a List.');
+          }
+        } else {
+          print("my questions failed to load");
+          if (mounted) {
+            setState(() {
+              _myQuestions = [];
+            });
+          }
+        }
+      } else {
+        print(
+          "my questions request failed with status: ${response.statusCode}",
+        );
+        if (mounted) {
+          setState(() {
+            _myQuestions = [];
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _myQuestions = [];
+        });
+      }
+      print('Error loading my questions: $e');
+    }
+  }
+
+  // Helper function to calculate time ago
+  String _calculateTimeAgo(String? createdAt) {
+    if (createdAt == null) return 'Just now';
+
+    try {
+      final createdDate = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(createdDate);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Just now';
     }
   }
 
@@ -743,9 +1037,11 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     final savedIds = (userProvider!.user?['savedQuestions'] ?? []) as List?;
     if (savedIds == null || savedIds.isEmpty) {
       print("no saved questions for this user");
-      setState(() {
-        _favoriteQuestions = [];
-      });
+      if (mounted) {
+        setState(() {
+          _favoriteQuestions = [];
+        });
+      }
       return;
     }
     final Set<String> idSet = savedIds.map((e) => e.toString()).toSet();
@@ -801,7 +1097,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               'createdAt':
                   question['createdAt'] ?? DateTime.now().toIso8601String(),
               'aiAnswer': question['aiAnswer'] ?? '',
-              'topAnswerId': question['topAnswerId'] ?? '',
+              'topAnswer': question['topAnswer'] ?? null,
               'tags': question['tags'] ?? [],
               'category': question['category'] ?? '',
               '_id': question['_id'] ?? '',
@@ -810,14 +1106,13 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               'timeAgo': 'Just now',
               'answers': 0,
               'responseType':
-                  (question['topAnswerId'] == null ||
-                          question['topAnswerId'].toString().isEmpty)
+                  (question['topAnswer'] == null ||
+                          question['topAnswer'].toString().isEmpty)
                       ? 'ai'
                       : 'human',
               'isAnswered':
-                  (question['topAnswerId'] != null &&
-                      question['topAnswerId'].toString().isNotEmpty),
-              'answeredBy': askedBy['displayName'],
+                  (question['topAnswer'] != null &&
+                      question['topAnswer'].toString().isNotEmpty),
             });
           }
         }
@@ -825,9 +1120,11 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         print('Error fetching favorite question $id: $e');
       }
     }
-    setState(() {
-      _favoriteQuestions = favorites;
-    });
+    if (mounted) {
+      setState(() {
+        _favoriteQuestions = favorites;
+      });
+    }
   }
 
   @override
@@ -960,27 +1257,41 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                 },
               ),
             if (_showFailMessage)
-              Container(
-                margin: EdgeInsets.only(bottom: 16),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFE6E6),
-                  border: Border.all(color: Color(0xFFD32F2F)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error, color: Color(0xFFD32F2F), size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Failed to submit question. Please try again.',
-                      style: TextStyle(
-                        color: Color(0xFFD32F2F),
-                        fontWeight: FontWeight.w500,
+              AnimatedBuilder(
+                animation: _failAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _failAnimation.value,
+                    child: Container(
+                      margin: EdgeInsets.only(bottom: 16),
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFFE6E6),
+                        border: Border.all(color: Color(0xFFD32F2F)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.error, color: Color(0xFFD32F2F), size: 20),
+                          SizedBox(width: 8),
+                          // Use Flexible to allow text to wrap and avoid overflow
+                          Flexible(
+                            child: Text(
+                              'Failed to submit question. Please try again.',
+                              style: TextStyle(
+                                color: Color(0xFFD32F2F),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
 
             Form(
@@ -1304,10 +1615,11 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
               children: [
                 Icon(Icons.question_answer, color: Color(0xFF104C34), size: 20),
-                SizedBox(width: 8),
                 Text(
                   'Recent Community Questions',
                   style: TextStyle(
@@ -1315,6 +1627,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF104C34),
                   ),
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
                 ),
               ],
             ),
@@ -1391,7 +1705,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                               SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  'Community',
+                                  'Recommended',
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 13),
                                 ),
@@ -1484,7 +1798,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 
               // Tab Content
               Container(
-                height: MediaQuery.of(context).size.height * 0.6,
+                height: MediaQuery.of(context).size.height * 0.8,
                 child: TabBarView(
                   controller: _tabController,
                   children: [
@@ -1544,16 +1858,18 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
                         child: Text(
-                          'No community questions yet',
+                          _searchQuery.isEmpty
+                              ? 'No community questions yet'
+                              : 'No questions found matching "${_searchQuery}"',
                           style: TextStyle(fontSize: 18, color: Colors.grey),
                           textAlign: TextAlign.center,
                         ),
                       ),
                     )
                     : ListView.builder(
-                      itemCount: _communityQuestions.length,
+                      itemCount: filteredQuestions.length,
                       itemBuilder: (context, index) {
-                        final question = _communityQuestions[index];
+                        final question = filteredQuestions[index];
                         return QuestionCard(question: question);
                       },
                     ),
