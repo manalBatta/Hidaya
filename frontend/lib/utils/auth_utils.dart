@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/UserProvider.dart';
@@ -60,9 +62,6 @@ class AuthUtils {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      print(
-        'AuthUtils.getValidToken: Token found: ${token != null && token.isNotEmpty}',
-      );
       if (token != null) {
         print('AuthUtils.getValidToken: Token length: ${token.length}');
         print(
