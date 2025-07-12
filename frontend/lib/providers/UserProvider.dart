@@ -19,7 +19,7 @@ class UserProvider with ChangeNotifier {
     await _saveUserToPrefs(userData);
     print("User saved to prefs");
   }
-
+ 
   // Clear user on logout
   Future<void> logout() async {
     _user = null;
