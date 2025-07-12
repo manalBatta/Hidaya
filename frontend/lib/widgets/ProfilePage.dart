@@ -1790,10 +1790,15 @@ class _ProfilePageState extends State {
   }
 
   Future<void> updateProfile(Map<String, dynamic> updatedData) async {
+    final token = await AuthUtils.getValidToken(context);
+    if (token == null) {
+      // User was logged out due to expired token
+      return;
+    }
+
     var headers = {
       'Content-Type': 'application/json',
-      'Authorization':
-          'Bearer ${await SharedPreferences.getInstance().then((value) => value.getString('token'))}',
+      'Authorization': 'Bearer $token',
     };
     var request = http.Request('PUT', Uri.parse(profile));
 
