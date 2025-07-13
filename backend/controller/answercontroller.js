@@ -1,5 +1,5 @@
 const AnswerServices = require('../services/answersservices');
-
+const AnswerModel=require('../models/Answers');
 exports.voteonanswer = async(req , res , next ) => {
   const { answerId } = req.body;
    const userId = req.userId;
@@ -11,6 +11,32 @@ exports.voteonanswer = async(req , res , next ) => {
     if (!updatedAnswer) {
       return res.status(404).json({ error: 'Answer not found' });
     }
+
+//recalculate the top answer for each question (the answer with maximum number of votes to the same answer make it to the top answer)
+const answer = await AnswerModel.findOne({ answerId }).lean();
+    if (!answer) {
+      return res.status(404).json({ error: 'Answer not found after update' });
+    }
+
+    const questionId = answer.questionId;
+// Find the top-voted answer for this question
+    const topAnswer = await AnswerModel.findOne({ questionId })
+      .sort({ upvotesCount: -1 })
+      .select('answerId')
+      .lean();
+       if (topAnswer) {
+      // Update the question with the new topAnswerId
+      await QuestionModel.updateOne(
+        { questionId },
+        { $set: { topAnswerId: topAnswer.answerId } }
+      );
+    }
+  res.json({
+      message: 'Upvote successful and top answer recalculated',
+      updatedAnswer: updatedAnswer.upvotesCount
+    });
+
+
   res.json({
       message: 'Upvote successful',
       updatedAnswer
@@ -22,6 +48,42 @@ console.error(err);
   }
    };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
 exports.submitanswerbyvolunteer = async(req , res , next ) => {
     try{
     const { questionId, text, language } = req.body;
