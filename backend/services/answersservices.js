@@ -1,6 +1,8 @@
 const AnswerModel = require("../models/Answers");
 const VoteModel = require("../models/Votes");
 const QuestionModel=require("../models/Questions");
+const UserModel = require("../models/User");
+
 const { v4: uuidv4 } = require('uuid');
 
 class AnswerServices {
@@ -75,8 +77,6 @@ static async UpVoteOnAnswer(answerId, userId) {
   }
 }
 
-
-
  static async SubmitAnswer (data){
  console.log("Answer to submit:", data);
 
@@ -98,6 +98,71 @@ static async UpVoteOnAnswer(answerId, userId) {
       throw err;
     }
 }
+
+static async GetAnswersOfVolunteer(userId) {
+  try {
+    if (!userId) {
+      throw new Error('Missing userId');
+    }
+
+    // Get all answers by this user
+    const answers = await AnswerModel.find({ answeredBy: userId }).lean();
+    if (!answers.length) return [];
+
+    // Get full user info
+    const user = await UserModel.findOne({ userId }).lean();
+    if (!user) throw new Error('User not found');
+
+    const fullUser = {
+      id: user.userId,
+      displayName: user.displayName,
+      country: user.country,
+      gender: user.gender,
+      email: user.email,
+      language: user.language,
+      role: user.role,
+      savedQuestions: user.savedQuestions,
+      savedLessons: user.savedLessons,
+      createdAt: user.createdAt,
+    };
+
+    // Extract unique questionIds
+    const questionIds = answers.map(a => a.questionId);
+    const questions = await QuestionModel.find({ questionId: { $in: questionIds } }).lean();
+
+    // Create a lookup map for questions
+    const questionMap = {};
+    for (const q of questions) {
+      questionMap[q.questionId] = q;
+    }
+
+    // Return enriched answers with full user + question info
+    const enrichedAnswers = answers.map(({ questionId, ...answer }) => ({
+      ...answer,
+      answeredBy: fullUser,
+      question: questionMap[questionId] || null,
+    }));
+
+    return enrichedAnswers;
+
+  } catch (err) {
+    console.error('Error in GetAnswersOfVolunteer:', err);
+    throw new Error('Failed to get answers');
+  }
+}
+
+static async GetTheUpvotedAnswerOfVol(questionId, userId) {
+  try {
+    const vote = await VoteModel.findOne({ votedBy: userId, questionId }).lean();
+    if (!vote) return null;
+
+    return vote.answerId;
+  } catch (err) {
+    console.error('Error in GetTheUpvotedAnswerOfVol:', err);
+    throw new Error('Failed to get upvoted answer');
+  }
+}
+
 
 
 

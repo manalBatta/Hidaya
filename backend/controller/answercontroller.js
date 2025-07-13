@@ -91,8 +91,6 @@ exports.voteonanswer = async (req, res, next) => {
 };
 
 
-
-   
 exports.submitanswerbyvolunteer = async(req , res , next ) => {
     try{
     const { questionId, text, language } = req.body;
@@ -126,9 +124,53 @@ catch (err) {
 
   } ;
 
+exports.getanswersofvolunteer = async(req , res , next ) => {
+  try{
+const userId = req.userId;
+if (!userId) {
+  return res.status(401).json({ status: false, error: "Unauthorized. userId not found." });
+}
+  console.log("userid is:",userId);
+
+const AnswersofVolunteer=await AnswerServices.GetAnswersOfVolunteer(userId);
+ res.status(200).json({
+      status: true,
+      success: "Getting user answers successfully",
+      answers: AnswersofVolunteer
+    });}
+    catch(err){
+      console.error("Error fetching user answers:", err);
+    next(err); 
+  }
+};
+
+exports.getanswerupvotedbyvolunteer = async(req , res , next) => {
+  try{
+const {questionId}=req.body ;
+const userId=req.userId;
+if (!questionId || !userId) {
+      return res.status(400).json({ success: false, message: 'questionId and userId are required' });
+    }
+    console.log("a",questionId);
+        console.log("b",userId);
+
+    const result=await AnswerServices.GetTheUpvotedAnswerOfVol(questionId,userId);
+  return res.status(200).json({
+      success: true,
+      message: result ? 'Upvoted answer found' : 'No upvoted answer found',
+      answerId: result || null
+    });
 
 
+  }
+    
+    catch(err){
+          console.error('Error in getUpvotedAnswer:', err);
+                return res.status(500).json({ success: false, message: 'Internal server error' });
 
+
+    }
+};
 
 
 
