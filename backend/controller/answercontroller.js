@@ -1,85 +1,94 @@
 const AnswerServices = require('../services/answersservices');
 const AnswerModel=require('../models/Answers');
-exports.voteonanswer = async(req , res , next ) => {
-  const { answerId } = req.body;
-   const userId = req.userId;
-  console.log('Received answerId:', req.body.answerId);
+const QuestionModel=require('../models/Questions');
+const UserModel=require('../models/User');
 
-   try{
-    const updatedAnswer = await AnswerServices.UpVoteOnAnswer(answerId,userId);
-     
+exports.voteonanswer = async (req, res, next) => {
+  const { answerId } = req.body;
+  const userId = req.userId;
+
+  try {
+    // Perform vote logic (handle switching/removing/voting inside service)
+    const updatedAnswer = await AnswerServices.UpVoteOnAnswer(answerId, userId);
     if (!updatedAnswer) {
       return res.status(404).json({ error: 'Answer not found' });
     }
 
-//recalculate the top answer for each question (the answer with maximum number of votes to the same answer make it to the top answer)
-const answer = await AnswerModel.findOne({ answerId }).lean();
-    if (!answer) {
-      return res.status(404).json({ error: 'Answer not found after update' });
+    // Get full question data
+    const question = await QuestionModel.findOne({ questionId: updatedAnswer.questionId }).lean();
+    if (!question) {
+      return res.status(404).json({ error: 'Question not found' });
     }
 
-    const questionId = answer.questionId;
-// Find the top-voted answer for this question
-    const topAnswer = await AnswerModel.findOne({ questionId })
-      .sort({ upvotesCount: -1 })
-      .select('answerId')
-      .lean();
-       if (topAnswer) {
-      // Update the question with the new topAnswerId
-      await QuestionModel.updateOne(
-        { questionId },
-        { $set: { topAnswerId: topAnswer.answerId } }
-      );
+    // Attach full user info to the updated answer
+    const answerUser = await UserModel.findOne(
+      { userId: updatedAnswer.answeredBy },
+      {
+        userId: 1,
+        displayName: 1,
+        country: 1,
+        gender: 1,
+        email: 1,
+        language: 1,
+        role: 1,
+        savedQuestions: 1,
+        savedLessons: 1,
+        createdAt: 1
+      }
+    ).lean();
+
+    const fullUpdatedAnswer = {
+      ...updatedAnswer,
+      answeredBy: answerUser ? {
+        id: answerUser.userId,
+        displayName: answerUser.displayName,
+        country: answerUser.country,
+        gender: answerUser.gender,
+        email: answerUser.email,
+        language: answerUser.language,
+        role: answerUser.role,
+        savedQuestions: answerUser.savedQuestions,
+        savedLessons: answerUser.savedLessons,
+        createdAt: answerUser.createdAt
+      } : null
+    };
+
+    // Get top answer if one exists
+    let topAnswer = null;
+    if (question.topAnswerId) {
+      const rawTopAnswer = await AnswerModel.findOne({ answerId: question.topAnswerId }).lean();
+      if (rawTopAnswer) {
+        const topUser = await UserModel.findOne({ userId: rawTopAnswer.answeredBy }).lean();
+        topAnswer = {
+          ...rawTopAnswer,
+          answeredBy: topUser ? {
+            id: topUser.userId,
+            displayName: topUser.displayName,
+            country: topUser.country,
+            gender: topUser.gender,
+            email: topUser.email,
+            language: topUser.language,
+            role: topUser.role,
+            savedQuestions: topUser.savedQuestions,
+            savedLessons: topUser.savedLessons,
+            createdAt: topUser.createdAt
+          } : null
+        };
+      }
     }
-  res.json({
-      message: 'Upvote successful and top answer recalculated',
-      updatedAnswer: updatedAnswer.upvotesCount
-    });
 
-
-  res.json({
+    res.json({
       message: 'Upvote successful',
-      updatedAnswer
+      updatedAnswer: fullUpdatedAnswer,
+      question,
+      topAnswer
     });
-   }
-   catch(err){
-console.error(err);
+
+  } catch (err) {
+    console.error('voteonanswer error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
-   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+};
 
 
 
