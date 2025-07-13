@@ -7,6 +7,8 @@ class UserProvider with ChangeNotifier {
 
   Map<String, dynamic>? get user => _user;
 
+  Map<String, dynamic>? get userId => _user?['userId'];
+
   bool get isLoggedIn => _user != null;
 
   // Set user after login or profile update

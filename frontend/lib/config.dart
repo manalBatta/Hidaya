@@ -10,3 +10,4 @@ final saveQuestionUrl = url + "saveQuestion";
 final answers = url + "api/answer"; //to get a specific answer by id
 final submitAnswerUrl = url + "answers"; //to submit a new answer
 final myquestions = url + "myquestion";
+final vote =url+'/answers/vote';
