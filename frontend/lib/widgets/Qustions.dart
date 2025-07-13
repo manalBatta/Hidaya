@@ -15,6 +15,7 @@ import 'dart:async'; // Added for Completer
 import 'package:provider/provider.dart';
 import '../providers/UserProvider.dart';
 import '../utils/auth_utils.dart';
+import 'MyAnswerCard.dart';
 
 class Questions extends StatefulWidget {
   @override
@@ -462,6 +463,60 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     },
   ];
 
+  List<Map<String, dynamic>> _myAnswers = [
+    {
+      'question': {
+        'questionId': '501',
+        'text': 'What is Zakat and who is eligible to receive it?',
+        'category': 'Islamic Finance',
+        'askedBy': {'displayName': 'Brother Ali'},
+        'createdAt': '2024-07-09T10:00:00.000Z',
+      },
+      'topAnswer': {
+        'answerId': 'answer-501',
+        'text':
+            'Zakat is a form of almsgiving and one of the Five Pillars of Islam. Eligible recipients include the poor, needy, and others as specified in the Quran.',
+        'answeredBy': {'displayName': 'Sheikh Omar'},
+        'createdAt': '2024-07-09T12:00:00.000Z',
+        'upvotesCount': 10,
+      },
+      'volunteerAnswer': {
+        'answerId': 'answer-502',
+        'text':
+            'Zakat is obligatory charity. It should be given to the poor and those in need as described in Surah At-Tawbah.',
+        'answeredBy': {'displayName': 'You'},
+        'createdAt': '2024-07-09T13:00:00.000Z',
+        'upvotesCount': 2,
+      },
+    },
+    {
+      'question': {
+        'questionId': '502',
+        'text': 'How many times a day do Muslims pray?',
+        'category': 'Worship',
+        'askedBy': {'displayName': 'Sister Maryam'},
+        'createdAt': '2024-07-08T09:00:00.000Z',
+      },
+      'topAnswer': {
+        'answerId': 'answer-503',
+        'text':
+            'Muslims pray five times a day: Fajr, Dhuhr, Asr, Maghrib, and Isha.',
+        'answeredBy': {'displayName': 'Imam Bilal'},
+        'createdAt': '2024-07-08T10:00:00.000Z',
+        'upvotesCount': 15,
+      },
+      'volunteerAnswer': {
+        'answerId': 'answer-504',
+        'text':
+            'There are five daily prayers in Islam, each at specific times throughout the day and night.',
+        'answeredBy': {'displayName': 'You'},
+        'createdAt': '2024-07-08T11:00:00.000Z',
+        'upvotesCount': 3,
+      },
+    },
+  ];
+  bool _myAnswersLoaded = true;
+
   bool _myQuestionsLoaded = false;
   bool _communityQuestionsLoaded = false;
 
@@ -510,7 +565,12 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         _getCommunityAndRecentQuestions();
         getFavoriteQuestions();
       } else if (_tabController.index == 1 && _tabController.indexIsChanging) {
-        _getMyQuestions();
+        if (userProvider?.user?['role'] == 'certified_volunteer' ||
+            userProvider?.user?['role'] == 'volunteer_pending') {
+          _getMyAnswers();
+        } else {
+          _getMyQuestions();
+        }
       } else if (_tabController.index == 2 && _tabController.indexIsChanging) {
         getFavoriteQuestions();
       }
@@ -1040,6 +1100,50 @@ Question: "$questionText"
         getFavoriteQuestions();
       }
       print('Error loading my questions: $e');
+    }
+  }
+
+  void _getMyAnswers() async {
+    try {
+      return;
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        if (mounted) {
+          setState(() {
+            _myAnswers = [];
+            _myAnswersLoaded = true;
+          });
+        }
+        return;
+      }
+
+      var response = await http.get(
+        Uri.parse(myAnswersUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['status'] == true) {
+        final answers = data['answers'];
+        if (answers is List) {
+          setState(() {
+            _myAnswers = List<Map<String, dynamic>>.from(answers);
+            _myAnswersLoaded = true;
+          });
+        }
+      } else {
+        setState(() {
+          _myAnswers = [];
+          _myAnswersLoaded = true;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _myAnswers = [];
+        _myAnswersLoaded = true;
+      });
     }
   }
 
@@ -1653,6 +1757,8 @@ Question: "$questionText"
   }
 
   Widget _buildTabbedInterface() {
+    final userRole = userProvider?.user?['role'] ?? 'user';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1667,12 +1773,12 @@ Question: "$questionText"
         SizedBox(height: 20),
 
         Card(
-          color: Colors.white.withOpacity(0.8),
-          shape: RoundedRectangleBorder(
+          color: Colors.transparent,
+          /* shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: Color(0xFFBFE3D5)),
-          ),
-          elevation: 8,
+          ), */
+          elevation: 0,
           child: Column(
             children: [
               // Tab Bar
@@ -1745,7 +1851,10 @@ Question: "$questionText"
                               SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  'My Questions',
+                                  (userRole == 'certified_volunteer' ||
+                                          userRole == 'volunteer_pending')
+                                      ? 'My Answers'
+                                      : 'My Questions',
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 13),
                                 ),
@@ -1812,7 +1921,10 @@ Question: "$questionText"
                   controller: _tabController,
                   children: [
                     _buildCommunityTab(),
-                    _buildMyQuestionsTab(),
+                    (userRole == 'certified_volunteer' ||
+                            userRole == 'volunteer_pending')
+                        ? _buildMyAnswersTab()
+                        : _buildMyQuestionsTab(),
                     _buildFavoritesTab(),
                   ],
                 ),
@@ -1903,6 +2015,25 @@ Question: "$questionText"
                   final question = _myQuestions[index];
                   // No need to generate AI answer here; it is included in the backend response
                   return QuestionCard(question: question);
+                },
+              ),
+    );
+  }
+
+  Widget _buildMyAnswersTab() {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child:
+          _myAnswers.isEmpty
+              ? _buildEmptyState(
+                'No answers submitted yet',
+                'Start by answering questions in the community',
+              )
+              : ListView.builder(
+                itemCount: _myAnswers.length,
+                itemBuilder: (context, index) {
+                  final item = _myAnswers[index];
+                  return MyAnswerCard(item: item);
                 },
               ),
     );
