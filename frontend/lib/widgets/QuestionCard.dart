@@ -71,17 +71,6 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
-  double _getResponsiveSpacing(double baseSpacing) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= 1200) {
-      return baseSpacing * 1.2; // Large screens (desktop)
-    } else if (screenWidth >= 768) {
-      return baseSpacing * 1.1; // Medium screens (tablet)
-    } else {
-      return baseSpacing; // Small screens (mobile)
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -257,10 +246,10 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
+  //Todo: Done deep checking do tasks bellow
   // Function to handle upvoting an answer
   Future<void> _handleUpvote(String answerId) async {
     //Todo: make sure volunteer can upvote one answer only
-    if (isUpvoting || upvotedAnswerId == answerId) return;
     setState(() {
       isUpvoting = true;
     });
@@ -272,17 +261,22 @@ class _QuestionCardState extends State<QuestionCard> {
         });
         return;
       }
-      final apiUrl = Uri.parse('$answers/$answerId/upvote');
+      final apiUrl = Uri.parse(vote);
       final response = await http.post(
         apiUrl,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
+        body: {"answerId": answerId},
       );
       if (response.statusCode == 200) {
-        //Todo: we should save the upvote and who upvoted becaue the user can upvote one answer only or we consider that volunteer can upvote the same answer many times and can upbote many answers on the same question
+        //Todo: should show the answer that the volunteer upvoted on this question if applicable
         setState(() {
+          isUpvoting = false;
+
+          //Todo : initialize the upvoted AnswerId when ahow all answers true
+          //for UI fast update
           upvotedAnswerId = answerId;
           // Optionally update the upvotes count in allAnswers
           for (var ans in allAnswers) {
@@ -1120,30 +1114,38 @@ class _QuestionCardState extends State<QuestionCard> {
               Spacer(),
 
               // Upvote icon for certified volunteers
-              IconButton(
-                icon: Icon(
-                  Icons.thumb_up,
-                  color: isUpvoted ? Colors.green : AppColors.askPageSubtitle,
-                ),
-                tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
-                onPressed:
-                    isCertified
-                        ? ((upvotedAnswerId == null || isUpvoted)
-                            ? () => _handleUpvote(answerId)
-                            : null)
-                        : () {},
-              ),
-              Row(
-                children: [
-                  Text(
-                    upvotesCount,
-                    style: TextStyle(
-                      fontSize: _getResponsiveFontSize(12),
-                      color: AppColors.askPageSubtitle,
+              if (answeredBy['id']?.toString() ==
+                  Provider.of<UserProvider>(
+                    context,
+                    listen: false,
+                  ).userId?.toString())
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.thumb_up,
+                        color:
+                            isUpvoted
+                                ? Colors.green
+                                : AppColors.askPageSubtitle,
+                      ),
+                      tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
+                      onPressed:
+                          isCertified
+                              ? ((upvotedAnswerId == null || isUpvoted)
+                                  ? () => _handleUpvote(answerId)
+                                  : null)
+                              : () {},
                     ),
-                  ),
-                ],
-              ),
+                    Text(
+                      upvotesCount,
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(12),
+                        color: AppColors.askPageSubtitle,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
           SizedBox(height: 8),
