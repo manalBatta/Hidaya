@@ -180,6 +180,31 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
+  // Add this function for confirmation dialog
+  Future<bool> _showChangeVoteDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text('Change your vote?'),
+                content: Text(
+                  'You have already upvoted another answer. Are you sure you want to change your vote to this answer?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text('Yes, change vote'),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+  }
+
   // Function to fetch all answers for the question
   Future<void> _fetchAllAnswers() async {
     setState(() {
@@ -201,16 +226,12 @@ class _QuestionCardState extends State<QuestionCard> {
         apiUrl,
         headers: {'Authorization': 'Bearer $token'},
       );
-      //Todo: check if the answeredBy have displayName as expected
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("Questions and all it's anwers is:$data");
-        //return;
         setState(() {
           final answers = List<Map<String, dynamic>>.from(
             data['answers'] ?? [],
           );
-          final topAnswer = data['topAnswer'];
 
           // Sort answers by upvotesCount descending
           answers.sort((a, b) {
@@ -221,14 +242,8 @@ class _QuestionCardState extends State<QuestionCard> {
             return bUpvotes.compareTo(aUpvotes);
           });
 
-          if (topAnswer != null &&
-              answers.isNotEmpty &&
-              answers.first['answerId']?.toString() !=
-                  topAnswer['answerId']?.toString()) {
-            allAnswers = [Map<String, dynamic>.from(topAnswer), ...answers];
-          } else {
-            allAnswers = answers;
-          }
+          allAnswers = answers;
+
           isLoadingAnswers = false;
         });
       } else {
@@ -238,7 +253,6 @@ class _QuestionCardState extends State<QuestionCard> {
         });
       }
     } catch (e) {
-      // Show mock data if there's an error
       setState(() {
         allAnswers = [];
         isLoadingAnswers = false;
@@ -246,10 +260,43 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
+  // Function to fetch the upvoted answer ID for the current user for this question
+  Future<void> fetchUpvotedAnswerId() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        upvotedAnswerId = null;
+        return;
+      }
+      final url = Uri.parse(upvotedAnswerUrl);
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'questionId': widget.question['questionId']}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          upvotedAnswerId = data['answerId']?.toString();
+        });
+      } else {
+        setState(() {
+          upvotedAnswerId = null;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        upvotedAnswerId = null;
+      });
+    }
+  }
+
   //Todo: Done deep checking do tasks bellow
   // Function to handle upvoting an answer
   Future<void> _handleUpvote(String answerId) async {
-    //Todo: make sure volunteer can upvote one answer only
     setState(() {
       isUpvoting = true;
     });
@@ -261,30 +308,47 @@ class _QuestionCardState extends State<QuestionCard> {
         });
         return;
       }
+      // If user already upvoted a different answer, show confirmation dialog
+      if (upvotedAnswerId != null && upvotedAnswerId != answerId) {
+        bool confirm = await _showChangeVoteDialog();
+        if (!confirm) {
+          setState(() {
+            isUpvoting = false;
+          });
+          return;
+        }
+      }
       final apiUrl = Uri.parse(vote);
-      final response = await http.post(
+      final response = await http.put(
         apiUrl,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: {"answerId": answerId},
+        body: jsonEncode({"answerId": answerId}),
       );
+      print('Upvote response body: ${response.body}');
       if (response.statusCode == 200) {
-        //Todo: should show the answer that the volunteer upvoted on this question if applicable
         setState(() {
           isUpvoting = false;
-
-          //Todo : initialize the upvoted AnswerId when ahow all answers true
-          //for UI fast update
+          // Remove previous upvote if any
+          if (upvotedAnswerId != null && upvotedAnswerId != answerId) {
+            for (var ans in allAnswers) {
+              if (ans['answerId'] == upvotedAnswerId) {
+                ans['upvotesCount'] = (ans['upvotesCount'] ?? 1) - 1;
+                if (ans['upvotesCount'] < 0) ans['upvotesCount'] = 0;
+              }
+            }
+          }
           upvotedAnswerId = answerId;
-          // Optionally update the upvotes count in allAnswers
+          // Update the upvotes count for the newly upvoted answer
           for (var ans in allAnswers) {
             if (ans['answerId'] == answerId) {
               ans['upvotesCount'] = (ans['upvotesCount'] ?? 0) + 1;
             }
           }
         });
+        await _fetchAllAnswers();
       } else {
         ScaffoldMessenger.of(
           context,
@@ -305,6 +369,7 @@ class _QuestionCardState extends State<QuestionCard> {
   // Function to handle submitting an answer
   Future<void> _handleSubmitAnswer() async {
     //Todo: make sure the submit request is linked correctly
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -562,7 +627,7 @@ class _QuestionCardState extends State<QuestionCard> {
                         ),
                       ],
 
-                      // Show "Answer Question" button for certified volunteers
+                      // Show "Answer Question" button for certified volunteers that has not answered yet
                       if (_isCertifiedVolunteer()) ...[
                         SizedBox(height: 16),
                         Center(
@@ -955,6 +1020,7 @@ class _QuestionCardState extends State<QuestionCard> {
     return Container(
       margin: EdgeInsets.only(top: 8),
       padding: EdgeInsets.all(16),
+
       decoration: BoxDecoration(
         color: AppColors.askPageBackground,
         border: Border.all(color: AppColors.askPageBorder),
@@ -1114,7 +1180,7 @@ class _QuestionCardState extends State<QuestionCard> {
               Spacer(),
 
               // Upvote icon for certified volunteers
-              if (answeredBy['id']?.toString() ==
+              if (answeredBy['id']?.toString() !=
                   Provider.of<UserProvider>(
                     context,
                     listen: false,
@@ -1132,9 +1198,14 @@ class _QuestionCardState extends State<QuestionCard> {
                       tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
                       onPressed:
                           isCertified
-                              ? ((upvotedAnswerId == null || isUpvoted)
-                                  ? () => _handleUpvote(answerId)
-                                  : null)
+                              ? () async {
+                                if (upvotedAnswerId != null &&
+                                    upvotedAnswerId != answerId) {
+                                  bool confirm = await _showChangeVoteDialog();
+                                  if (!confirm) return;
+                                }
+                                _handleUpvote(answerId);
+                              }
                               : () {},
                     ),
                     Text(
