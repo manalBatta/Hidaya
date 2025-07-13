@@ -47,7 +47,7 @@ class _ProfilePageState extends State {
   };
 
   // Controllers for edit form
-  final _editFormKey = GlobalKey<FormState>();
+  final _editFormKey = GlobalKey<FormState>(); //for validation....
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
   String? _gender;
