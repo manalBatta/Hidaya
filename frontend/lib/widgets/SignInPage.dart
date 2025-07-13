@@ -24,7 +24,6 @@ class _SignInPageState extends State<SignInPage> {
   String _accountType = 'user';
   bool _obscurePassword = true;
 
-  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
