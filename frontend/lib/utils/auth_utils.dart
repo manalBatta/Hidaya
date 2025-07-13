@@ -63,7 +63,6 @@ class AuthUtils {
       final token = prefs.getString('token');
 
       if (token != null) {
-        print('AuthUtils.getValidToken: Token length: ${token.length}');
         print(
           'AuthUtils.getValidToken: Token is expired: ${isTokenExpired(token)}',
         );

@@ -14,6 +14,7 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'dart:async'; // Added for Completer
 import 'package:provider/provider.dart';
 import '../providers/UserProvider.dart';
+import '../utils/auth_utils.dart';
 
 class Questions extends StatefulWidget {
   @override
@@ -90,7 +91,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'category': 'Worship',
       '_id': 'dbid-201',
       'timeAgo': '2 hours ago',
-      'answers': 24,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': false,
@@ -112,7 +112,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'category': 'Prayer',
       '_id': 'dbid-202',
       'timeAgo': '4 hours ago',
-      'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
       'isFavorited': false,
@@ -155,7 +154,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-203',
       '__v': 0,
       'timeAgo': '6 hours ago',
-      'answers': 32,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': true,
@@ -179,7 +177,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-204',
       '__v': 0,
       'timeAgo': '1 day ago',
-      'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
       'isFavorited': false,
@@ -225,7 +222,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-101',
       '__v': 0,
       'timeAgo': '3 days ago',
-      'answers': 5,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': false,
@@ -248,7 +244,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-102',
       '__v': 0,
       'timeAgo': '1 week ago',
-      'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
       'isFavorited': false,
@@ -292,7 +287,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'category': 'Spirituality',
       '_id': 'dbid-201',
       'timeAgo': '1 month ago',
-      'answers': 89,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': true,
@@ -337,7 +331,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'category': 'Worship',
       '_id': 'dbid-301',
       'timeAgo': '2 hours ago',
-      'answers': 3,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': false,
@@ -360,7 +353,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-302',
       '__v': 0,
       'timeAgo': '4 hours ago',
-      'answers': 1,
       'responseType': 'ai',
       'isAnswered': false,
       'isFavorited': false,
@@ -402,7 +394,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-303',
       '__v': 0,
       'timeAgo': '6 hours ago',
-      'answers': 0,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': false,
@@ -444,7 +435,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       '_id': 'dbid-304',
       '__v': 0,
       'timeAgo': '8 hours ago',
-      'answers': 1,
       'responseType': 'human',
       'isAnswered': true,
       'isFavorited': false,
@@ -466,12 +456,14 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       'category': 'Daily Life',
       '_id': 'dbid-305',
       'timeAgo': '1 day ago',
-      'answers': 0,
       'responseType': 'ai',
       'isAnswered': false,
       'isFavorited': false,
     },
   ];
+
+  bool _myQuestionsLoaded = false;
+  bool _communityQuestionsLoaded = false;
 
   @override
   void initState() {
@@ -504,6 +496,13 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       _getCommunityAndRecentQuestions();
       _getMyQuestions();
       getFavoriteQuestions();
+
+      // Listen to user provider changes to update favorites
+      userProvider?.addListener(() {
+        if (mounted && _communityQuestionsLoaded && _myQuestionsLoaded) {
+          getFavoriteQuestions();
+        }
+      });
     });
     _tabController.addListener(() {
       if (!mounted) return;
@@ -512,6 +511,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         getFavoriteQuestions();
       } else if (_tabController.index == 1 && _tabController.indexIsChanging) {
         _getMyQuestions();
+      } else if (_tabController.index == 2 && _tabController.indexIsChanging) {
+        getFavoriteQuestions();
       }
     });
   }
@@ -523,6 +524,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     _successAnimationController.dispose();
     _failAnimationController.dispose();
     _tabController.dispose();
+    // Remove listener to prevent memory leaks
+    userProvider?.removeListener(() {});
     super.dispose();
   }
 
@@ -546,7 +549,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
           "aiAnswer": aiAnswer,
         };
 
-        print("add question request body: $requestbody");
         var response = await http.post(
           Uri.parse(questions),
           headers: {
@@ -557,11 +559,9 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         );
         final data = jsonDecode(response.body);
 
-        print("response: ${response.statusCode}");
         if (response.statusCode == 201) {
           if (data['status'] == true) {
             print('Question submitted successfully');
-            print(data);
 
             // Refresh my questions to include the new question
             if (mounted) {
@@ -604,7 +604,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
             });
           }
         } else {
-          print(response.reasonPhrase);
           setState(() {
             _showFailMessage = true;
             _showSuccessMessage = false;
@@ -734,6 +733,8 @@ Question: "$questionText"
     return await completer.future;
   }
 
+  //Todo: show myAnswers tab for certifiedVolunteers
+  //Done deep checking
   List<Map<String, dynamic>> _getFilteredCommunityQuestions() {
     if (_searchQuery.isEmpty) {
       return _communityQuestions;
@@ -742,12 +743,21 @@ Question: "$questionText"
         .where(
           (q) =>
               q['text'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              q['category'].toLowerCase().contains(_searchQuery.toLowerCase()),
+              q['category'].toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              (q['tags'] != null &&
+                  (q['tags'] as List).any(
+                    (tag) => tag.toString().toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ),
+                  )),
         )
         .toList();
   }
 
-  // Helper: Sort community questions by tag similarity, freshness, location, answers
+  //Done deep checking
+  // Helper: Sort community questions by tag similarity, freshness, location
   List<Map<String, dynamic>> sortCommunityQuestions(
     List<Map<String, dynamic>> questions,
     String userCountry,
@@ -775,21 +785,30 @@ Question: "$questionText"
       int locB = locationScore(b['askedBy']?['country']);
       int freshA = freshnessScore(a['createdAt'] ?? '');
       int freshB = freshnessScore(b['createdAt'] ?? '');
-      int ansA = a['answers'] ?? 0;
-      int ansB = b['answers'] ?? 0;
-      // Weighted sum (adjust weights as needed)
-      int scoreA = tagA * 100 + locA * 50 + freshA ~/ 1000000 + ansA;
-      int scoreB = tagB * 100 + locB * 50 + freshB ~/ 1000000 + ansB;
+      // Do not include answers in the comparison
+      int scoreA = tagA * 100 + locA * 50 + freshA ~/ 1000000;
+      int scoreB = tagB * 100 + locB * 50 + freshB ~/ 1000000;
       return scoreB.compareTo(scoreA);
     });
     return questions;
   }
 
+  //Done deep checking
   void _getCommunityAndRecentQuestions() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        // User was logged out due to expired token
+        if (mounted) {
+          setState(() {
+            _communityQuestions = [];
+            _recentQuestions = [];
+            _communityQuestionsLoaded = true;
+          });
+          _trySortCommunityQuestions();
+        }
+        return;
+      }
 
       var response = await http.get(
         Uri.parse(publicQuestions),
@@ -799,11 +818,9 @@ Question: "$questionText"
         },
       );
       final data = jsonDecode(response.body);
-      print("all questions : ${data['question']}");
       if (response.statusCode == 200) {
         if (data['status'] == true) {
           final questions = data['question'];
-          print("questions field: $questions");
           if (questions is List) {
             List<Map<String, dynamic>> updatedQuestions = [];
             for (var question in questions) {
@@ -834,28 +851,12 @@ Question: "$questionText"
                 'category': question['category'] ?? '',
                 '_id': question['_id'] ?? '',
                 // UI compatibility fields
-                'timeAgo': 'Just now',
-                'answers': 0,
+                'timeAgo': _calculateTimeAgo(question['createdAt']),
                 'responseType':
                     (question['topAnswer'] == null) ? 'ai' : 'human',
                 'isAnswered': (question['topAnswer'] != null),
               });
             }
-            // Extract tags from all questions in _myQuestions
-            final Set<String> userTagsSet = {};
-            for (final q in _myQuestions) {
-              final tags = q['tags'];
-              if (tags is List) {
-                userTagsSet.addAll(tags.map((e) => e.toString()));
-              }
-            }
-            List<String> userTags = userTagsSet.toList();
-            updatedQuestions = sortCommunityQuestions(
-              updatedQuestions,
-              userProvider.user!['country'] ?? '',
-              userTags,
-            );
-
             if (mounted) {
               setState(() {
                 _communityQuestions = updatedQuestions;
@@ -868,21 +869,36 @@ Question: "$questionText"
                       DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
                   return bDate.compareTo(aDate); // descending: newest first
                 });
+                _communityQuestionsLoaded = true;
               });
+              _trySortCommunityQuestions();
+              // Update favorites when community questions are loaded
+              getFavoriteQuestions();
             }
-            print("recomended questions to user $updatedQuestions");
           } else {
             if (mounted) {
               setState(() {
                 _communityQuestions = [];
                 _recentQuestions = [];
+                _communityQuestionsLoaded = true;
               });
+              _trySortCommunityQuestions();
+              getFavoriteQuestions();
             }
             print('No questions found or questions is not a List.');
             return;
           }
         } else {
           print("community qustions faild to load");
+          if (mounted) {
+            setState(() {
+              _communityQuestions = [];
+              _recentQuestions = [];
+              _communityQuestionsLoaded = true;
+            });
+            _trySortCommunityQuestions();
+            getFavoriteQuestions();
+          }
         }
       }
     } catch (e) {
@@ -890,17 +906,29 @@ Question: "$questionText"
         setState(() {
           _communityQuestions = [];
           _recentQuestions = [];
+          _communityQuestionsLoaded = true;
         });
+        _trySortCommunityQuestions();
+        getFavoriteQuestions();
       }
       print('Error loading community questions: $e');
     }
   }
 
-  // Get user's own questions
+  //Done deep checking
   void _getMyQuestions() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        // User was logged out due to expired token
+        if (mounted) {
+          setState(() {
+            _myQuestions = [];
+            _myQuestionsLoaded = true;
+          });
+        }
+        return;
+      }
 
       var response = await http.get(
         Uri.parse(myquestions),
@@ -910,8 +938,6 @@ Question: "$questionText"
         },
       );
       final data = jsonDecode(response.body);
-      print("my questions response: $data");
-
       if (response.statusCode == 200) {
         if (data['status'] == true) {
           final questions = data['question'];
@@ -945,15 +971,11 @@ Question: "$questionText"
                 'tags': question['tags'] ?? [],
                 'category': question['category'] ?? '',
                 '_id': question['_id'] ?? '',
-                '__v': question['__v'] ?? 0,
                 // UI compatibility fields
                 'timeAgo': _calculateTimeAgo(question['createdAt']),
-                'answers': question['answers'] ?? 0,
                 'responseType':
                     (question['topAnswer'] == null) ? 'ai' : 'human',
                 'isAnswered': (question['topAnswer'] != null),
-                'isFavorited':
-                    false, // User's own questions are not favorited by default
               });
             }
 
@@ -969,14 +991,20 @@ Question: "$questionText"
             if (mounted) {
               setState(() {
                 _myQuestions = updatedMyQuestions;
+                _myQuestionsLoaded = true;
               });
+              _trySortCommunityQuestions();
+              // Update favorites when my questions are loaded
+              getFavoriteQuestions();
             }
-            print("my questions loaded: ${updatedMyQuestions.length}");
           } else {
             if (mounted) {
               setState(() {
                 _myQuestions = [];
+                _myQuestionsLoaded = true;
               });
+              _trySortCommunityQuestions();
+              getFavoriteQuestions();
             }
             print('No my questions found or questions is not a List.');
           }
@@ -985,26 +1013,56 @@ Question: "$questionText"
           if (mounted) {
             setState(() {
               _myQuestions = [];
+              _myQuestionsLoaded = true;
             });
+            _trySortCommunityQuestions();
+            getFavoriteQuestions();
           }
         }
       } else {
-        print(
-          "my questions request failed with status: ${response.statusCode}",
-        );
+        print("my questions request failed with status:  [38;5;9m");
         if (mounted) {
           setState(() {
             _myQuestions = [];
+            _myQuestionsLoaded = true;
           });
+          _trySortCommunityQuestions();
+          getFavoriteQuestions();
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _myQuestions = [];
+          _myQuestionsLoaded = true;
         });
+        _trySortCommunityQuestions();
+        getFavoriteQuestions();
       }
       print('Error loading my questions: $e');
+    }
+  }
+
+  //Done deep checking
+  void _trySortCommunityQuestions() {
+    if (_myQuestionsLoaded && _communityQuestionsLoaded) {
+      final Set<String> userTagsSet = {};
+      for (final q in _myQuestions) {
+        final tags = q['tags'];
+        if (tags is List) {
+          userTagsSet.addAll(tags.map((e) => e.toString()));
+        }
+      }
+      List<String> userTags = userTagsSet.toList();
+      if (mounted) {
+        setState(() {
+          _communityQuestions = sortCommunityQuestions(
+            _communityQuestions,
+            userProvider?.user?["country"] ?? '',
+            userTags,
+          );
+        });
+      }
     }
   }
 
@@ -1031,99 +1089,50 @@ Question: "$questionText"
     }
   }
 
+  //Done deep checking
   // Get favorite questions for the user by matching savedQuestions IDs with questions in _recentQuestions and _communityQuestions
-  void getFavoriteQuestions() async {
+  void getFavoriteQuestions() {
     if (userProvider == null) return;
-    final savedIds = (userProvider!.user?['savedQuestions'] ?? []) as List?;
-    if (savedIds == null || savedIds.isEmpty) {
-      print("no saved questions for this user");
+    if (_communityQuestionsLoaded && _myQuestionsLoaded) {
+      final savedIds = (userProvider!.savedQuestions) as List?;
+      if (savedIds == null || savedIds.isEmpty) {
+        print("no saved questions for this user");
+        if (mounted) {
+          setState(() {
+            _favoriteQuestions = [];
+          });
+        }
+        return;
+      }
+      final Set<String> idSet = savedIds.map((e) => e.toString()).toSet();
+      print("saved questions ids: $idSet");
+
+      // Use a Map to avoid duplicates by question ID
+      final Map<String, Map<String, dynamic>> favoritesMap = {};
+
+      // Check recent questions first
+      for (final q in _recentQuestions) {
+        final qid = q['questionId'] ?? q['_id'] ?? '';
+        if (idSet.contains(qid)) {
+          favoritesMap[qid] = q;
+        }
+      }
+
+      // Check my questions (will override if same ID exists)
+      for (final q in _myQuestions) {
+        final qid = q['questionId'] ?? q['_id'] ?? '';
+        if (idSet.contains(qid)) {
+          favoritesMap[qid] = q;
+        }
+      }
+
+      final List<Map<String, dynamic>> favorites = favoritesMap.values.toList();
+
       if (mounted) {
         setState(() {
-          _favoriteQuestions = [];
+          _favoriteQuestions = favorites;
         });
       }
-      return;
-    }
-    final Set<String> idSet = savedIds.map((e) => e.toString()).toSet();
-    // Combine recent and community questions for search
-    final allQuestions = [..._recentQuestions];
-    // Use a set to avoid duplicates
-    final Set<String> seen = {};
-    final List<Map<String, dynamic>> favorites = [];
-    for (final q in allQuestions) {
-      final qid = q['questionId'] ?? q['_id'] ?? '';
-      if (idSet.contains(qid) && !seen.contains(qid)) {
-        favorites.add(q);
-        seen.add(qid);
-      }
-    }
-    // For any missing favorite IDs, fetch from backend
-    final missingIds = idSet.difference(seen);
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    //Todo:check this request to get favorite private questions
-    for (final id in missingIds) {
-      try {
-        final response = await http.get(
-          Uri.parse('question/$id'),
-          headers: {
-            "Content-Type": "application/json",
-            if (token != null) "Authorization": "Bearer $token",
-          },
-        );
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['status'] == true && data['question'] != null) {
-            final question = data['question'];
-            // askedBy may be a String or Map
-            final askedByRaw = question['askedBy'];
-            Map<String, dynamic> askedBy;
-            if (askedByRaw is String) {
-              askedBy = {'id': askedByRaw, 'displayName': askedByRaw};
-            } else if (askedByRaw is Map) {
-              askedBy = {
-                'id': askedByRaw['id'] ?? '',
-                'displayName': askedByRaw['displayName'] ?? '',
-                'country': askedByRaw['country'] ?? '',
-              };
-            } else {
-              askedBy = {'id': '', 'displayName': '', 'country': ''};
-            }
-            favorites.add({
-              'questionId': question['questionId'] ?? question['_id'] ?? '',
-              'text': question['text'] ?? '',
-              'isPublic': question['isPublic'] ?? true,
-              'askedBy': askedBy,
-              'createdAt':
-                  question['createdAt'] ?? DateTime.now().toIso8601String(),
-              'aiAnswer': question['aiAnswer'] ?? '',
-              'topAnswer': question['topAnswer'] ?? null,
-              'tags': question['tags'] ?? [],
-              'category': question['category'] ?? '',
-              '_id': question['_id'] ?? '',
-              '__v': question['__v'] ?? 0,
-              // UI compatibility fields
-              'timeAgo': 'Just now',
-              'answers': 0,
-              'responseType':
-                  (question['topAnswer'] == null ||
-                          question['topAnswer'].toString().isEmpty)
-                      ? 'ai'
-                      : 'human',
-              'isAnswered':
-                  (question['topAnswer'] != null &&
-                      question['topAnswer'].toString().isNotEmpty),
-            });
-          }
-        }
-      } catch (e) {
-        print('Error fetching favorite question $id: $e');
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _favoriteQuestions = favorites;
-      });
     }
   }
 
