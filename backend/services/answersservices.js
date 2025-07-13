@@ -28,7 +28,7 @@ const newvote={
     }
   }
 
-static async SubmitAnswer (data){
+ static async SubmitAnswer (data){
  console.log("Answer to submit:", data);
 
     try {
