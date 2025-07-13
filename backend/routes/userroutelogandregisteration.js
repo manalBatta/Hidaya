@@ -1,11 +1,9 @@
-
 const router = require("express").Router();
-const UserController = require('../controller/usercontroller');
-const authMiddleware = require('../services/authMiddleware');
-const QuestionController=require('../controller/questioncontroller');
-const AnswerController=require('../controller/answercontroller');
-const FlagController=require('../controller/flagcontroller');
-
+const UserController = require("../controller/usercontroller");
+const authMiddleware = require("../services/authMiddleware");
+const QuestionController = require("../controller/questioncontroller");
+const AnswerController = require("../controller/answercontroller");
+const FlagController = require("../controller/flagcontroller");
 
 router.post("/register",UserController.register);
 router.post("/login",UserController.login);
