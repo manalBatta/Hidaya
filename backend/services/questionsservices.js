@@ -249,17 +249,25 @@ console.log("uuuu",enrichedQuestions)
 }
 
 
-static async SaveQuestion(userId,questionId){
-const user = await UserModel.findOne({ userId });
+static async SaveQuestion(userId, questionId) {
+  const user = await UserModel.findOne({ userId });
 
   if (!user) return null;
 
-  if (!user.savedQuestions.includes(questionId)) {
+  const index = user.savedQuestions.indexOf(questionId);
+   let status;
+  if (index === -1) {
+    // Not saved yet — add it
     user.savedQuestions.push(questionId);
-    await user.save();
+    status='saved';
+  } else {
+    // Already saved — remove it
+    user.savedQuestions.splice(index, 1);
+    status='removed';
   }
 
-  return true;
+  await user.save();
+  return status;
 }
 
 

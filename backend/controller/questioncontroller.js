@@ -65,55 +65,69 @@ exports.getquestionandanswers = async (req, res, next) => {
     if (!question) return res.status(404).json({ error: "Question not found" });
 
     // Get all answers to the question
-    const answers = await AnswerModel.find({ questionId: id }).lean();
+    const rawAnswers = await AnswerModel.find({ questionId: id }).lean();
 
-    // Prepare topAnswer if it exists
+    // Collect unique userIds from answers and topAnswerId (in case it's not in answers list)
+    const answerUserIds = rawAnswers.map(ans => ans.answeredBy);
+    const topAnswerUserId = question.topAnswerId
+      ? rawAnswers.find(a => a.answerId === question.topAnswerId)?.answeredBy
+      : null;
+
+    const userIds = [...new Set([...answerUserIds, topAnswerUserId].filter(Boolean))];
+
+    // Fetch user info
+    const users = await UserModel.find(
+      { userId: { $in: userIds } },
+      {
+        userId: 1,
+        displayName: 1,
+        country: 1,
+        gender: 1,
+        email: 1,
+        language: 1,
+        role: 1,
+        savedQuestions: 1,
+        savedLessons: 1,
+        createdAt: 1
+      }
+    ).lean();
+
+    // Map userId => user info
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.userId] = {
+        id: user.userId,
+        displayName: user.displayName,
+        country: user.country,
+        gender: user.gender,
+        email: user.email,
+        language: user.language,
+        role: user.role,
+        savedQuestions: user.savedQuestions,
+        savedLessons: user.savedLessons,
+        createdAt: user.createdAt
+      };
+    });
+
+    // Build the answers array with full answeredBy info
+    const answers = rawAnswers.map(ans => ({
+      answerId: ans.answerId,
+      questionId: ans.questionId,
+      text: ans.text,
+      createdAt: ans.createdAt,
+      language: ans.language,
+      upvotesCount: ans.upvotesCount,
+      answeredBy: userMap[ans.answeredBy] || null
+    }));
+
+    // Build the topAnswer if available
     let topAnswer = null;
     if (question.topAnswerId) {
-      const rawTopAnswer = await AnswerModel.findOne({ answerId: question.topAnswerId }).lean();
-
-      if (rawTopAnswer) {
-        const topAnswerUser = await UserModel.findOne(
-          { userId: rawTopAnswer.answeredBy },
-          {
-            userId: 1,
-            displayName: 1,
-            country: 1,
-            gender: 1,
-            email: 1,
-            language: 1,
-            role: 1,
-            savedQuestions: 1,
-            savedLessons: 1,
-            createdAt: 1
-          }
-        ).lean();
-
-        topAnswer = {
-          answerId: rawTopAnswer.answerId,
-          questionId: rawTopAnswer.questionId,
-          text: rawTopAnswer.text,
-          createdAt: rawTopAnswer.createdAt,
-          language: rawTopAnswer.language,
-          upvotesCount: rawTopAnswer.upvotesCount,
-          answeredBy: topAnswerUser
-            ? {
-                id: topAnswerUser.userId,
-                displayName: topAnswerUser.displayName,
-                country: topAnswerUser.country,
-                gender: topAnswerUser.gender,
-                email: topAnswerUser.email,
-                language: topAnswerUser.language,
-                role: topAnswerUser.role,
-                savedQuestions: topAnswerUser.savedQuestions,
-                savedLessons: topAnswerUser.savedLessons,
-                createdAt: topAnswerUser.createdAt
-              }
-            : null
-        };
-      }
+      const top = answers.find(ans => ans.answerId === question.topAnswerId);
+      if (top) topAnswer = top;
     }
 
+    // Send final response
     res.json({
       questionId: question.questionId,
       text: question.text,
@@ -125,6 +139,7 @@ exports.getquestionandanswers = async (req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 
 exports.getquestionsofaspecificuser = async (req , res , next) => {
@@ -158,7 +173,15 @@ exports.savequestion = async (req , res , next) => {
  if (!result) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    res.status(200).json({ success: true, message: 'Question saved successfully' });
+
+const message=
+result==='saved'
+? 'Question added to saved list'
+: 'Question removed from saved list';
+
+
+
+    res.status(200).json({ success: true, message});
 
   }
 catch(err){
