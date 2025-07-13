@@ -104,7 +104,7 @@ class _QuestionCardState extends State<QuestionCard> {
     super.dispose();
   }
 
-  //Todo: Done deep check but lastly check the backend toggle save logic
+  //Done deep checking
   Future<void> saveQuestion() async {
     print("calling saveQuestion");
     setState(() {
@@ -134,7 +134,6 @@ class _QuestionCardState extends State<QuestionCard> {
       );
 
       print("save question response is :${jsonDecode(response.body)}");
-      //Todo: make sure unsave is also implemented in the backend
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -196,7 +195,6 @@ class _QuestionCardState extends State<QuestionCard> {
   Future<void> _fetchAllAnswers() async {
     setState(() {
       isLoadingAnswers = true;
-      allAnswers = _getMockAnswers();
     });
     try {
       final token = await AuthUtils.getValidToken(context);
@@ -257,36 +255,6 @@ class _QuestionCardState extends State<QuestionCard> {
         isLoadingAnswers = false;
       });
     }
-  }
-
-  // Mock data for demonstration purposes
-  List<Map<String, dynamic>> _getMockAnswers() {
-    return [
-      {
-        'id': '1',
-        'text':
-            'This is a detailed answer from a certified volunteer explaining the Islamic perspective on this matter.',
-        'answeredBy': {'displayName': 'Ahmed Hassan'},
-        'upvotesCount': 15,
-        'createdAt': '2024-01-15T10:30:00Z',
-      },
-      {
-        'id': '2',
-        'text':
-            'Another comprehensive answer providing additional insights and references from Islamic scholars.',
-        'answeredBy': {'displayName': 'Fatima Ali'},
-        'upvotesCount': 8,
-        'createdAt': '2024-01-15T11:45:00Z',
-      },
-      {
-        'id': '3',
-        'text':
-            'A third answer offering a different perspective on the same question.',
-        'answeredBy': {'displayName': 'Omar Khalil'},
-        'upvotesCount': 12,
-        'createdAt': '2024-01-15T14:20:00Z',
-      },
-    ];
   }
 
   // Function to handle upvoting an answer
@@ -467,7 +435,7 @@ class _QuestionCardState extends State<QuestionCard> {
                       child: Text(
                         question['text']?.toString() ?? 'No question text',
                         style: TextStyle(
-                          fontSize: _getResponsiveFontSize(18),
+                          fontSize: _getResponsiveFontSize(16),
                           fontWeight: FontWeight.w700,
                           color: AppColors.askPageTitle,
                           height: 1.4,
@@ -558,7 +526,6 @@ class _QuestionCardState extends State<QuestionCard> {
                         _buildPrivacyChip(question['isPublic'] ?? true),
                       ],
                     ),
-                    _buildResponseBadge(question['responseType']?.toString()),
                   ],
                 ),
                 // Show "Show/Hide all answers" button for certified volunteers
@@ -628,6 +595,11 @@ class _QuestionCardState extends State<QuestionCard> {
                           ),
                         ),
                       ],
+                      Spacer(),
+                      if (question['responseType']?.toString() == 'ai')
+                        _buildResponseBadge(
+                          question['responseType']?.toString(),
+                        ),
                     ],
                   ),
                 ),
@@ -822,7 +794,8 @@ class _QuestionCardState extends State<QuestionCard> {
 
           // Display top answer for human-answered questions
           if (question['responseType'] == 'human' &&
-              question['topAnswer'] != null)
+              question['topAnswer'] != null &&
+              !showAllAnswers)
             _buildTopAnswerCard(question['topAnswer']),
         ],
       ),
@@ -932,7 +905,9 @@ class _QuestionCardState extends State<QuestionCard> {
     Color backgroundColor;
     Color textColor;
     String text;
-
+    if (responseType == "ai") backgroundColor = AppColors.askPageAIBox;
+    textColor = AppColors.askPageAIText;
+    text = '🤖 AI';
     switch (responseType) {
       case 'human':
         backgroundColor = AppColors.askPageHumanBadge;
@@ -1020,10 +995,16 @@ class _QuestionCardState extends State<QuestionCard> {
               Spacer(),
               Row(
                 children: [
-                  Icon(
-                    Icons.thumb_up,
-                    size: _getResponsiveIconSize(12),
-                    color: AppColors.askPageSubtitle,
+                  Tooltip(
+                    message:
+                        _isCertifiedVolunteer()
+                            ? "Expand to upvote this answer"
+                            : "$upvotesCount Muslims approved this",
+                    child: Icon(
+                      Icons.thumb_up,
+                      size: _getResponsiveIconSize(12),
+                      color: AppColors.askPageSubtitle,
+                    ),
                   ),
                   SizedBox(width: 4),
                   Text(
@@ -1068,7 +1049,10 @@ class _QuestionCardState extends State<QuestionCard> {
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isTopAnswer ? Color(0xFFF8FFF8) : Colors.white,
+        color:
+            isTopAnswer
+                ? AppColors.islamicGreen400.withOpacity(0.5)
+                : Colors.white,
         border: Border.all(
           color:
               isTopAnswer
