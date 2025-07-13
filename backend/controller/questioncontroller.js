@@ -1,4 +1,4 @@
-const UserServices = require('../services/questionsservices');
+const UserServices = require("../services/questionsservices");
 const QuestionModel = require("../models/Questions");
 const AnswerModel = require("../models/Answers");
 const UserModel=require("../models/User");
@@ -15,7 +15,7 @@ exports.submitquestion = async (req, res, next) => {
 if (!text || !category) {
       return res.status(400).json({
         status: false,
-        message: "Text and category are required"
+        message: "Text and category are required",
       });
     }
     const Newquestion = {
@@ -27,32 +27,34 @@ if (!text || !category) {
       askedBy: req.userId || "anonymous",
     };
 
-   const {newQuestion , user} =await UserServices.SubmitQuestion(Newquestion,userId);
+    const { newQuestion, user } = await UserServices.SubmitQuestion(
+      Newquestion,
+      userId
+    );
 
-const questionToReturn = newQuestion.toObject();
-questionToReturn.askedBy={  
+    const questionToReturn = newQuestion.toObject();
+    questionToReturn.askedBy = {
       id: userId,
       displayName: user?.displayName || "Anonymous"
 
     };
-res.status(201).json({
-  status: true,
-  success: 'Question submitted successfully',
-  question: questionToReturn
-});
+    res.status(201).json({
+      status: true,
+      success: "Question submitted successfully",
+      question: questionToReturn,
+    });
   } catch (err) {
     console.log("---> err -->", err);
     next(err);
   }
 };
-exports.getpublicquestions = async (req , res , next) => {
-const allpublicquestions=await UserServices.GetPublicQuestions();
-res.status(200).json({
-  status: true,
-  success: 'Getting public Questions  successfully',
-  question: allpublicquestions
-});
-
+exports.getpublicquestions = async (req, res, next) => {
+  const allpublicquestions = await UserServices.GetPublicQuestions();
+  res.status(200).json({
+    status: true,
+    success: "Getting public Questions  successfully",
+    question: allpublicquestions,
+  });
 };
 exports.getquestionandanswers = async (req, res, next) => {
   const { id } = req.params;
@@ -60,7 +62,7 @@ exports.getquestionandanswers = async (req, res, next) => {
   try {
     // Get the question
     const question = await QuestionModel.findOne({ questionId: id }).lean();
-    if (!question) return res.status(404).json({ error: 'Question not found' });
+    if (!question) return res.status(404).json({ error: "Question not found" });
 
     // Get all answers to the question
     const rawAnswers = await AnswerModel.find({ questionId: id }).lean();
@@ -132,7 +134,6 @@ exports.getquestionandanswers = async (req, res, next) => {
       answers,
       topAnswer
     });
-
   } catch (err) {
     console.error("Error in getquestionandanswers:", err);
     res.status(500).json({ error: 'Internal server error' });
@@ -149,8 +150,8 @@ if (!userId) {
 }
   console.log("userid is:",userId);
 
-const QuestionsofUser=await UserServices.GetQuestionOfUser(userId);
- res.status(200).json({
+    const QuestionsofUser = await UserServices.GetQuestionOfUser(userId);
+    res.status(200).json({
       status: true,
       success: "Getting user questions successfully",
       question: QuestionsofUser

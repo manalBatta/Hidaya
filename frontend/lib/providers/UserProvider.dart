@@ -19,13 +19,33 @@ class UserProvider with ChangeNotifier {
     await _saveUserToPrefs(userData);
     print("User saved to prefs");
   }
- 
+
   // Clear user on logout
   Future<void> logout() async {
     _user = null;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('user');
+  }
+
+  // Add a question to savedQuestions and persist
+  void toggleSavedQuestion(String questionId) {
+    if (_user == null) return;
+    _user!["savedQuestions"] ??= [];
+    final saved = _user!["savedQuestions"] as List;
+    if (saved.contains(questionId)) {
+      saved.remove(questionId);
+    } else {
+      saved.add(questionId);
+    }
+    notifyListeners();
+    _saveUserToPrefs(_user!);
+  }
+
+  // Getter for savedQuestions
+  List<String> get savedQuestions {
+    if (_user == null) return [];
+    return List<String>.from(_user!["savedQuestions"] ?? []);
   }
 
   // Save user data to local storage
