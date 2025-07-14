@@ -11,4 +11,4 @@ final submitAnswerUrl = url + "answers"; //to submit a new answer
 final myquestions = url + "myquestion";
 final vote = url + 'answers/vote';
 final upvotedAnswerUrl = url + 'upvotedAnswer';
-final myAnswersUrl = url + "myAnswers";
+final myAnswersUrl = url + "myAnwers";

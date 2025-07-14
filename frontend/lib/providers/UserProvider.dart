@@ -7,7 +7,7 @@ class UserProvider with ChangeNotifier {
 
   Map<String, dynamic>? get user => _user;
 
-  Map<String, dynamic>? get userId => _user?['userId'];
+  String get userId => _user?['id']?.toString() ?? '';
 
   bool get isLoggedIn => _user != null;
 

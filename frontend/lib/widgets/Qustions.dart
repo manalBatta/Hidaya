@@ -516,7 +516,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     },
   ];
   bool _myAnswersLoaded = true;
-
   bool _myQuestionsLoaded = false;
   bool _communityQuestionsLoaded = false;
 
@@ -551,6 +550,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       _getCommunityAndRecentQuestions();
       _getMyQuestions();
       getFavoriteQuestions();
+      _getMyAnswers();
 
       // Listen to user provider changes to update favorites
       userProvider?.addListener(() {
@@ -1105,7 +1105,6 @@ Question: "$questionText"
 
   void _getMyAnswers() async {
     try {
-      return;
       final token = await AuthUtils.getValidToken(context);
       if (token == null) {
         if (mounted) {
@@ -1128,18 +1127,60 @@ Question: "$questionText"
       if (response.statusCode == 200 && data['status'] == true) {
         final answers = data['answers'];
         if (answers is List) {
+          Map<String, Map<String, dynamic>> latestAnswersByQuestion = {};
+          for (var ans in answers) {
+            final question = ans['question'];
+            final questionId = question?['questionId'];
+            if (questionId == null) continue;
+            // If you want the latest answer, compare createdAt
+            if (!latestAnswersByQuestion.containsKey(questionId) ||
+                DateTime.parse(ans['createdAt']).isAfter(
+                  DateTime.parse(
+                    latestAnswersByQuestion[questionId]!['createdAt'],
+                  ),
+                )) {
+              latestAnswersByQuestion[questionId] = ans;
+            }
+          }
+
+          List<Map<String, dynamic>> myAnswersList = [];
+          for (var ans in latestAnswersByQuestion.values) {
+            Map<String, dynamic>? question = ans['question'];
+            final topAnswerId = question?['topAnswerId'];
+            Map<String, dynamic>? topAnswer;
+            for (var q in _recentQuestions) {
+              if (q['questionId'] == question?['questionId'] &&
+                  q['topAnswer'] != null) {
+                question = q;
+                final tA = q['topAnswer'];
+                if (tA['answerId'] == topAnswerId) {
+                  topAnswer = tA;
+                  break;
+                }
+              }
+            }
+            myAnswersList.add({
+              'question': question,
+              'topAnswer': topAnswer,
+              'volunteerAnswer': ans,
+            });
+          }
+          if (!mounted) return;
           setState(() {
-            _myAnswers = List<Map<String, dynamic>>.from(answers);
+            _myAnswers = myAnswersList;
             _myAnswersLoaded = true;
           });
         }
       } else {
+        if (!mounted) return;
         setState(() {
           _myAnswers = [];
           _myAnswersLoaded = true;
         });
       }
     } catch (e) {
+      print("error fetching my answer: $e");
+      if (!mounted) return;
       setState(() {
         _myAnswers = [];
         _myAnswersLoaded = true;
@@ -1238,6 +1279,12 @@ Question: "$questionText"
         });
       }
     }
+  }
+
+  void refreshAllTabs() {
+    _getCommunityAndRecentQuestions();
+    _getMyAnswers();
+    getFavoriteQuestions();
   }
 
   @override
@@ -1870,7 +1917,10 @@ Question: "$questionText"
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  '${_myQuestions.length}',
+                                  (userRole == 'certified_volunteer' ||
+                                          userRole == 'volunteer_pending')
+                                      ? '${_myAnswers.length}'
+                                      : '${_myQuestions.length}',
                                   style: TextStyle(fontSize: 10),
                                 ),
                               ),
@@ -1991,7 +2041,10 @@ Question: "$questionText"
                       itemCount: filteredQuestions.length,
                       itemBuilder: (context, index) {
                         final question = filteredQuestions[index];
-                        return QuestionCard(question: question);
+                        return QuestionCard(
+                          question: question,
+                          onRefresh: refreshAllTabs,
+                        );
                       },
                     ),
           ),
@@ -2013,7 +2066,6 @@ Question: "$questionText"
                 itemCount: _myQuestions.length,
                 itemBuilder: (context, index) {
                   final question = _myQuestions[index];
-                  // No need to generate AI answer here; it is included in the backend response
                   return QuestionCard(question: question);
                 },
               ),
@@ -2051,7 +2103,10 @@ Question: "$questionText"
               : ListView.builder(
                 itemCount: _favoriteQuestions.length,
                 itemBuilder: (context, index) {
-                  return QuestionCard(question: _favoriteQuestions[index]);
+                  return QuestionCard(
+                    question: _favoriteQuestions[index],
+                    onRefresh: refreshAllTabs,
+                  );
                 },
               ),
     );
