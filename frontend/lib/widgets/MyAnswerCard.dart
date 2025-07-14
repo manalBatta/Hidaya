@@ -59,7 +59,9 @@ class MyAnswerCard extends StatelessWidget {
               if (topAnswer != null)
                 _buildAnswerSection('Top Answer', topAnswer, highlight: true),
               // Volunteer Answer
-              if (volunteerAnswer != null)
+              if (volunteerAnswer != null &&
+                  topAnswer != null &&
+                  topAnswer['answerId'] != volunteerAnswer['answerId'])
                 _buildAnswerSection(
                   'Your Answer',
                   volunteerAnswer,

@@ -11,8 +11,10 @@ import 'AIResponseCard.dart';
 
 class QuestionCard extends StatefulWidget {
   final Map<String, dynamic> question;
+  final VoidCallback? onRefresh;
 
-  const QuestionCard({Key? key, required this.question}) : super(key: key);
+  const QuestionCard({Key? key, required this.question, this.onRefresh})
+    : super(key: key);
 
   @override
   State<QuestionCard> createState() => _QuestionCardState();
@@ -246,6 +248,8 @@ class _QuestionCardState extends State<QuestionCard> {
 
           isLoadingAnswers = false;
         });
+        // Fetch the upvoted answer ID for this question
+        await fetchUpvotedAnswerId();
       } else {
         setState(() {
           isLoadingAnswers = false;
@@ -268,15 +272,17 @@ class _QuestionCardState extends State<QuestionCard> {
         upvotedAnswerId = null;
         return;
       }
-      final url = Uri.parse(upvotedAnswerUrl);
-      final response = await http.post(
-        url,
+      final urlWithQuery = Uri.parse(
+        '$upvotedAnswerUrl?questionId=${widget.question['questionId']}',
+      );
+      final response = await http.get(
+        urlWithQuery,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'questionId': widget.question['questionId']}),
       );
+      print("get upvoted Answer initilization :${response.body}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -294,7 +300,6 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
-  //Todo: Done deep checking do tasks bellow
   // Function to handle upvoting an answer
   Future<void> _handleUpvote(String answerId) async {
     setState(() {
@@ -348,7 +353,7 @@ class _QuestionCardState extends State<QuestionCard> {
             }
           }
         });
-        await _fetchAllAnswers();
+        /*  await _fetchAllAnswers(); */
       } else {
         ScaffoldMessenger.of(
           context,
@@ -365,11 +370,8 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
-  //Todo: waiting for backend updates
   // Function to handle submitting an answer
   Future<void> _handleSubmitAnswer() async {
-    //Todo: make sure the submit request is linked correctly
-
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -404,11 +406,9 @@ class _QuestionCardState extends State<QuestionCard> {
 
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        print("answer submit response: $data");
         if (data['status'] == true) {
           // Clear the form and hide it
           _answerController.clear();
-          //Todo : check if the user has answered this question don't show the answer button
           setState(() {
             showAnswerForm = false;
             showAllAnswers = true;
@@ -423,6 +423,9 @@ class _QuestionCardState extends State<QuestionCard> {
           );
 
           await _fetchAllAnswers();
+          if (widget.onRefresh != null) {
+            widget.onRefresh!();
+          }
         } else {
           ScaffoldMessenger.of(
             context,
@@ -459,6 +462,41 @@ class _QuestionCardState extends State<QuestionCard> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = userProvider.user;
     return user != null && user['role'] == 'certified_volunteer';
+  }
+
+  // Helper function to check if current user has already answered
+  bool _hasCurrentUserAnswered() {
+    final userId = Provider.of<UserProvider>(context, listen: false).userId;
+    for (final answer in allAnswers) {
+      final answeredBy = answer['answeredBy'];
+      final answeredById =
+          answeredBy != null
+              ? (answeredBy['id'] ?? answeredBy['userId'])
+              : null;
+      if (answeredById?.toString() == userId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Modified function to handle showing the answer form
+  Future<void> _handleShowAnswerForm() async {
+    // Always fetch latest answers before showing the form
+    await _fetchAllAnswers();
+    if (!_hasCurrentUserAnswered()) {
+      setState(() {
+        showAnswerForm = true;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'You have already submitted an answer for this question.',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -628,11 +666,16 @@ class _QuestionCardState extends State<QuestionCard> {
                       ],
 
                       // Show "Answer Question" button for certified volunteers that has not answered yet
-                      if (_isCertifiedVolunteer()) ...[
+                      if (_isCertifiedVolunteer() &&
+                          !_isTopAnswerByCurrentUser() &&
+                          !_hasCurrentUserAnswered()) ...[
                         SizedBox(height: 16),
                         Center(
                           child: ElevatedButton.icon(
-                            onPressed: _toggleAnswerForm,
+                            onPressed:
+                                isSubmittingAnswer
+                                    ? null
+                                    : _handleShowAnswerForm,
                             icon: Icon(
                               showAnswerForm ? Icons.close : Icons.edit,
                               size: _getResponsiveIconSize(16),
@@ -688,42 +731,41 @@ class _QuestionCardState extends State<QuestionCard> {
                       ),
                     ),
                   ),
-                  // Answers list
-                  Container(
-                    constraints: BoxConstraints(maxHeight: 400),
-                    child:
-                        isLoadingAnswers
-                            ? Container(
-                              padding: EdgeInsets.all(20),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.islamicGreen500,
-                                ),
-                              ),
-                            )
-                            : allAnswers.isEmpty
-                            ? Container(
-                              padding: EdgeInsets.all(20),
-                              child: Center(
-                                child: Text(
-                                  'No answers available',
-                                  style: TextStyle(
-                                    color: AppColors.askPageSubtitle,
-                                    fontSize: _getResponsiveFontSize(14),
-                                  ),
-                                ),
-                              ),
-                            )
-                            : ListView.builder(
-                              shrinkWrap: true,
-                              physics: ClampingScrollPhysics(),
-                              itemCount: allAnswers.length,
-                              itemBuilder: (context, index) {
-                                final answer = allAnswers[index];
-                                return _buildAnswerCard(answer, index);
-                              },
-                            ),
-                  ),
+                  // Answers list (not scrollable, expands to fit all answers)
+                  if (isLoadingAnswers)
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.islamicGreen500,
+                        ),
+                      ),
+                    )
+                  else if (allAnswers.isEmpty)
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      child: Center(
+                        child: Text(
+                          'No answers available',
+                          style: TextStyle(
+                            color: AppColors.askPageSubtitle,
+                            fontSize: _getResponsiveFontSize(14),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Column(
+                      children:
+                          allAnswers
+                              .asMap()
+                              .entries
+                              .map(
+                                (entry) =>
+                                    _buildAnswerCard(entry.value, entry.key),
+                              )
+                              .toList(),
+                    ),
                 ],
               ),
             ),
@@ -1004,10 +1046,7 @@ class _QuestionCardState extends State<QuestionCard> {
   // Helper function to extract display name from answeredBy object
   String _getAnswererDisplayName(Map<String, dynamic>? answeredBy) {
     if (answeredBy == null) return '';
-    if (answeredBy is Map) {
-      return answeredBy['displayName']?.toString() ?? '';
-    }
-    return answeredBy.toString();
+    return answeredBy['displayName']?.toString() ?? '';
   }
 
   // Widget to display top answer
@@ -1016,79 +1055,128 @@ class _QuestionCardState extends State<QuestionCard> {
     final answerText = topAnswer['text']?.toString() ?? '';
     final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
     final answererName = _getAnswererDisplayName(answeredBy);
+    final createdAt = topAnswer['createdAt']?.toString() ?? '';
 
     return Container(
       margin: EdgeInsets.only(top: 8),
-      padding: EdgeInsets.all(16),
-
+      padding: EdgeInsets.all(6), // Outer white padding
       decoration: BoxDecoration(
-        color: AppColors.askPageBackground,
-        border: Border.all(color: AppColors.askPageBorder),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Answerer info row
-          Row(
-            children: [
-              Icon(
-                Icons.verified_user,
-                size: _getResponsiveIconSize(16),
-                color: Colors.blue,
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.islamicGreen400.withOpacity(0.5),
+          border: Border.all(
+            color: AppColors.islamicGreen500.withOpacity(0.5),
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Answerer info row
+            Row(
+              children: [
+                // Top answer indicator
+                Container(
+                  margin: EdgeInsets.only(right: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.islamicGreen500,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: _getResponsiveIconSize(10),
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 2),
+                      Text(
+                        'Top Answer',
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(10),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.verified_user,
+                  size: _getResponsiveIconSize(16),
+                  color: AppColors.islamicGreen500,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  answererName,
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(12),
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.askPageTitle,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.verified,
+                  size: _getResponsiveIconSize(12),
+                  color: AppColors.islamicGreen500,
+                ),
+                Spacer(),
+                Row(
+                  children: [
+                    Tooltip(
+                      message:
+                          _isCertifiedVolunteer()
+                              ? "Expand to upvote this answer"
+                              : "$upvotesCount Muslims approved this",
+                      child: Icon(
+                        Icons.thumb_up,
+                        size: _getResponsiveIconSize(12),
+                        color: AppColors.askPageSubtitle,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      upvotesCount,
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(12),
+                        color: AppColors.askPageSubtitle,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            // Answer text
+            Text(
+              answerText,
+              style: TextStyle(
+                fontSize: _getResponsiveFontSize(14),
+                color: AppColors.askPageTitle,
+                height: 1.4,
               ),
-              SizedBox(width: 4),
+            ),
+            SizedBox(height: 8),
+            // Timestamp
+            if (createdAt.isNotEmpty)
               Text(
-                answererName,
+                'Answered on ${_formatDate(createdAt)}',
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(12),
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.askPageTitle,
+                  fontSize: _getResponsiveFontSize(11),
+                  color: AppColors.askPageSubtitle,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-              SizedBox(width: 4),
-              Icon(
-                Icons.verified,
-                size: _getResponsiveIconSize(12),
-                color: Colors.blue,
-              ),
-              Spacer(),
-              Row(
-                children: [
-                  Tooltip(
-                    message:
-                        _isCertifiedVolunteer()
-                            ? "Expand to upvote this answer"
-                            : "$upvotesCount Muslims approved this",
-                    child: Icon(
-                      Icons.thumb_up,
-                      size: _getResponsiveIconSize(12),
-                      color: AppColors.askPageSubtitle,
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    upvotesCount,
-                    style: TextStyle(
-                      fontSize: _getResponsiveFontSize(12),
-                      color: AppColors.askPageSubtitle,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          // Answer text
-          Text(
-            answerText,
-            style: TextStyle(
-              fontSize: _getResponsiveFontSize(14),
-              color: AppColors.askPageTitle,
-              height: 1.4,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1192,21 +1280,12 @@ class _QuestionCardState extends State<QuestionCard> {
                         Icons.thumb_up,
                         color:
                             isUpvoted
-                                ? Colors.green
+                                ? Colors.lightGreen
                                 : AppColors.askPageSubtitle,
                       ),
                       tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
                       onPressed:
-                          isCertified
-                              ? () async {
-                                if (upvotedAnswerId != null &&
-                                    upvotedAnswerId != answerId) {
-                                  bool confirm = await _showChangeVoteDialog();
-                                  if (!confirm) return;
-                                }
-                                _handleUpvote(answerId);
-                              }
-                              : () {},
+                          isCertified ? () => _handleUpvote(answerId) : () {},
                     ),
                     Text(
                       upvotesCount,
@@ -1253,5 +1332,14 @@ class _QuestionCardState extends State<QuestionCard> {
     } catch (e) {
       return dateString;
     }
+  }
+
+  bool _isTopAnswerByCurrentUser() {
+    final topAnswer = widget.question['topAnswer'];
+    final answeredBy = topAnswer != null ? topAnswer['answeredBy'] : null;
+    final answeredById = answeredBy != null ? answeredBy['id'] : null;
+    final userId = Provider.of<UserProvider>(context, listen: false).userId;
+
+    return answeredById?.toString() == userId;
   }
 }

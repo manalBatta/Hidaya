@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/main.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -56,6 +57,10 @@ class _SignInPageState extends State<SignInPage> {
         listen: false,
       ).setUser(data['user']);
       print("User set in provider successfully!");
+      // Navigate to root so MaterialApp rebuilds and shows ResponsiveLayout
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => HidayaApp()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Login failed')),
