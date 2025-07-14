@@ -4,6 +4,9 @@ const authMiddleware = require("../services/authMiddleware");
 const QuestionController = require("../controller/questioncontroller");
 const AnswerController = require("../controller/answercontroller");
 const FlagController = require("../controller/flagcontroller");
+const LessonController = require("../controller/lessoncontroller");
+
+
 
 router.post("/register",UserController.register);
 router.post("/login",UserController.login);
@@ -18,7 +21,7 @@ router.get("/myquestion",authMiddleware,QuestionController.getquestionsofaspecif
 router.post("/saveQuestion",authMiddleware,QuestionController.savequestion);
 router.get("/myAnwers",authMiddleware,AnswerController.getanswersofvolunteer);
 router.get("/upvotedAnswer",authMiddleware,AnswerController.getanswerupvotedbyvolunteer);
-
+router.get("/api/lessons",LessonController.getalllesson);
 
 
 
