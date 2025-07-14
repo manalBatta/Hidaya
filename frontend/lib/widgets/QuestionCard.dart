@@ -188,17 +188,31 @@ class _QuestionCardState extends State<QuestionCard> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: Text('Change your vote?'),
+                title: Text(
+                  'Change your vote?',
+                  style: TextStyle(color: AppColors.askPageTitle),
+                ),
                 content: Text(
                   'You have already upvoted another answer. Are you sure you want to change your vote to this answer?',
+                  style: TextStyle(color: AppColors.askPageSubtitle),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: AppColors.askPageSubtitle),
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.islamicGreen500,
+                      foregroundColor: AppColors.islamicWhite,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                     child: Text('Yes, change vote'),
                   ),
                 ],
@@ -323,6 +337,8 @@ class _QuestionCardState extends State<QuestionCard> {
           return;
         }
       }
+      // If user clicks upvote on the same answer again, treat as toggle (remove upvote)
+      final isTogglingOff = upvotedAnswerId == answerId;
       final apiUrl = Uri.parse(vote);
       final response = await http.put(
         apiUrl,
@@ -336,24 +352,36 @@ class _QuestionCardState extends State<QuestionCard> {
       if (response.statusCode == 200) {
         setState(() {
           isUpvoting = false;
-          // Remove previous upvote if any
-          if (upvotedAnswerId != null && upvotedAnswerId != answerId) {
+          if (isTogglingOff) {
+            // Remove upvote
+            upvotedAnswerId = null;
             for (var ans in allAnswers) {
-              if (ans['answerId'] == upvotedAnswerId) {
+              if (ans['answerId'] == answerId) {
                 ans['upvotesCount'] = (ans['upvotesCount'] ?? 1) - 1;
                 if (ans['upvotesCount'] < 0) ans['upvotesCount'] = 0;
               }
             }
-          }
-          upvotedAnswerId = answerId;
-          // Update the upvotes count for the newly upvoted answer
-          for (var ans in allAnswers) {
-            if (ans['answerId'] == answerId) {
-              ans['upvotesCount'] = (ans['upvotesCount'] ?? 0) + 1;
+          } else {
+            // Remove previous upvote if any
+            if (upvotedAnswerId != null && upvotedAnswerId != answerId) {
+              for (var ans in allAnswers) {
+                if (ans['answerId'] == upvotedAnswerId) {
+                  ans['upvotesCount'] = (ans['upvotesCount'] ?? 1) - 1;
+                  if (ans['upvotesCount'] < 0) ans['upvotesCount'] = 0;
+                }
+              }
+            }
+            upvotedAnswerId = answerId;
+            // Update the upvotes count for the newly upvoted answer
+            for (var ans in allAnswers) {
+              if (ans['answerId'] == answerId) {
+                ans['upvotesCount'] = (ans['upvotesCount'] ?? 0) + 1;
+              }
             }
           }
         });
-        /*  await _fetchAllAnswers(); */
+        // Optionally, refresh all answers from backend for full sync
+        // await _fetchAllAnswers();
       } else {
         ScaffoldMessenger.of(
           context,
