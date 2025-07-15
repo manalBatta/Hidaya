@@ -6,6 +6,8 @@ import '../constants/colors.dart';
 import 'HomePage.dart';
 import 'LessonsPage.dart';
 import 'ProfilePage.dart';
+import 'package:provider/provider.dart';
+import '../providers/NavigationProvider.dart';
 
 class ResponsiveLayout extends StatefulWidget {
   final String userRole;
@@ -35,7 +37,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       label: 'Ask',
       icon: Icons.help_outline,
       activeIcon: Icons.help,
-      page: Questions(),
+      page: Questions(initialTabIndex: 0),
     ),
     NavigationItem(
       id: 'lessons',
@@ -79,6 +81,18 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       duration: Duration(milliseconds: 300),
       vsync: this,
     );
+    // Listen to NavigationProvider for main tab changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navProvider = Provider.of<NavigationProvider>(
+        context,
+        listen: false,
+      );
+      navProvider.addListener(() {
+        if (_selectedIndex != navProvider.mainTabIndex) {
+          _onTabSelected(navProvider.mainTabIndex);
+        }
+      });
+    });
   }
 
   @override
@@ -124,6 +138,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
   @override
   Widget build(BuildContext context) {
     print("ResponsiveLayout is being built!");
+    final navProvider = Provider.of<NavigationProvider>(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         bool isMobile = constraints.maxWidth < 768;
@@ -139,7 +154,17 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
                       _selectedIndex = index;
                     });
                   },
-                  children: _navigationItems.map((item) => item.page).toList(),
+                  children:
+                      _navigationItems.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        if (item.id == 'ask') {
+                          return Questions(
+                            initialTabIndex: navProvider.questionsTabIndex,
+                          );
+                        }
+                        return item.page;
+                      }).toList(),
                 ),
 
                 // Admin Floating Action Button
@@ -161,6 +186,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
   }
 
   Widget _buildDesktopLayout() {
+    final navProvider = Provider.of<NavigationProvider>(context);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -182,7 +208,6 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
             // Main Content
             Expanded(
               child: Container(
-                
                 padding: EdgeInsets.all(24),
                 child: PageView(
                   controller: _pageController,
@@ -191,7 +216,17 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
                       _selectedIndex = index;
                     });
                   },
-                  children: _navigationItems.map((item) => item.page).toList(),
+                  children:
+                      _navigationItems.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        if (item.id == 'ask') {
+                          return Questions(
+                            initialTabIndex: navProvider.questionsTabIndex,
+                          );
+                        }
+                        return item.page;
+                      }).toList(),
                 ),
               ),
             ),

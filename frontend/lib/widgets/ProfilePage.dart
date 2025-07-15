@@ -14,6 +14,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:frontend/widgets/Qustions.dart';
+import 'package:frontend/providers/NavigationProvider.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -1589,6 +1591,13 @@ class _ProfilePageState extends State {
                     'lessons saved',
                     AppColors.islamicGreen50,
                     AppColors.islamicGreen600,
+                    () {
+                      final navProvider = Provider.of<NavigationProvider>(
+                        context,
+                        listen: false,
+                      );
+                      navProvider.setMainTabIndex(2); // 2 = Lessons tab
+                    },
                   ),
                 ),
                 SizedBox(width: 16),
@@ -1603,6 +1612,17 @@ class _ProfilePageState extends State {
                     'questions asked',
                     AppColors.islamicGold50,
                     AppColors.islamicGold400,
+                    () {
+                      final navProvider = Provider.of<NavigationProvider>(
+                        context,
+                        listen: false,
+                      );
+                      navProvider.setMainTabIndex(1); // 1 = Ask tab
+                      navProvider.setQuestionsTabIndex(
+                        2,
+                      ); // 2 = Favorites sub-tab
+                      navProvider.triggerScrollToFavorites();
+                    },
                   ),
                 ),
               ],
@@ -1693,44 +1713,49 @@ class _ProfilePageState extends State {
     String subtitle,
     Color bgColor,
     Color iconColor,
+    VoidCallback? onTap,
   ) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: iconColor.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: iconColor, size: 24),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.islamicGreen800,
-                    fontSize: 14,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: iconColor.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: iconColor, size: 24),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.islamicGreen800,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: iconColor,
+              ],
             ),
-          ),
-          Text(subtitle, style: TextStyle(fontSize: 12, color: iconColor)),
-        ],
+            SizedBox(height: 8),
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: iconColor,
+              ),
+            ),
+            Text(subtitle, style: TextStyle(fontSize: 12, color: iconColor)),
+          ],
+        ),
       ),
     );
   }
@@ -1975,5 +2000,12 @@ Map<String, dynamic> getInitialUserObj(String role) {
       'savedQuestions': [],
       'savedLessons': [],
     };
+  }
+}
+
+class QuestionsWithFavoritesTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Questions(initialTabIndex: 2);
   }
 }

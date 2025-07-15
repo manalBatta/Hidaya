@@ -109,6 +109,23 @@ async function sendToGemini(promptText) {
   return result?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply";
 }
 
+
+function buildWelcomePrompt(user) {
+    const name = user.name || "dear friend";
+    const location = user.country ? `from ${user.country}` : "";
+    const genderGreeting = user.gender === "female" ? "sister" : "brother";
+  
+    return `
+  Greet the user warmly. Their name is ${name}, and they are ${location}.
+  Start with "As-salamu alaykum, ${genderGreeting}!"
+  
+  Offer a helpful message about what they can ask (e.g., prayer, Quran, life in Islam).
+  Be friendly, supportive, and informative.
+  
+  Speak in their preferred language: ${user.language || 'en'}.
+  `;
+  }
+  
 module.exports = {
   getLastSession,
   createNewSupabaseSession,
