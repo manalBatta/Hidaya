@@ -12,3 +12,5 @@ final myquestions = url + "myquestion";
 final vote = url + 'answers/vote';
 final upvotedAnswerUrl = url + 'upvotedAnswer';
 final myAnswersUrl = url + "myAnwers";
+final startChat = url + 'chat/start';
+final sendChat = url + 'chat/send';

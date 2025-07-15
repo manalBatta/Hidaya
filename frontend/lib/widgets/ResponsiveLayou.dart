@@ -182,6 +182,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
             // Main Content
             Expanded(
               child: Container(
+                
                 padding: EdgeInsets.all(24),
                 child: PageView(
                   controller: _pageController,
