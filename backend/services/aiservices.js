@@ -75,7 +75,7 @@ function buildPrompt(user, history, message) {
     user.name || "Guest"
   } from ${user.city}, ${user.country}.
   They speak ${language} and are identified as ${user.gender}.
-  Only answer with short, warm, clear Islamic responses. Provide 2-3 recommendations and ask gentle follow-up questions.
+  Only answer with short, warm, clear Islamic responses. Provide 2-3 recommendations and ask gentle follow-up questions ,Please answer in ${language} only, with no translation or transliteration..
   `;
 
   const historyText = history
@@ -105,6 +105,7 @@ async function sendToGemini(promptText) {
   const result = await response.json();
 
   // Defensive fallback if result is empty or malformed
+  console.log("result from gemini ", result);
   return result?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply";
 }
 
