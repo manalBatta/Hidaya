@@ -16,8 +16,12 @@ import 'package:provider/provider.dart';
 import '../providers/UserProvider.dart';
 import '../utils/auth_utils.dart';
 import 'MyAnswerCard.dart';
+import '../providers/NavigationProvider.dart';
 
 class Questions extends StatefulWidget {
+  final int initialTabIndex;
+  Questions({this.initialTabIndex = 0});
+
   @override
   _QuestionsState createState() => _QuestionsState();
 }
@@ -31,6 +35,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   late AnimationController _failAnimationController;
   late Animation<double> _failAnimation;
   late TabController _tabController;
+
+  final ScrollController _favoritesScrollController = ScrollController();
+  late VoidCallback _navListener;
+  NavigationProvider? _navProvider;
 
   String _selectedCategory = '';
   bool _isPublic = true;
@@ -522,7 +530,11 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
     _successAnimationController = AnimationController(
       duration: Duration(milliseconds: 500),
       vsync: this,
@@ -575,6 +587,30 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         getFavoriteQuestions();
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navListener = () {
+        if (_navProvider?.scrollToFavorites == true) {
+          _tabController.animateTo(2);
+          if (_favoritesScrollController.hasClients) {
+            _favoritesScrollController.animateTo(
+              0,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+          _navProvider?.resetScrollToFavorites();
+        }
+      };
+      _navProvider?.addListener(_navListener);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_navProvider == null) {
+      _navProvider = Provider.of<NavigationProvider>(context, listen: false);
+    }
   }
 
   @override
@@ -586,6 +622,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     _tabController.dispose();
     // Remove listener to prevent memory leaks
     userProvider?.removeListener(() {});
+    _navProvider?.removeListener(_navListener);
+    _favoritesScrollController.dispose();
     super.dispose();
   }
 
@@ -2108,6 +2146,7 @@ Question: "$questionText"
                 'Save questions you find helpful',
               )
               : ListView.builder(
+                controller: _favoritesScrollController,
                 itemCount: _favoriteQuestions.length,
                 itemBuilder: (context, index) {
                   return QuestionCard(

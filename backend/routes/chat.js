@@ -19,7 +19,12 @@ router.post("/start", async (req, res) => {
 
     if (!session) {
       session = await createNewSupabaseSession(userId);
-      await User.updateOne({ _id: userId }, { ai_session_id: session.id });
+      await User.updateOne({ userId: userId }, { ai_session_id: session.id });
+      const prompt = buildWelcomePrompt(user);
+      const welcomeMessage = await sendToGemini(prompt);
+
+      // Save to Supabase
+      await saveChatMessage(session.id, "ai", welcomeMessage);
     }
 
     res.json({ sessionId: session.id });
