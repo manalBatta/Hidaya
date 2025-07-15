@@ -11,12 +11,16 @@
   "description": "",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.51.0",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",
     "express": "^5.1.0",
+    "franc": "^6.2.0",
+    "iso-639-3-to-1": "^1.0.0",
     "mongoose": "^8.16.1",
+    "node-fetch": "^3.3.2",
     "openai": "^5.9.0"
   }
 }

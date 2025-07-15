@@ -755,6 +755,13 @@ Format the response in a clear, readable manner with correct grammar and spacing
 Question: "$questionText"
 ''';
 
+    final gemini = Gemini.instance;
+
+    gemini
+        .info(model: 'gemini-pro')
+        .then((info) => print('Gemini Model is $info'))
+        .catchError((e) => print('info $e'));
+
     StringBuffer buffer = StringBuffer();
     final completer = Completer<String>();
     String previousOutput = '';
