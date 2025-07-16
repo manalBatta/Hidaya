@@ -17,11 +17,6 @@ import '../providers/UserProvider.dart';
 import '../utils/auth_utils.dart';
 import 'MyAnswerCard.dart';
 
-export 'package:frontend/widgets/Qustions.dart' show generateAIAnswerGemini;
-
-
-
-
 import '../providers/NavigationProvider.dart';
 
 class Questions extends StatefulWidget {
@@ -535,6 +530,11 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 
   Timer? _timer;
 
+  final Map<String, GlobalKey> _questionKeys = {}; // Add this line
+  final ScrollController _communityScrollController =
+      ScrollController(); // Add this line
+  bool _isAutoLoading = false; // Add this line
+
   @override
   void initState() {
     super.initState();
@@ -611,6 +611,12 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       };
       _navProvider?.addListener(_navListener);
     });
+    _communityScrollController.addListener(() {
+      if (_communityScrollController.position.pixels >=
+          _communityScrollController.position.maxScrollExtent - 50) {
+        _loadMoreCommunityQuestionsIfNeeded();
+      }
+    });
   }
 
   @override
@@ -633,6 +639,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     userProvider?.removeListener(() {});
     _navProvider?.removeListener(_navListener);
     _favoritesScrollController.dispose();
+    _communityScrollController.dispose();
     super.dispose();
   }
 
@@ -646,7 +653,10 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
           _questionController.text,
         );
         // Generate AI answer before submitting
-        final aiAnswer = await generateAIAnswerGemini(_questionController.text);
+        var aiAnswer = await generateAIAnswerGemini(_questionController.text);
+        if (aiAnswer.trim().isEmpty) {
+          aiAnswer = 'pending';
+        }
 
         final requestbody = {
           "text": _questionController.text,
@@ -769,24 +779,34 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
               if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
                 final jsonString = output.substring(jsonStart, jsonEnd + 1);
                 final List<dynamic> tags = jsonDecode(jsonString);
-                completer.complete(tags.whereType<String>().toList());
+                if (!completer.isCompleted) {
+                  completer.complete(tags.whereType<String>().toList());
+                }
                 return;
               }
               // Fallback: try to parse the whole output as JSON
               try {
                 final List<dynamic> tags = jsonDecode(output);
-                completer.complete(tags.whereType<String>().toList());
+                if (!completer.isCompleted) {
+                  completer.complete(tags.whereType<String>().toList());
+                }
               } catch (_) {
-                completer.complete([]);
+                if (!completer.isCompleted) {
+                  completer.complete([]);
+                }
               }
             } catch (e) {
               print('Error extracting tags from Gemini: $e');
-              completer.complete([]);
+              if (!completer.isCompleted) {
+                completer.complete([]);
+              }
             }
           },
           onError: (e) {
             print('Error extracting tags from Gemini: $e');
-            completer.complete([]);
+            if (!completer.isCompleted) {
+              completer.complete([]);
+            }
           },
         );
 
@@ -802,49 +822,51 @@ Format the response in a clear, readable manner with correct grammar and spacing
 Question: "$questionText"
 ''';
 
-    final gemini = Gemini.instance;
-
-    gemini
-        .info(model: 'gemini-pro')
-        .then((info) => print('Gemini Model is $info'))
-        .catchError((e) => print('info $e'));
-
     StringBuffer buffer = StringBuffer();
     final completer = Completer<String>();
     String previousOutput = '';
 
-    Gemini.instance
-        .promptStream(parts: [Part.text(prompt)])
-        .listen(
-          (value) {
-            if (value?.output != null) {
-              final current = value?.output?.trim() ?? '';
-              final lastChar =
-                  previousOutput.isNotEmpty
-                      ? previousOutput[previousOutput.length - 1]
-                      : '';
+    try {
+      Gemini.instance
+          .promptStream(parts: [Part.text(prompt)])
+          .listen(
+            (value) {
+              if (value?.output != null) {
+                final current = value?.output?.trim() ?? '';
+                final lastChar =
+                    previousOutput.isNotEmpty
+                        ? previousOutput[previousOutput.length - 1]
+                        : '';
 
-              // Add a space if needed
-              if (lastChar.isNotEmpty &&
-                  !lastChar.contains(RegExp(r'[ \n\r\t.,;:!?(){}[\]]')) &&
-                  !current.startsWith(RegExp(r'[ \n\r\t.,;:!?(){}[\]]'))) {
-                buffer.write(' ');
+                // Add a space if needed
+                if (lastChar.isNotEmpty &&
+                    !lastChar.contains(RegExp(r'[ \n\r\t.,;:!?(){}\[\]]')) &&
+                    !current.startsWith(RegExp(r'[ \n\r\t.,;:!?(){}\[\]]'))) {
+                  buffer.write(' ');
+                }
+
+                buffer.write(current);
+                previousOutput = current;
               }
+            },
+            onDone: () {
+              if (!completer.isCompleted) {
+                completer.complete(buffer.toString());
+              }
+            },
+            onError: (e) {
+              print('Error fetching AI answer from Gemini: $e');
+              if (!completer.isCompleted) {
+                completer.complete('');
+              }
+            },
+          );
 
-              buffer.write(current);
-              previousOutput = current;
-            }
-          },
-          onDone: () {
-            completer.complete(buffer.toString());
-          },
-          onError: (e) {
-            print('Error fetching AI answer from Gemini: $e');
-            completer.complete('');
-          },
-        );
-
-    return await completer.future;
+      return await completer.future;
+    } catch (e) {
+      print("error extracting tags: $e");
+      return '';
+    }
   }
 
   //Todo: show myAnswers tab for certifiedVolunteers
@@ -909,109 +931,141 @@ Question: "$questionText"
 
   //Done deep checking
 
- int _currentPage = 1;
-final int _pageSize = 3;
-bool _hasMoreCommunityQuestions = true;
-bool _isLoadingCommunityQuestions = false;
+  int _currentPage = 1;
+  final int _pageSize = 3;
+  bool _hasMoreCommunityQuestions = true;
+  bool _isLoadingCommunityQuestions = false;
 
-Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async { //loadMore is used to load more questions when user scrolls to the bottom of the list
-  if (_isLoadingCommunityQuestions) return;
-  if (!loadMore) {
-    // Reset pagination if not loading more (initial load or refresh)
-    _currentPage = 1;
-    _hasMoreCommunityQuestions = true;
-  }
-  if (!_hasMoreCommunityQuestions) return;
-
-  _isLoadingCommunityQuestions = true;
-
-  try {
-    final token = await AuthUtils.getValidToken(context);
-    if (token == null) {
-      if (mounted) {
-        setState(() {
-          _communityQuestions = [];
-          _recentQuestions = [];
-          _communityQuestionsLoaded = true;
-        });
-        _trySortCommunityQuestions();
-      }
-      _isLoadingCommunityQuestions = false;
-      return;
+  Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async {
+    //loadMore is used to load more questions when user scrolls to the bottom of the list
+    if (_isLoadingCommunityQuestions) return;
+    if (!loadMore) {
+      // Reset pagination if not loading more (initial load or refresh)
+      _currentPage = 1;
+      _hasMoreCommunityQuestions = true;
     }
+    if (!_hasMoreCommunityQuestions) return;
 
-    final url = Uri.parse("$publicQuestions?page=$_currentPage&limit=$_pageSize");
-    final response = await http.get(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
+    _isLoadingCommunityQuestions = true;
 
-    final data = jsonDecode(response.body);
-    if (response.statusCode == 200 && data['status'] == true) {
-      final questions = data['question'];
-      if (questions is List && questions.isNotEmpty) {
-        List<Map<String, dynamic>> updatedQuestions = [];
-        for (var question in questions) {
-          final askedByRaw = question['askedBy'];
-          Map<String, dynamic> askedBy;
-          if (askedByRaw is String) {
-            askedBy = {'id': askedByRaw, 'displayName': askedByRaw};
-          } else if (askedByRaw is Map) {
-            askedBy = {
-              'id': askedByRaw['id'] ?? '',
-              'displayName': askedByRaw['displayName'] ?? '',
-              'country': askedByRaw['country'] ?? '',
-            };
-          } else {
-            askedBy = {'id': '', 'displayName': '', 'country': ''};
-          }
-
-          updatedQuestions.add({
-            'questionId': question['questionId'] ?? question['_id'] ?? '',
-            'text': question['text'] ?? '',
-            'isPublic': question['isPublic'] ?? true,
-            'askedBy': askedBy,
-            'createdAt': question['createdAt'] ?? DateTime.now().toIso8601String(),
-            'aiAnswer': question['aiAnswer'] ?? '',
-            'topAnswer': question['topAnswer'] ?? null,
-            'tags': question['tags'] ?? [],
-            'category': question['category'] ?? '',
-            '_id': question['_id'] ?? '',
-            'timeAgo': _calculateTimeAgo(question['createdAt']),
-            'responseType': (question['topAnswer'] == null) ? 'ai' : 'human',
-            'isAnswered': (question['topAnswer'] != null),
-          });
-        }
-
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
         if (mounted) {
           setState(() {
-            if (loadMore) {
-              _communityQuestions.addAll(updatedQuestions);
-            } else {
-              _communityQuestions = updatedQuestions;
-            }
-            _recentQuestions = List<Map<String, dynamic>>.from(_communityQuestions)
-              ..sort((a, b) {
-                final aDate = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
-                final bDate = DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
-                return bDate.compareTo(aDate);
-              });
+            _communityQuestions = [];
+            _recentQuestions = [];
             _communityQuestionsLoaded = true;
           });
           _trySortCommunityQuestions();
-          getFavoriteQuestions();
         }
+        _isLoadingCommunityQuestions = false;
+        return;
+      }
 
-        // If received less than page size, no more pages left
-        if (questions.length < _pageSize) {
-          _hasMoreCommunityQuestions = false;
+      final url = Uri.parse(
+        "$publicQuestions?page=$_currentPage&limit=$_pageSize",
+      );
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['status'] == true) {
+        final questions = data['question'];
+        if (questions is List && questions.isNotEmpty) {
+          List<Map<String, dynamic>> updatedQuestions = [];
+          for (var question in questions) {
+            final askedByRaw = question['askedBy'];
+            Map<String, dynamic> askedBy;
+            if (askedByRaw is String) {
+              askedBy = {'id': askedByRaw, 'displayName': askedByRaw};
+            } else if (askedByRaw is Map) {
+              askedBy = {
+                'id': askedByRaw['id'] ?? '',
+                'displayName': askedByRaw['displayName'] ?? '',
+                'country': askedByRaw['country'] ?? '',
+              };
+            } else {
+              askedBy = {'id': '', 'displayName': '', 'country': ''};
+            }
+
+            updatedQuestions.add({
+              'questionId': question['questionId'] ?? question['_id'] ?? '',
+              'text': question['text'] ?? '',
+              'isPublic': question['isPublic'] ?? true,
+              'askedBy': askedBy,
+              'createdAt':
+                  question['createdAt'] ?? DateTime.now().toIso8601String(),
+              'aiAnswer': question['aiAnswer'] ?? '',
+              'topAnswer': question['topAnswer'] ?? null,
+              'tags': question['tags'] ?? [],
+              'category': question['category'] ?? '',
+              '_id': question['_id'] ?? '',
+              'timeAgo': _calculateTimeAgo(question['createdAt']),
+              'responseType': (question['topAnswer'] == null) ? 'ai' : 'human',
+              'isAnswered': (question['topAnswer'] != null),
+            });
+          }
+
+          // Exclude questions asked by the current user
+          final currentUserId = userProvider?.userId;
+          if (currentUserId != null) {
+            updatedQuestions =
+                updatedQuestions
+                    .where((q) => q['askedBy']?['id'] != currentUserId)
+                    .toList();
+          }
+
+          if (mounted) {
+            setState(() {
+              if (loadMore) {
+                _communityQuestions.addAll(updatedQuestions);
+              } else {
+                _communityQuestions = updatedQuestions;
+              }
+              _recentQuestions = List<Map<String, dynamic>>.from(
+                _communityQuestions,
+              )..sort((a, b) {
+                final aDate =
+                    DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+                final bDate =
+                    DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+                return bDate.compareTo(aDate);
+              });
+              _communityQuestionsLoaded = true;
+            });
+            _trySortCommunityQuestions();
+            getFavoriteQuestions();
+            await retryPendingAIs(_communityQuestions);
+          }
+
+          // If received less than page size, no more pages left
+          if (questions.length < _pageSize) {
+            _hasMoreCommunityQuestions = false;
+          } else {
+            _currentPage++;
+          }
         } else {
-          _currentPage++;
+          if (mounted) {
+            setState(() {
+              if (!loadMore) {
+                _communityQuestions = [];
+                _recentQuestions = [];
+              }
+              _communityQuestionsLoaded = true;
+            });
+            _trySortCommunityQuestions();
+            getFavoriteQuestions();
+          }
+          _hasMoreCommunityQuestions = false;
         }
       } else {
+        print("Failed to load community questions");
         if (mounted) {
           setState(() {
             if (!loadMore) {
@@ -1025,8 +1079,7 @@ Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async { //
         }
         _hasMoreCommunityQuestions = false;
       }
-    } else {
-      print("Failed to load community questions");
+    } catch (e) {
       if (mounted) {
         setState(() {
           if (!loadMore) {
@@ -1038,39 +1091,11 @@ Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async { //
         _trySortCommunityQuestions();
         getFavoriteQuestions();
       }
-      _hasMoreCommunityQuestions = false;
+      print('Error loading community questions: $e');
+    } finally {
+      _isLoadingCommunityQuestions = false;
     }
-  } catch (e) {
-    if (mounted) {
-      setState(() {
-        if (!loadMore) {
-          _communityQuestions = [];
-          _recentQuestions = [];
-        }
-        _communityQuestionsLoaded = true;
-      });
-      _trySortCommunityQuestions();
-      getFavoriteQuestions();
-    }
-    print('Error loading community questions: $e');
-  } finally {
-    _isLoadingCommunityQuestions = false;
   }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   //Done deep checking
   void _getMyQuestions() async {
@@ -1115,7 +1140,6 @@ Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async { //
               } else {
                 askedBy = {'id': '', 'displayName': '', 'country': ''};
               }
-
               updatedMyQuestions.add({
                 'questionId': question['questionId'] ?? question['_id'] ?? '',
                 'text': question['text'] ?? '',
@@ -1153,6 +1177,7 @@ Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async { //
               _trySortCommunityQuestions();
               // Update favorites when my questions are loaded
               getFavoriteQuestions();
+              await retryPendingAIs(_myQuestions);
             }
           } else {
             if (mounted) {
@@ -1385,24 +1410,33 @@ Future<void> _getCommunityAndRecentQuestions({bool loadMore = false}) async { //
     _getMyQuestions();
   }
 
-//By Ruba 
+  //By Ruba
 
- 
-//By Ruby
-void _startRepeatingTimer(){
-  _timer = Timer.periodic(Duration(seconds: 2), (Timer timer) {
-    refreshAllTabs();
-  });
- 
-}
+  //By Ruby
+  void _startRepeatingTimer() {
+    _timer = Timer.periodic(Duration(seconds: 2), (Timer timer) {
+      refreshAllTabs();
+    });
+  }
 
-
-
-
-
-
-
-
+  Future<void> _loadMoreCommunityQuestionsIfNeeded() async {
+    if (_isAutoLoading || !_hasMoreCommunityQuestions) return;
+    _isAutoLoading = true;
+    await _getCommunityAndRecentQuestions(loadMore: true);
+    await Future.delayed(Duration(milliseconds: 100));
+    if (_communityQuestions.isNotEmpty) {
+      final lastQuestionId = _communityQuestions.last['questionId'];
+      final key = _questionKeys[lastQuestionId];
+      if (key != null && key.currentContext != null) {
+        Scrollable.ensureVisible(
+          key.currentContext!,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+    _isAutoLoading = false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1430,7 +1464,7 @@ void _startRepeatingTimer(){
             SizedBox(height: 24),
 
             // Recent Questions
-            _buildRecentQuestions(),
+            //_buildRecentQuestions(),
           ],
         ),
       ),
@@ -2151,24 +2185,42 @@ void _startRepeatingTimer(){
                               _searchQuery.isEmpty
                                   ? 'No community questions yet'
                                   : 'No questions found matching " [38;5;9m{_searchQuery}"',
-                              style: TextStyle(fontSize: 18, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
                         )
                         : ListView.builder(
+                          controller:
+                              _communityScrollController, // Attach controller here
                           itemCount: filteredQuestions.length,
                           itemBuilder: (context, index) {
                             final question = filteredQuestions[index];
+                            final questionId = question['questionId'];
+                            _questionKeys.putIfAbsent(
+                              questionId,
+                              () => GlobalKey(),
+                            );
                             return QuestionCard(
+                              key: _questionKeys[questionId],
                               question: question,
                               onUpdate: (updatedFields) {
-                                print("✅ onUpdate triggered with: $updatedFields");
+                                print(
+                                  "✅ onUpdate triggered with: $updatedFields",
+                                );
                                 final questionId = question['questionId'];
-                                final originalIndex = _communityQuestions.indexWhere((q) => q['questionId'] == questionId);
+                                final originalIndex = _communityQuestions
+                                    .indexWhere(
+                                      (q) => q['questionId'] == questionId,
+                                    );
                                 if (originalIndex != -1) {
                                   setState(() {
-                                    _communityQuestions[originalIndex].addAll(updatedFields);
+                                    _communityQuestions[originalIndex].addAll(
+                                      updatedFields,
+                                    );
                                   });
                                   refreshAllTabs();
                                 }
@@ -2186,25 +2238,24 @@ void _startRepeatingTimer(){
             right: 24,
             child: FloatingActionButton(
               onPressed: () async {
-                  await _getCommunityAndRecentQuestions(loadMore: true);
-                       await Future.delayed(Duration(milliseconds: 100));
-                     if (_communityQuestions.isNotEmpty) {
-    // Scroll to last question widget
-    final lastQuestionKey = _communityQuestions.last['questionId']; 
-    
-    if (lastQuestionKey != null) {
-      Scrollable.ensureVisible(
-        lastQuestionKey.currentContext!,
-        duration: Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
+                await _getCommunityAndRecentQuestions(loadMore: true);
+                await Future.delayed(Duration(milliseconds: 100));
+                if (_communityQuestions.isNotEmpty) {
+                  // Scroll to last question widget
+                  final lastQuestionId = _communityQuestions.last['questionId'];
+                  final key = _questionKeys[lastQuestionId];
+                  if (key != null && key.currentContext != null) {
+                    Scrollable.ensureVisible(
+                      key.currentContext!,
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                }
               },
               backgroundColor: AppColors.askPageSubtitle,
               child: Icon(Icons.arrow_downward, color: Colors.white),
               tooltip: 'Scroll Down',
-              
             ),
           ),
       ],
@@ -2224,7 +2275,10 @@ void _startRepeatingTimer(){
                 itemCount: _myQuestions.length,
                 itemBuilder: (context, index) {
                   final question = _myQuestions[index];
-                  return QuestionCard(question: question, onRefresh: refreshAllTabs);
+                  return QuestionCard(
+                    question: question,
+                    onRefresh: refreshAllTabs,
+                  );
                 },
               ),
     );
@@ -2296,24 +2350,51 @@ void _startRepeatingTimer(){
       ),
     );
   }
+
+  // Helper to update AI answer on backend
+  Future<void> updateAIAnswerOnBackend(
+    String questionId,
+    String aiAnswer,
+  ) async {
+    final token = await AuthUtils.getValidToken(context);
+    if (token == null) return;
+    await http.patch(
+      Uri.parse('$questions/$questionId/ai-answer'),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({"aiAnswer": aiAnswer}),
+    );
+  }
+
+  // Helper to retry pending AI answers
+  Future<void> retryPendingAIs(List<Map<String, dynamic>> questions) async {
+    for (var q in questions) {
+      if (q['aiAnswer'] == 'pending') {
+        final newAnswer = await generateAIAnswerGemini(q['text']);
+        if (newAnswer.trim().isNotEmpty && newAnswer != 'pending') {
+          q['aiAnswer'] = newAnswer;
+          await updateAIAnswerOnBackend(q['questionId'], newAnswer);
+        }
+      }
+    }
+  }
 }
 
-
-
-
-
- Future<String> generateAIAnswerGemini(String questionText) async {
-    final prompt = '''
+Future<String?> generateAIAnswerGemini(String questionText) async {
+  final prompt = '''
 Provide a concise, clear Islamic answer to the following question.
 Use proper spacing between all words and punctuation.
 Format the response in a clear, readable manner with correct grammar and spacing.
 Question: "$questionText"
 ''';
 
-    StringBuffer buffer = StringBuffer();
-    final completer = Completer<String>();
-    String previousOutput = '';
+  StringBuffer buffer = StringBuffer();
+  final completer = Completer<String>();
+  String previousOutput = '';
 
+  try {
     Gemini.instance
         .promptStream(parts: [Part.text(prompt)])
         .listen(
@@ -2327,8 +2408,8 @@ Question: "$questionText"
 
               // Add a space if needed
               if (lastChar.isNotEmpty &&
-                  !lastChar.contains(RegExp(r'[ \n\r\t.,;:!?(){}[\]]')) &&
-                  !current.startsWith(RegExp(r'[ \n\r\t.,;:!?(){}[\]]'))) {
+                  !lastChar.contains(RegExp(r'[ \n\r\t.,;:!?(){}\[\]]')) &&
+                  !current.startsWith(RegExp(r'[ \n\r\t.,;:!?(){}\[\]]'))) {
                 buffer.write(' ');
               }
 
@@ -2337,19 +2418,21 @@ Question: "$questionText"
             }
           },
           onDone: () {
-            completer.complete(buffer.toString());
+            if (!completer.isCompleted) {
+              completer.complete(buffer.toString());
+            }
           },
           onError: (e) {
             print('Error fetching AI answer from Gemini: $e');
-            completer.complete('');
+            if (!completer.isCompleted) {
+              completer.complete('');
+            }
           },
         );
 
     return await completer.future;
+  } catch (e) {
+    print("error extracting tags: $e");
+    return null;
   }
-
-
-
-
-
-
+}
