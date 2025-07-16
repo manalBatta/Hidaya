@@ -1,4 +1,26 @@
 const { createClient } = require("@supabase/supabase-js");
+const ISO6391 = require("iso-639-1");
+const cld3 = require("cld3-asm");
+
+let cldFactory = null;
+let identifier = null;
+
+async function initLanguageIdentifier() {
+  cldFactory = await cld3.loadModule({ timeout: 5000 });
+  identifier = cldFactory.create(0, 512);
+}
+
+// Call this once at server startup
+initLanguageIdentifier();
+
+function detectLanguage(message) {
+  if (!identifier) return "en";
+  const result = identifier.findLanguage(message);
+  if (result && result.is_reliable && result.language) {
+    return result.language; // ISO 639-1 code
+  }
+  return "en";
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -62,29 +84,6 @@ async function fetchRecentMessages(sessionId, limit = 10) {
   return data; // [{ sender: 'user', message: '...' }, ...]
 }
 
-function buildPrompt(user, history, message) {
-  const franc = require("franc");
-  const userLang = franc.franc(message);
-
-  const toISO639_1 = require("iso-639-3-to-1");
-  const langCode2 = toISO639_1(userLang);
-  const language = langCode2 || "en";
-
-  const intro = `
-  You are an Islamic assistant helping a user named ${
-    user.name || "Guest"
-  } from ${user.city}, ${user.country}.
-  They speak ${language} and are identified as ${user.gender}.
-  Only answer with short, warm, clear Islamic responses. Provide 2-3 recommendations and ask gentle follow-up questions ,Please answer in ${language} only, with no translation or transliteration..
-  `;
-
-  const historyText = history
-    .map((h) => `${h.sender === "user" ? "User" : "AI"}: ${h.message}`)
-    .join("\n");
-
-  return `${intro}\n\nPrevious Conversation:\n${historyText}\n\nNew Message:\nUser: ${message} Please answer in ${language} only, with no translation or transliteration.`;
-}
-
 async function sendToGemini(promptText) {
   const apiKey = process.env.GEMINI_API_KEY || "YOUR_API_KEY";
   const response = await fetch(
@@ -93,11 +92,8 @@ async function sendToGemini(promptText) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: promptText }],
-          },
-        ],
+        model: "gemini-2.5-flash",
+        contents: promptText,
       }),
     }
   );
@@ -109,23 +105,125 @@ async function sendToGemini(promptText) {
   return result?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply";
 }
 
+function buildPrompt(user, history, message) {
+  const supportedLanguages = ["en", "ar", "fr", "ur"];
+  let language = detectLanguage(message) || "en";
+  if (!supportedLanguages.includes(language)) {
+    language = "en";
+  }
+
+  console.log("detectedLang:", language);
+
+  // Create system prompt as a user message (Gemini doesn't support role="system")
+  const systemPrompt = {
+    role: "user",
+    parts: [
+      {
+        text: `
+You are a kind and knowledgeable Islamic assistant.
+You are helping a user named ${user.displayName || "Guest"} from ${
+          user.country || "an unknown country"
+        }.
+
+Always respond with warm, short, and respectful Islamic answers.
+
+Do NOT start your answers with a greeting like "As-salamu alaykum" since you are in the middle of a conversation.
+
+Before ending, suggest 2–3 things the user might want to ask next. Use the format:
+Suggestions:
+- Option 1
+- Option 2
+- Option 3
+
+Suggestions must be under 15 words, no full sentences, no external resources, it should be about what can the conversation be about or what is the subject that the user may ask about next.
+
+Reply only in ${language}. No transliteration. No English explanation.
+        `.trim(),
+      },
+    ],
+  };
+
+  // Convert message history into Gemini format
+  const formattedHistory = history.map((h) => ({
+    role: h.sender === "user" ? "user" : "model",
+    parts: [{ text: h.message }],
+  }));
+
+  // Add the new user message
+  const userMessage = {
+    role: "user",
+    parts: [{ text: message }],
+  };
+
+  // Combine all into one contents[] array
+  const contents = [systemPrompt, ...formattedHistory, userMessage];
+
+  return contents;
+}
 
 function buildWelcomePrompt(user) {
-    const name = user.name || "dear friend";
-    const location = user.country ? `from ${user.country}` : "";
-    const genderGreeting = user.gender === "female" ? "sister" : "brother";
-  
-    return `
+  const name = user.displayName || "dear friend";
+  const location = user.country ? `from ${user.country}` : "";
+  const genderGreeting = user.gender === "female" ? "sister" : "brother";
+
+  const prompt = `
   Greet the user warmly. Their name is ${name}, and they are ${location}.
   Start with "As-salamu alaykum, ${genderGreeting}!"
   
   Offer a helpful message about what they can ask (e.g., prayer, Quran, life in Islam).
   Be friendly, supportive, and informative.
   
-  Speak in their preferred language: ${user.language || 'en'}.
   `;
-  }
-  
+
+  return [
+    {
+      role: "user",
+      parts: [{ text: prompt }],
+    },
+  ];
+}
+
+function buildContextualWelcome(user, lastUserMessage, history) {
+  const name = user.displayName || "dear friend";
+  const country = user.country || "your country";
+  const language = "en";
+  const topicHint = lastUserMessage ? lastUserMessage.message : "";
+  const formattedHistory = history.map((h) => ({
+    role: h.sender === "user" ? "user" : "model",
+    parts: [{ text: h.message }],
+  }));
+
+  const prompt = `
+You are a friendly and respectful Islamic guide.
+
+Welcome the user by name: ${name}. 
+Greet them with: "As-salamu alaykum" in their language: ${language}.
+the user is from ${country}
+
+remind the user of the last topic were talking about then use that to guide the message.
+
+Give 2-3 helpful suggestions related to ${topicHint} using the format:
+Suggestions:
+- Option 1
+- Option 2
+- Option 3
+
+
+Keep suggestions under 15 words each. Avoid full sentences.it should be about what can the conversation be about or what is the subject that the user may ask about next.
+
+
+Respond in ${language}.
+`;
+
+  return [
+    ...formattedHistory,
+    {
+      role: "user",
+      parts: [{ text: prompt }],
+    },
+  ];
+}
+
 module.exports = {
   getLastSession,
   createNewSupabaseSession,
@@ -133,4 +231,6 @@ module.exports = {
   fetchRecentMessages,
   buildPrompt,
   sendToGemini,
+  buildWelcomePrompt,
+  buildContextualWelcome,
 };

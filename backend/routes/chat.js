@@ -8,6 +8,8 @@ const {
   fetchRecentMessages,
   buildPrompt,
   sendToGemini,
+  buildWelcomePrompt,
+  buildContextualWelcome,
 } = require("../services/aiservices.js");
 
 router.post("/start", async (req, res) => {
@@ -16,18 +18,27 @@ router.post("/start", async (req, res) => {
   try {
     const user = await User.findOne({ userId });
     let session = await getLastSession(userId);
+    let greetingMessage;
 
     if (!session) {
       session = await createNewSupabaseSession(userId);
       await User.updateOne({ userId: userId }, { ai_session_id: session.id });
       const prompt = buildWelcomePrompt(user);
-      const welcomeMessage = await sendToGemini(prompt);
+      greetingMessage = await sendToGemini(prompt);
 
       // Save to Supabase
-      await saveChatMessage(session.id, "ai", welcomeMessage);
+      await saveChatMessage(session.id, "ai", greetingMessage);
+    } else {
+      const recentMessages = await fetchRecentMessages(session.id);
+
+      const prompt = buildContextualWelcome(user, recentMessages);
+      greetingMessage = await sendToGemini(prompt);
+
+      // Save AI message
+      await saveChatMessage(session.id, "ai", greetingMessage);
     }
 
-    res.json({ sessionId: session.id });
+    res.json({ sessionId: session.id, greeting: greetingMessage });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -48,7 +59,6 @@ router.post("/send", async (req, res) => {
 
     // Compose prompt with personalization
     const prompt = buildPrompt(user, history, message);
-
     // Call Gemini API
     const aiReply = await sendToGemini(prompt);
 
