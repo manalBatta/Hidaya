@@ -14,3 +14,5 @@ final upvotedAnswerUrl = url + 'upvotedAnswer';
 final myAnswersUrl = url + "myAnwers";
 final startChat = url + 'chat/start';
 final sendChat = url + 'chat/send';
+final deleteQuestionUrl = url + "deletequestions/"; // usage: deleteQuestionUrl + questionId to delete a question
+final updateQuestionUrl = url + "updatequestions/";// usage: updateQuestionUrl + questionId to update a question
