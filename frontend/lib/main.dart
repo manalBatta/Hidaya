@@ -20,12 +20,6 @@ Future<void> resetAppState() async {
   // Clear SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   await prefs.clear();
-
-  // If you use Hive:
-  // var box = await Hive.openBox('yourBoxName');
-  // await box.clear();
-
-  // Add other storage resets as needed
 }
 
 void main() async {

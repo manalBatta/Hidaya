@@ -237,3 +237,24 @@ return res.status(200).json({success:true,message:'Question updated successfully
 
 
 }
+
+// PATCH /questions/:id/ai-answer
+exports.updateAIAnswer = async (req, res, next) => {
+  const questionId = req.params.id;
+  const { aiAnswer } = req.body;
+  if (!aiAnswer) {
+    return res.status(400).json({ success: false, message: 'aiAnswer is required' });
+  }
+  try {
+    const question = await QuestionModel.findOne({ questionId });
+    if (!question) {
+      return res.status(404).json({ success: false, message: 'Question not found' });
+    }
+    question.aiAnswer = aiAnswer;
+    await question.save();
+    return res.status(200).json({ success: true, message: 'AI answer updated successfully', question });
+  } catch (err) {
+    console.error('Error updating AI answer:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
