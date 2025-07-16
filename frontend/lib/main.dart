@@ -14,6 +14,13 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:frontend/utils/auth_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:frontend/providers/NavigationProvider.dart';
+
+Future<void> resetAppState() async {
+  // Clear SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +50,13 @@ void main() async {
   }
 
   runApp(
-    ChangeNotifierProvider(create: (_) => userProvider, child: HidayaApp()),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => userProvider),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
+      ],
+      child: HidayaApp(),
+    ),
   );
 }
 
