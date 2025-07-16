@@ -49,11 +49,16 @@ if (!text || !category) {
   }
 };
 exports.getpublicquestions = async (req, res, next) => {
-  const allpublicquestions = await UserServices.GetPublicQuestions();
+    const {page,limit} = req.query;
+    const { questions, totalCount } = await UserServices.GetPublicQuestions(page, limit);
   res.status(200).json({
     status: true,
     success: "Getting public Questions  successfully",
-    question: allpublicquestions,
+    question: questions,
+    totalCount: totalCount,
+    currentPage: page,
+    totalPages: Math.ceil(totalCount / limit),
+
   });
 };
 exports.getquestionandanswers = async (req, res, next) => {
