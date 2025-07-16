@@ -15,8 +15,12 @@ class QuestionCard extends StatefulWidget {
   final VoidCallback? onRefresh;
   final void Function(Map<String, dynamic> updatedFields)? onUpdate;
 
-  const QuestionCard({Key? key, required this.question, this.onRefresh, this.onUpdate})
-    : super(key: key);
+  const QuestionCard({
+    Key? key,
+    required this.question,
+    this.onRefresh,
+    this.onUpdate,
+  }) : super(key: key);
 
   @override
   State<QuestionCard> createState() => _QuestionCardState();
@@ -75,21 +79,13 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
-   bool hasHummanAnswer(Map<String, dynamic> question){
-     final topAnswerId = question['topAnswerId'];
-     print("topAnswerId by ruba : $topAnswerId");
-  return topAnswerId != null && topAnswerId.toString().trim().isNotEmpty;
+  bool hasHummanAnswer(Map<String, dynamic> question) {
+    final topAnswerId = question['topAnswerId'];
+    print("topAnswerId by ruba : $topAnswerId");
+    return topAnswerId != null && topAnswerId.toString().trim().isNotEmpty;
   }
-  
-  //By Ruby 
-  
-   
 
-
-
-
-
-
+  //By Ruby
 
   @override
   void initState() {
@@ -550,23 +546,22 @@ class _QuestionCardState extends State<QuestionCard> {
     final question = widget.question;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final askedBy = widget.question['askedBy'];
-final askedById = askedBy is String ? askedBy : askedBy?['id'];
-final userId = userProvider.user?['id'];
-final isOwner = askedById == userId;
+    final askedById = askedBy is String ? askedBy : askedBy?['id'];
+    final userId = userProvider.user?['id'];
+    final isOwner = askedById == userId;
 
-final aiAnswer = widget.question['aiAnswer']?.toString().trim();
- final rawTopAnswer = widget.question['topAnswer'];
-final topAnswerId = rawTopAnswer is Map ? rawTopAnswer['answerId']?.toString().trim() : null;
+    final aiAnswer = widget.question['aiAnswer']?.toString().trim();
+    final rawTopAnswer = widget.question['topAnswer'];
+    final topAnswerId =
+        rawTopAnswer is Map
+            ? rawTopAnswer['answerId']?.toString().trim()
+            : null;
 
-  //print("isQwner: $isOwner");
-    //print("aiAnswer: $aiAnswer");
-      //print("topAnswerId: $topAnswerId");
-     // print("rawTopAnswerId: $topAnswerId");
-    //  print("Full question: ${widget.question}");
-final canEdit = isOwner &&
-    aiAnswer != null &&
-    aiAnswer.isNotEmpty &&
-    (topAnswerId == null || topAnswerId.isEmpty);
+    final canEdit =
+        isOwner &&
+        aiAnswer != null &&
+        aiAnswer.isNotEmpty &&
+        (topAnswerId == null || topAnswerId.isEmpty);
 
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -658,38 +653,56 @@ final canEdit = isOwner &&
                         // Delete button for owner
                         if (isOwner)
                           IconButton(
-                            icon: Icon(Icons.delete, color: AppColors.deleteRed),
+                            icon: Icon(
+                              Icons.delete,
+                              color: AppColors.deleteRed,
+                            ),
                             tooltip: 'Delete Question',
                             onPressed: () async {
                               final confirm = await showDialog<bool>(
                                 context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('Delete Question'),
-                                  content: Text('Are you sure you want to delete this question? This action cannot be undone.'),
-                                  actions: [
-                                    TextButton(
-                                      child: Text('Cancel'),
-                                      onPressed: () => Navigator.of(context).pop(false),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red[700],
-                                        foregroundColor: Colors.white,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: Text('Delete Question'),
+                                      content: Text(
+                                        'Are you sure you want to delete this question? This action cannot be undone.',
                                       ),
-                                      child: Text('Delete'),
-                                      onPressed: () => Navigator.of(context).pop(true),
+                                      actions: [
+                                        TextButton(
+                                          child: Text('Cancel'),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                        ),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red[700],
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: Text('Delete'),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
                               );
                               if (confirm == true) {
                                 try {
-                                  final token = await AuthUtils.getValidToken(context);
-                                   final questionId = widget.question['questionId'] ?? widget.question['_id'];
-                              if (questionId == null) {
-                                 throw Exception('Question ID is missing');
-                                       }
-                               final url = Uri.parse('$deleteQuestionUrl$questionId');
+                                  final token = await AuthUtils.getValidToken(
+                                    context,
+                                  );
+                                  final questionId =
+                                      widget.question['questionId'] ??
+                                      widget.question['_id'];
+                                  if (questionId == null) {
+                                    throw Exception('Question ID is missing');
+                                  }
+                                  final url = Uri.parse(
+                                    '$deleteQuestionUrl$questionId',
+                                  );
                                   final response = await http.delete(
                                     url,
                                     headers: {
@@ -698,19 +711,37 @@ final canEdit = isOwner &&
                                     },
                                   );
                                   final data = jsonDecode(response.body);
-                                  if (response.statusCode == 200 && data['success'] == true) {
+                                  if (response.statusCode == 200 &&
+                                      data['success'] == true) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Question deleted successfully'), backgroundColor: Colors.green),
+                                      SnackBar(
+                                        content: Text(
+                                          'Question deleted successfully',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
                                     );
-                                    if (widget.onRefresh != null) widget.onRefresh!();
+                                    if (widget.onRefresh != null)
+                                      widget.onRefresh!();
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(data['message'] ?? 'Failed to delete question'), backgroundColor: Colors.red),
+                                      SnackBar(
+                                        content: Text(
+                                          data['message'] ??
+                                              'Failed to delete question',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
                                     );
                                   }
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error deleting question: $e'), backgroundColor: Colors.red),
+                                    SnackBar(
+                                      content: Text(
+                                        'Error deleting question: $e',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
                                   );
                                 }
                               }
@@ -722,8 +753,12 @@ final canEdit = isOwner &&
                             icon: Icon(Icons.edit, color: Colors.blue[700]),
                             tooltip: 'Edit Question',
                             onPressed: () async {
-                              final TextEditingController editController = TextEditingController(text: widget.question['text']);
-                              String selectedCategory = widget.question['category'] ?? '';
+                              final TextEditingController editController =
+                                  TextEditingController(
+                                    text: widget.question['text'],
+                                  );
+                              String selectedCategory =
+                                  widget.question['category'] ?? '';
                               final categories = [
                                 'Worship',
                                 'Prayer',
@@ -737,83 +772,135 @@ final canEdit = isOwner &&
                                 'Etiquette',
                                 'Other',
                               ];
-                              bool isPublic = widget.question['isPublic'] ?? true;
-                              String newAIAnswer = widget.question['aiAnswer'] ?? '';
+                              bool isPublic =
+                                  widget.question['isPublic'] ?? true;
+                              String newAIAnswer =
+                                  widget.question['aiAnswer'] ?? '';
                               bool textChanged = false;
                               final result = await showDialog<bool>(
                                 context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('Edit Question'),
-                                  content: SingleChildScrollView(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        TextFormField(
-                                          controller: editController,
-                                          maxLines: 4,
-                                          decoration: InputDecoration(
-                                            labelText: 'Question',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          onChanged: (val) {
-                                            textChanged = true;
-                                          },
-                                        ),
-                                        SizedBox(height: 16),
-                                        DropdownButtonFormField<String>(
-                                          value: selectedCategory.isEmpty ? null : selectedCategory,
-                                          items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
-                                          onChanged: (val) => selectedCategory = val ?? '',
-                                          decoration: InputDecoration(
-                                            labelText: 'Category',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                        ),
-                                        SizedBox(height: 16),
-                                        Row(
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: Text('Edit Question'),
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(isPublic ? Icons.lock_open : Icons.lock, color: isPublic ? Colors.green : Colors.orange),
-                                            SizedBox(width: 8),
-                                            Text(isPublic ? 'Public' : 'Private'),
-                                            Spacer(),
-                                            Switch(
-                                              value: isPublic,
+                                            TextFormField(
+                                              controller: editController,
+                                              maxLines: 4,
+                                              decoration: InputDecoration(
+                                                labelText: 'Question',
+                                                border: OutlineInputBorder(),
+                                              ),
                                               onChanged: (val) {
-                                                isPublic = val;
-                                                (context as Element).markNeedsBuild();
+                                                textChanged = true;
                                               },
-                                              activeColor: Colors.green,
-                                              inactiveThumbColor: Colors.orange,
+                                            ),
+                                            SizedBox(height: 16),
+                                            DropdownButtonFormField<String>(
+                                              value:
+                                                  selectedCategory.isEmpty
+                                                      ? null
+                                                      : selectedCategory,
+                                              items:
+                                                  categories
+                                                      .map(
+                                                        (cat) =>
+                                                            DropdownMenuItem(
+                                                              value: cat,
+                                                              child: Text(cat),
+                                                            ),
+                                                      )
+                                                      .toList(),
+                                              onChanged:
+                                                  (val) =>
+                                                      selectedCategory =
+                                                          val ?? '',
+                                              decoration: InputDecoration(
+                                                labelText: 'Category',
+                                                border: OutlineInputBorder(),
+                                              ),
+                                            ),
+                                            SizedBox(height: 16),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  isPublic
+                                                      ? Icons.lock_open
+                                                      : Icons.lock,
+                                                  color:
+                                                      isPublic
+                                                          ? Colors.green
+                                                          : Colors.orange,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  isPublic
+                                                      ? 'Public'
+                                                      : 'Private',
+                                                ),
+                                                Spacer(),
+                                                Switch(
+                                                  value: isPublic,
+                                                  onChanged: (val) {
+                                                    isPublic = val;
+                                                    (context as Element)
+                                                        .markNeedsBuild();
+                                                  },
+                                                  activeColor: Colors.green,
+                                                  inactiveThumbColor:
+                                                      Colors.orange,
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: Text('Cancel'),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                        ),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue[700],
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: Text('Save'),
+                                          onPressed:
+                                              () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      child: Text('Cancel'),
-                                      onPressed: () => Navigator.of(context).pop(false),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue[700],
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      child: Text('Save'),
-                                      onPressed: () => Navigator.of(context).pop(true),
-                                    ),
-                                  ],
-                                ),
                               );
                               if (result == true) {
                                 try {
-                                  final token = await AuthUtils.getValidToken(context);
+                                  final token = await AuthUtils.getValidToken(
+                                    context,
+                                  );
                                   // If the text changed, regenerate the AI answer
-                                  if (textChanged && editController.text.trim() != widget.question['text']) {
-                                    newAIAnswer = await questions_util.generateAIAnswerGemini(editController.text.trim());
+                                  if (textChanged &&
+                                      editController.text.trim() !=
+                                          widget.question['text']) {
+                                    newAIAnswer =
+                                        await questions_util
+                                            .generateAIAnswerGemini(
+                                              editController.text.trim(),
+                                            ) ??
+                                        "";
                                   }
-                                  final url = Uri.parse(updateQuestionUrl+(widget.question['questionId'] ?? widget.question['_id'] ?? ''));
+                                  final url = Uri.parse(
+                                    updateQuestionUrl +
+                                        (widget.question['questionId'] ??
+                                            widget.question['_id'] ??
+                                            ''),
+                                  );
                                   final response = await http.put(
                                     url,
                                     headers: {
@@ -828,14 +915,24 @@ final canEdit = isOwner &&
                                     }),
                                   );
                                   final data = jsonDecode(response.body);
-                                  if (response.statusCode == 200 && data['success'] == true) {
-                                    print("status: ${response.statusCode}, data: $data");
+                                  if (response.statusCode == 200 &&
+                                      data['success'] == true) {
+                                    print(
+                                      "status: ${response.statusCode}, data: $data",
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Question updated successfully'), backgroundColor: Colors.green),
+                                      SnackBar(
+                                        content: Text(
+                                          'Question updated successfully',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
                                     );
                                     setState(() {
-                                      widget.question['text'] = editController.text.trim();
-                                      widget.question['category'] = selectedCategory;
+                                      widget.question['text'] =
+                                          editController.text.trim();
+                                      widget.question['category'] =
+                                          selectedCategory;
                                       widget.question['isPublic'] = isPublic;
                                       widget.question['aiAnswer'] = newAIAnswer;
                                     });
@@ -845,15 +942,27 @@ final canEdit = isOwner &&
                                       'isPublic': isPublic,
                                       'aiAnswer': newAIAnswer,
                                     });
-                                    if (widget.onRefresh != null) widget.onRefresh!();
+                                    if (widget.onRefresh != null)
+                                      widget.onRefresh!();
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(data['message'] ?? 'Failed to update question'), backgroundColor: Colors.red),
+                                      SnackBar(
+                                        content: Text(
+                                          data['message'] ??
+                                              'Failed to update question',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
                                     );
                                   }
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error updating question: $e'), backgroundColor: Colors.red),
+                                    SnackBar(
+                                      content: Text(
+                                        'Error updating question: $e',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
                                   );
                                 }
                               }
@@ -1611,13 +1720,4 @@ final canEdit = isOwner &&
 
     return answeredById?.toString() == userId;
   }
-
-  
-
-
-
-
-
-
 }
-
