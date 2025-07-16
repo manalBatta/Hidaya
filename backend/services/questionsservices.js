@@ -270,7 +270,41 @@ static async SaveQuestion(userId, questionId) {
   return status;
 }
 
+static async DeleteQuestion(userId,questionId){
+  const question = await QuestionModel.findOne({questionId}) //find the question by the questionId
+  if(!question){
+    return null;
+  }
+  if(question.askedBy !== userId){
+    return null;
+  }
+  await QuestionModel.deleteOne({questionId}) //delete the question from the question table
+  await AnswerModel.deleteMany({ questionId }); //delete the answers of this question from the answer table
 
+  await UserModel.updateMany(
+    { savedQuestions: questionId }, //find the users who saved this question
+    { $pull: { savedQuestions: questionId } } //remove the question from the savedQuestions array of the users
+  );
+  return true;
+
+}
+
+static async UpdateQuestion(userId,questionId,text,category,isPublic,aiAnswer){
+  const question = await QuestionModel.findOne({questionId});
+  if(!question){
+    return null;
+  }
+  if(question.askedBy !== userId){
+    return null;
+  }
+  question.text = text;
+  question.category = category;
+  question.isPublic = isPublic;
+  question.aiAnswer = aiAnswer;
+  await question.save();
+  return question;
+  
+}
 
 
 

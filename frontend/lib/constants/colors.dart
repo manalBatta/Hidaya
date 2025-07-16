@@ -47,4 +47,7 @@ class AppColors {
   static const askPageAIDarkBlue = Color(0xFF1E3A8A);
   static const askPageAIText = Color(0xFF1E40AF);
   static const askPageAINote = Color(0xFF1D4ED8);
+
+  // Red color for delete icon
+  static const deleteRed = Color(0xFFD32F2F); // Material Red 700
 }
