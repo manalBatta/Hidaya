@@ -17,6 +17,12 @@ import '../providers/UserProvider.dart';
 import '../utils/auth_utils.dart';
 import 'MyAnswerCard.dart';
 
+export 'package:frontend/widgets/Qustions.dart' show generateAIAnswerGemini;
+
+
+
+
+
 class Questions extends StatefulWidget {
   @override
   _QuestionsState createState() => _QuestionsState();
@@ -519,6 +525,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   bool _myQuestionsLoaded = false;
   bool _communityQuestionsLoaded = false;
 
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
@@ -575,6 +583,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
         getFavoriteQuestions();
       }
     });
+    
   }
 
   @override
@@ -584,6 +593,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     _successAnimationController.dispose();
     _failAnimationController.dispose();
     _tabController.dispose();
+    _timer?.cancel();
     // Remove listener to prevent memory leaks
     userProvider?.removeListener(() {});
     super.dispose();
@@ -1285,7 +1295,29 @@ Question: "$questionText"
     _getCommunityAndRecentQuestions();
     _getMyAnswers();
     getFavoriteQuestions();
+    _getMyQuestions();
   }
+
+//By Ruba 
+
+ 
+//By Ruby
+
+
+void _startRepeatingTimer(){
+  _timer = Timer.periodic(Duration(seconds: 2), (Timer timer) {
+    refreshAllTabs();
+  });
+ 
+}
+
+
+
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -2043,7 +2075,17 @@ Question: "$questionText"
                         final question = filteredQuestions[index];
                         return QuestionCard(
                           question: question,
-                          onRefresh: refreshAllTabs,
+                          onUpdate: (updatedFields) {
+                            print("✅ onUpdate triggered with: $updatedFields");
+                            final questionId = question['questionId'];
+                            final originalIndex = _communityQuestions.indexWhere((q) => q['questionId'] == questionId);
+                            if (originalIndex != -1) {
+                              setState(() {
+                                _communityQuestions[originalIndex].addAll(updatedFields);
+                              });
+                              refreshAllTabs();
+                            }
+                          },
                         );
                       },
                     ),
@@ -2066,7 +2108,7 @@ Question: "$questionText"
                 itemCount: _myQuestions.length,
                 itemBuilder: (context, index) {
                   final question = _myQuestions[index];
-                  return QuestionCard(question: question);
+                  return QuestionCard(question: question, onRefresh: refreshAllTabs);
                 },
               ),
     );
@@ -2138,3 +2180,59 @@ Question: "$questionText"
     );
   }
 }
+
+
+
+
+
+ Future<String> generateAIAnswerGemini(String questionText) async {
+    final prompt = '''
+Provide a concise, clear Islamic answer to the following question.
+Use proper spacing between all words and punctuation.
+Format the response in a clear, readable manner with correct grammar and spacing.
+Question: "$questionText"
+''';
+
+    StringBuffer buffer = StringBuffer();
+    final completer = Completer<String>();
+    String previousOutput = '';
+
+    Gemini.instance
+        .promptStream(parts: [Part.text(prompt)])
+        .listen(
+          (value) {
+            if (value?.output != null) {
+              final current = value?.output?.trim() ?? '';
+              final lastChar =
+                  previousOutput.isNotEmpty
+                      ? previousOutput[previousOutput.length - 1]
+                      : '';
+
+              // Add a space if needed
+              if (lastChar.isNotEmpty &&
+                  !lastChar.contains(RegExp(r'[ \n\r\t.,;:!?(){}[\]]')) &&
+                  !current.startsWith(RegExp(r'[ \n\r\t.,;:!?(){}[\]]'))) {
+                buffer.write(' ');
+              }
+
+              buffer.write(current);
+              previousOutput = current;
+            }
+          },
+          onDone: () {
+            completer.complete(buffer.toString());
+          },
+          onError: (e) {
+            print('Error fetching AI answer from Gemini: $e');
+            completer.complete('');
+          },
+        );
+
+    return await completer.future;
+  }
+
+
+
+
+
+

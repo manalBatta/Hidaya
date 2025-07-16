@@ -189,3 +189,46 @@ catch(err){
     res.status(500).json({ success: false, message: 'Server error' });
 }
 };
+
+exports.deletequestion = async (req , res , next) => {
+  const userId = req.userId;
+  const { id } = req.params;
+  if (!id){
+    return res.status(400).json({ success: false, message: 'questionId is required to delete a question'})
+  }
+  try{
+    const question = await UserServices.DeleteQuestion(userId,id);
+  if(!question){
+return res.status(404).json({ success: false, message: 'Question not found'})
+  }
+return res.status(200).json({success:true,message:'Question deleted successfully'})
+
+}
+  catch(err){
+    console.error('Error deleting question:', err)
+  }
+};
+
+
+exports.updatequestion = async (req , res , next) => {
+  const userId = req.userId;
+  const questionId = req.params.id; 
+    const {text , category , isPublic , aiAnswer} = req.body;
+ if(!questionId || !text || !category || isPublic === undefined){
+  return res.status(400).json({success:false,message:'All fields are required'});
+ }
+ try{
+const question = await UserServices.UpdateQuestion(userId,questionId,text,category,isPublic, aiAnswer);
+if(!question){
+  return res.status(404).json({success:false,message:'Question not found'});
+}
+return res.status(200).json({success:true,message:'Question updated successfully'});
+
+ }
+ catch(err){
+  console.error('Error updating question:' , err);
+  return res.status(500).json({success:false,message:'Server error'})
+ }
+
+
+}
