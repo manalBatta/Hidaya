@@ -9,7 +9,6 @@ const {
   buildPrompt,
   sendToGemini,
   buildWelcomePrompt,
-  buildContextualWelcome,
 } = require("../services/aiservices.js");
 
 router.post("/start", async (req, res) => {
@@ -31,9 +30,10 @@ router.post("/start", async (req, res) => {
     } else {
       const recentMessages = await fetchRecentMessages(session.id);
 
-      const prompt = buildContextualWelcome(user, recentMessages);
+      console.log("recnet messages to continue: ", recentMessages);
+      // Use buildPrompt with isStartWithHistory flag
+      const prompt = buildPrompt(user, recentMessages, "", true);
       greetingMessage = await sendToGemini(prompt);
-
       // Save AI message
       await saveChatMessage(session.id, "ai", greetingMessage);
     }
