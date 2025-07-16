@@ -29,6 +29,41 @@ class ChatMessage {
   ChatMessage({required this.type, required this.content});
 }
 
+class ParsedAIMessage {
+  final String cleanMessage;
+  final List<String> suggestions;
+
+  ParsedAIMessage({required this.cleanMessage, required this.suggestions});
+}
+
+ParsedAIMessage extractSuggestions(String aiMessage) {
+  final suggestions = <String>[];
+  final suggestionsStart = aiMessage.indexOf("Suggestions:");
+
+  if (suggestionsStart == -1) {
+    return ParsedAIMessage(cleanMessage: aiMessage.trim(), suggestions: []);
+  }
+
+  final messageWithoutSuggestions =
+      aiMessage.substring(0, suggestionsStart).trim();
+  final suggestionsText = aiMessage.substring(
+    suggestionsStart + "Suggestions:".length,
+  );
+  final lines = suggestionsText.split('\n');
+
+  for (var line in lines) {
+    final trimmed = line.trim().replaceFirst(RegExp(r'^[-•*]\s*'), '');
+    if (trimmed.isNotEmpty) {
+      suggestions.add(trimmed);
+    }
+  }
+
+  return ParsedAIMessage(
+    cleanMessage: messageWithoutSuggestions,
+    suggestions: suggestions,
+  );
+}
+
 class ImmersiveAIChat extends StatefulWidget {
   final VoidCallback? onClose;
 
@@ -107,6 +142,9 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         final data = jsonDecode(response.body);
 
         userProvider.setSessionId(data['sessionId']);
+        _scrollToBottom();
+        await _typeAIResponse(data["greeting"]);
+        _scrollToBottom();
       } else {
         // handle failure
         ScaffoldMessenger.of(
@@ -120,12 +158,15 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     }
   }
 
-  Future<void> _sendMessage() async {
+  Future<void> _sendMessage([String? message]) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final sessionId = userProvider.sessionId;
 
-    if (_inputController.text.trim().isEmpty || sessionId == null) return;
-    final content = _inputController.text.trim();
+    if ((message == null && _inputController.text.trim().isEmpty) ||
+        sessionId == null) {
+      return;
+    }
+    final content = message ?? _inputController.text.trim();
     final userMessage = ChatMessage(type: 'user', content: content);
 
     if (!mounted) return;
@@ -137,6 +178,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     });
     _inputController.clear();
     _scrollToBottom();
+
     try {
       final token = await AuthUtils.getValidToken(context);
 
@@ -155,8 +197,16 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
       final data = jsonDecode(response.body);
 
-      _scrollToBottom();
-      await _typeAIResponse(data["reply"]);
+      if (response.statusCode == 200 && data["reply"] != null) {
+        _scrollToBottom();
+        await _typeAIResponse(data["reply"]);
+        _scrollToBottom();
+      } else {
+        // Handle error or missing reply
+        await _typeAIResponse(
+          "I'm sorry, I couldn't process your question at the moment. Please try again, or ask another question about Islam and I'll do my best to help you.",
+        );
+      }
       print("answer is : $data");
       _scrollToBottom();
     } catch (e) {
@@ -177,6 +227,12 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
   Future<void> _typeAIResponse(String response) async {
     if (!mounted) return;
+
+    // Parse the message and suggestions
+    final parsed = extractSuggestions(response);
+    final cleanResponse = parsed.cleanMessage;
+    final suggestions = parsed.suggestions;
+
     setState(() {
       _isTyping = true;
       _typingText = "";
@@ -184,10 +240,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       _waveFrequency = 1.5;
     });
 
-    for (int i = 0; i <= response.length; i++) {
+    for (int i = 0; i <= cleanResponse.length; i++) {
       if (mounted) {
         setState(() {
-          _typingText = response.substring(0, i);
+          _typingText = cleanResponse.substring(0, i);
         });
         await Future.delayed(const Duration(milliseconds: 30));
       } else {
@@ -195,17 +251,28 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       }
     }
 
-    final aiMessage = ChatMessage(type: 'ai', content: response);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     if (mounted) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
       setState(() {
-        userProvider.addMessage(aiMessage);
+        // Add the AI message (without suggestions)
+        userProvider.addMessage(
+          ChatMessage(type: 'ai', content: cleanResponse),
+        );
+
+        // Add each suggestion as a button (custom message type)
+        for (var suggestion in suggestions) {
+          userProvider.addMessage(
+            ChatMessage(type: 'suggestion', content: suggestion),
+          );
+        }
+
         _isTyping = false;
         _typingText = "";
         _waveAmplitude = 0.3;
         _waveFrequency = 1.0;
       });
+
       _scrollToBottom();
     }
   }
@@ -246,6 +313,34 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
   Widget _buildMessageBubble(ChatMessage message, int index) {
     final isUser = message.type == 'user';
+    if (message.type == 'suggestion') {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  _isDarkMode
+                      ? Colors.green.shade700.withOpacity(0.9)
+                      : const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            onPressed: () {
+              _sendMessage(message.content);
+            },
+            child: Text(
+              message.content,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -484,7 +579,6 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                           listen: false,
                         );
                         userProvider.clearMessages();
-                        await _initializeChatSession();
                       },
                       icon: Icon(
                         Icons.add_comment,

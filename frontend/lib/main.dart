@@ -16,6 +16,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:frontend/providers/NavigationProvider.dart';
 
+Future<void> resetAppState() async {
+  // Clear SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
+  // If you use Hive:
+  // var box = await Hive.openBox('yourBoxName');
+  // await box.clear();
+
+  // Add other storage resets as needed
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'assets/.env');
