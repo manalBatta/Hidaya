@@ -22,7 +22,8 @@ router.post("/saveQuestion",authMiddleware,QuestionController.savequestion);
 router.get("/myAnwers",authMiddleware,AnswerController.getanswersofvolunteer);
 router.get("/upvotedAnswer",authMiddleware,AnswerController.getanswerupvotedbyvolunteer);
 router.get("/api/lessons",LessonController.getalllesson);
-
+router.delete("/deletequestions/:id", authMiddleware, QuestionController.deletequestion);
+router.put("/updatequestions/:id", authMiddleware, QuestionController.updatequestion);
 
 
 
