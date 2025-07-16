@@ -6,6 +6,14 @@ class UserProvider with ChangeNotifier {
   Map<String, dynamic>? _user;
   String? _sessionId;
 
+  // Chat session initialization flag
+  bool _chatInitialized = false;
+  bool get chatInitialized => _chatInitialized;
+  void setChatInitialized(bool value) {
+    _chatInitialized = value;
+    notifyListeners();
+  }
+
   Map<String, dynamic>? get user => _user;
   String? get sessionId => _sessionId;
 
@@ -68,6 +76,7 @@ class UserProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('user');
     prefs.remove('sessionId');
+    setChatInitialized(true);
   }
 
   // Add a question to savedQuestions and persist

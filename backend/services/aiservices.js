@@ -81,7 +81,7 @@ async function fetchRecentMessages(sessionId, limit = 10) {
     return [];
   }
 
-  return data; // [{ sender: 'user', message: '...' }, ...]
+  return data || [];
 }
 
 async function sendToGemini(promptText) {
@@ -105,7 +105,7 @@ async function sendToGemini(promptText) {
   return result?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply";
 }
 
-function buildPrompt(user, history, message) {
+function buildPrompt(user, history, message, isStartWithHistory = false) {
   const supportedLanguages = ["en", "ar", "fr", "ur"];
   let language = detectLanguage(message) || "en";
   if (!supportedLanguages.includes(language)) {
@@ -114,16 +114,44 @@ function buildPrompt(user, history, message) {
 
   console.log("detectedLang:", language);
 
-  // Create system prompt as a user message (Gemini doesn't support role="system")
-  const systemPrompt = {
-    role: "user",
-    parts: [
-      {
-        text: `
+  let systemPromptText;
+  if (isStartWithHistory) {
+    // Greet and remind user of last topic if possible
+    const lastUserMsg =
+      history && history.length > 0
+        ? history.filter((h) => h.sender === "user").slice(-1)[0]?.message
+        : "";
+    console.log("last message was", lastUserMsg);
+    systemPromptText = `
 You are a kind and knowledgeable Islamic assistant.
 You are helping a user named ${user.displayName || "Guest"} from ${
-          user.country || "an unknown country"
-        }.
+      user.country || "an unknown country"
+    }.
+
+Greet the user with "As-salamu alaykum" in their language (${language}).
+If there is context from previous messages, remind the user of the last topic discussed: ${
+      lastUserMsg ? `"${lastUserMsg}"` : "(no previous topic)"
+    }.
+
+Always respond with warm, short, and respectful Islamic answers.
+
+Before ending, suggest 2–3 things the user might want to ask next. Use the format:
+Suggestions:
+- Option 1
+- Option 2
+- Option 3
+
+Suggestions must be under 15 words, no full sentences, no external resources, it should be about what can the conversation be about or what is the subject that the user may ask about next.
+
+Reply only in ${language}. No transliteration. No English explanation.
+    `.trim();
+  } else {
+    // Middle of conversation (default behavior)
+    systemPromptText = `
+You are a kind and knowledgeable Islamic assistant.
+You are helping a user named ${user.displayName || "Guest"} from ${
+      user.country || "an unknown country"
+    }.
 
 Always respond with warm, short, and respectful Islamic answers.
 
@@ -138,7 +166,15 @@ Suggestions:
 Suggestions must be under 15 words, no full sentences, no external resources, it should be about what can the conversation be about or what is the subject that the user may ask about next.
 
 Reply only in ${language}. No transliteration. No English explanation.
-        `.trim(),
+    `.trim();
+  }
+
+  // Create system prompt as a user message (Gemini doesn't support role="system")
+  const systemPrompt = {
+    role: "user",
+    parts: [
+      {
+        text: systemPromptText,
       },
     ],
   };
@@ -188,6 +224,7 @@ function buildContextualWelcome(user, lastUserMessage, history) {
   const country = user.country || "your country";
   const language = "en";
   const topicHint = lastUserMessage ? lastUserMessage.message : "";
+  if (history == undefined) history = [];
   const formattedHistory = history.map((h) => ({
     role: h.sender === "user" ? "user" : "model",
     parts: [{ text: h.message }],
@@ -200,7 +237,8 @@ Welcome the user by name: ${name}.
 Greet them with: "As-salamu alaykum" in their language: ${language}.
 the user is from ${country}
 
-remind the user of the last topic were talking about then use that to guide the message.
+if there is context previous messages use them to remind the user of the last topic were talking about then use that to guide the message.
+
 
 Give 2-3 helpful suggestions related to ${topicHint} using the format:
 Suggestions:

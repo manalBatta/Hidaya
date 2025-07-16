@@ -125,6 +125,11 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
   Future<void> _initializeChatSession() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
+    if (userProvider.chatInitialized) {
+      _scrollToBottom();
+      return;
+    }
+
     if (!mounted) return;
     try {
       final token = await AuthUtils.getValidToken(context);
@@ -138,24 +143,27 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         body: jsonEncode({'userId': userProvider.userId}),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
 
+      if (response.statusCode == 200) {
         userProvider.setSessionId(data['sessionId']);
         _scrollToBottom();
         await _typeAIResponse(data["greeting"]);
         _scrollToBottom();
       } else {
-        // handle failure
+        // handle failure, display error from response if available
+        final errorMsg = data['error'] ?? 'Failed to start session';
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to start sission')));
+        ).showSnackBar(SnackBar(content: Text(errorMsg)));
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+
+    userProvider.setChatInitialized(true);
   }
 
   Future<void> _sendMessage([String? message]) async {
@@ -290,24 +298,31 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
   }
 
   Widget _buildAnimatedWaveform() {
-    return Container(
-      width: double.infinity,
-      height: 128,
-      child: AnimatedBuilder(
-        animation: _waveController,
-        builder: (context, child) {
-          return CustomPaint(
-            painter: WaveformPainter(
-              progress: _waveController.value,
-              amplitude: _waveAmplitude,
-              frequency: _waveFrequency,
-              isDarkMode: _isDarkMode,
-              isResponding: _isResponding,
-            ),
-            size: Size.infinite,
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double maxHeight = MediaQuery.of(context).size.height * 0.15;
+        if (maxHeight < 64) maxHeight = 64;
+        if (maxHeight > 128) maxHeight = 128;
+        return Container(
+          width: double.infinity,
+          height: maxHeight,
+          child: AnimatedBuilder(
+            animation: _waveController,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: WaveformPainter(
+                  progress: _waveController.value,
+                  amplitude: _waveAmplitude,
+                  frequency: _waveFrequency,
+                  isDarkMode: _isDarkMode,
+                  isResponding: _isResponding,
+                ),
+                size: Size(constraints.maxWidth, maxHeight),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -605,213 +620,195 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               ),
 
               // Main Content
-              Expanded(
+              // Animation and status area
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Waveform Section
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildAnimatedWaveform(),
-                            const SizedBox(height: 32),
-                            if (_isResponding)
-                              Text(
-                                'AI is responding...',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF059669),
-                                ),
-                              )
-                            else if (_isTyping)
-                              Text(
-                                'Typing response...',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color:
-                                      _isDarkMode
-                                          ? Colors.green.shade300
-                                          : const Color(0xFF059669),
-                                ),
-                              )
-                            else if (messages.isEmpty)
-                              Column(
-                                children: [
-                                  Text(
-                                    'Welcome to the immersive Islamic AI experience',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w500,
-                                      color:
-                                          _isDarkMode
-                                              ? Colors.white
-                                              : const Color(0xFF064E3B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Ask me anything about Islam, and I\'ll guide you with wisdom from the Quran and Sunnah',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color:
-                                          _isDarkMode
-                                              ? Colors.grey.shade300
-                                              : const Color(0xFF059669),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
+                    _buildAnimatedWaveform(),
+                    const SizedBox(height: 32),
+                    if (_isResponding)
+                      Text(
+                        'AI is responding...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF059669),
                         ),
-                      ),
-                    ),
-
-                    // Chat Section
-                    Container(
-                      height: 400,
-                      decoration: BoxDecoration(
-                        color: (_isDarkMode ? Colors.black : Colors.white)
-                            .withOpacity(0.2),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(20),
+                      )
+                    else if (_isTyping)
+                      Text(
+                        'Typing response...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              _isDarkMode
+                                  ? Colors.green.shade300
+                                  : const Color(0xFF059669),
                         ),
-                      ),
-                      child: Column(
+                      )
+                    else if (messages.isEmpty)
+                      Column(
                         children: [
-                          // Messages
-                          Expanded(
-                            child:
-                                messages.isEmpty && !_isTyping
-                                    ? _buildSuggestions()
-                                    : ListView.builder(
-                                      controller: _scrollController,
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount:
-                                          messages.length + (_isTyping ? 1 : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index < messages.length) {
-                                          return _buildMessageBubble(
-                                            messages[index],
-                                            index,
-                                          );
-                                        } else {
-                                          return _buildTypingIndicator();
-                                        }
-                                      },
-                                    ),
-                          ),
-
-                          // Input Area
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: (_isDarkMode ? Colors.black : Colors.white)
-                                  .withOpacity(0.3),
-                              border: Border(
-                                top: BorderSide(
-                                  color:
-                                      _isDarkMode
-                                          ? Colors.green.shade600.withOpacity(
-                                            0.3,
-                                          )
-                                          : const Color(
-                                            0xFF059669,
-                                          ).withOpacity(0.2),
-                                ),
-                              ),
+                          Text(
+                            'Welcome to the immersive Islamic AI experience',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              color:
+                                  _isDarkMode
+                                      ? Colors.white
+                                      : const Color(0xFF064E3B),
                             ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: (_isDarkMode
-                                              ? Colors.grey.shade800
-                                              : Colors.white)
-                                          .withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(24),
-                                      border: Border.all(
-                                        color:
-                                            _isDarkMode
-                                                ? Colors.green.shade600
-                                                    .withOpacity(0.3)
-                                                : const Color(
-                                                  0xFF059669,
-                                                ).withOpacity(0.2),
-                                      ),
-                                    ),
-                                    child: TextField(
-                                      controller: _inputController,
-                                      decoration: InputDecoration(
-                                        hintText:
-                                            'Ask a question about Islam...',
-                                        hintStyle: TextStyle(
-                                          color:
-                                              _isDarkMode
-                                                  ? Colors.grey.shade400
-                                                  : Colors.grey.shade600,
-                                        ),
-                                        border: InputBorder.none,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 20,
-                                              vertical: 16,
-                                            ),
-                                        /* suffixIcon: IconButton(
-                                          onPressed: () {
-                                            // Voice input functionality
-                                          },
-                                          icon: Icon(
-                                            Icons.mic,
-                                            color:
-                                                _isDarkMode
-                                                    ? Colors.green.shade400
-                                                    : const Color(0xFF059669),
-                                          ),
-                                        ), */
-                                      ),
-                                      style: TextStyle(
-                                        color:
-                                            _isDarkMode
-                                                ? Colors.white
-                                                : const Color(0xFF064E3B),
-                                        fontSize: 16,
-                                      ),
-                                      enabled: !_isResponding,
-                                      onSubmitted: (_) => _sendMessage(),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color:
-                                        _isDarkMode
-                                            ? Colors.green.shade600
-                                            : const Color(0xFF059669),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: IconButton(
-                                    onPressed:
-                                        _inputController.text.trim().isEmpty ||
-                                                _isResponding
-                                            ? null
-                                            : _sendMessage,
-                                    icon: const Icon(
-                                      Icons.send,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Ask me anything about Islam, and I\'ll guide you with wisdom from the Quran and Sunnah',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color:
+                                  _isDarkMode
+                                      ? Colors.grey.shade300
+                                      : const Color(0xFF059669),
                             ),
                           ),
                         ],
+                      ),
+                  ],
+                ),
+              ),
+              // Chat Section
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: (_isDarkMode ? Colors.black : Colors.white)
+                        .withOpacity(0.2),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child:
+                      messages.isEmpty && !_isTyping
+                          ? _buildSuggestions()
+                          : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: messages.length + (_isTyping ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index < messages.length) {
+                                if (messages[index].type == 'suggestion') {
+                                  // Only render the first suggestion in a group
+                                  if (index == 0 ||
+                                      messages[index - 1].type !=
+                                          'suggestion') {
+                                    // Find the end of this suggestion group
+                                    int end = index;
+                                    while (end < messages.length &&
+                                        messages[end].type == 'suggestion') {
+                                      end++;
+                                    }
+                                    final group =
+                                        messages
+                                            .sublist(index, end)
+                                            .cast<ChatMessage>();
+                                    return buildSuggestionsRow(group);
+                                  } else {
+                                    // Skip rendering this suggestion, as it's part of a group already rendered
+                                    return SizedBox.shrink();
+                                  }
+                                }
+                                // Render normal message
+                                return _buildMessageBubble(
+                                  messages[index],
+                                  index,
+                                );
+                              } else {
+                                return _buildTypingIndicator();
+                              }
+                            },
+                          ),
+                ),
+              ),
+              // Input Area
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: (_isDarkMode ? Colors.black : Colors.white)
+                      .withOpacity(0.3),
+                  border: Border(
+                    top: BorderSide(
+                      color:
+                          _isDarkMode
+                              ? Colors.green.shade600.withOpacity(0.3)
+                              : const Color(0xFF059669).withOpacity(0.2),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: (_isDarkMode
+                                  ? Colors.grey.shade800
+                                  : Colors.white)
+                              .withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color:
+                                _isDarkMode
+                                    ? Colors.green.shade600.withOpacity(0.3)
+                                    : const Color(0xFF059669).withOpacity(0.2),
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _inputController,
+                          decoration: InputDecoration(
+                            hintText: 'Ask a question about Islam...',
+                            hintStyle: TextStyle(
+                              color:
+                                  _isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          style: TextStyle(
+                            color:
+                                _isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF064E3B),
+                            fontSize: 16,
+                          ),
+                          enabled: !_isResponding,
+                          onSubmitted: (_) => _sendMessage(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color:
+                            _isDarkMode
+                                ? Colors.green.shade600
+                                : const Color(0xFF059669),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: IconButton(
+                        onPressed:
+                            _inputController.text.trim().isEmpty ||
+                                    _isResponding
+                                ? null
+                                : _sendMessage,
+                        icon: const Icon(Icons.send, color: Colors.white),
                       ),
                     ),
                   ],
@@ -864,6 +861,44 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                 );
               }).toList(),
         ),
+      ),
+    );
+  }
+
+  Widget buildSuggestionsRow(List<ChatMessage> suggestions) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      child: Wrap(
+        spacing: 8,
+        children:
+            suggestions.map((message) {
+              return ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      _isDarkMode
+                          ? Colors.green.shade700.withOpacity(0.9)
+                          : const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {
+                  _sendMessage(message.content);
+                },
+                child: Text(
+                  message.content,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
