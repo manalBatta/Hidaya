@@ -48,6 +48,4 @@ router.patch(
   QuestionController.updateAIAnswer
 );
 
-
-
 module.exports = router;

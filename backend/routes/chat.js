@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const { askGeminiWithLangchain } = require("../services/langchainGemini.js");
+
 const {
   getLastSession,
   createNewSupabaseSession,
@@ -22,22 +24,31 @@ router.post("/start", async (req, res) => {
     if (!session) {
       session = await createNewSupabaseSession(userId);
       await User.updateOne({ userId: userId }, { ai_session_id: session.id });
-      const prompt = buildWelcomePrompt(user);
-      greetingMessage = await sendToGemini(prompt);
 
-      // Save to Supabase
+      // Use LangChain to generate welcome
+      greetingMessage = await askGeminiWithLangchain({
+        user,
+        history: [],
+        message: "start", // trigger for a warm intro
+      });
+
+      // Save greeting to Supabase
       await saveChatMessage(session.id, "ai", greetingMessage);
     } else {
       const recentMessages = await fetchRecentMessages(session.id);
+      const lastUserMessage =
+        recentMessages.filter((m) => m.sender === "user").slice(-1)[0]
+          ?.message || "";
 
-      console.log("recnet messages to continue: ", recentMessages);
-      // Use buildPrompt with isStartWithHistory flag
-      const prompt = buildPrompt(user, recentMessages, "", true);
-      greetingMessage = await sendToGemini(prompt);
-      // Save AI message
+      greetingMessage = await askGeminiWithLangchain({
+        user,
+        history: recentMessages,
+        message: "__resume__", // Special marker
+        lastUserMessage,
+      });
+
       await saveChatMessage(session.id, "ai", greetingMessage);
     }
-
     res.json({ sessionId: session.id, greeting: greetingMessage });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -57,10 +68,12 @@ router.post("/send", async (req, res) => {
     // Get user profile from MongoDB
     const user = await User.findOne({ userId });
 
-    // Compose prompt with personalization
-    const prompt = buildPrompt(user, history, message);
     // Call Gemini API
-    const aiReply = await sendToGemini(prompt);
+    const aiReply = await askGeminiWithLangchain({
+      user,
+      history,
+      message,
+    });
 
     // Save AI message to Supabase
     await saveChatMessage(sessionId, "ai", aiReply);
