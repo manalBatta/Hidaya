@@ -55,7 +55,7 @@ async function createNewSupabaseSession(userId) {
     console.error("Error creating new session:", error);
     throw new Error("Failed to create session");
   }
-
+  console.log("created new sessionid:", data.id, "for the userid:", userId);
   return data; // new session row with id
 }
 
@@ -73,14 +73,14 @@ async function fetchRecentMessages(sessionId, limit = 10) {
     .from("chat_messages")
     .select("sender, message")
     .eq("session_id", sessionId)
-    .order("timestamp", { ascending: true })
+    .order("timestamp", { ascending: false })
     .limit(limit);
 
   if (error) {
     console.error("Error fetching messages:", error);
     return [];
   }
-
+  console.log("History messages", data);
   return data || [];
 }
 
