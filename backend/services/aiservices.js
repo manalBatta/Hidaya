@@ -55,7 +55,7 @@ async function createNewSupabaseSession(userId) {
     console.error("Error creating new session:", error);
     throw new Error("Failed to create session");
   }
-
+  console.log("created new sessionid:", data.id, "for the userid:", userId);
   return data; // new session row with id
 }
 
