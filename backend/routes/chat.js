@@ -8,9 +8,7 @@ const {
   createNewSupabaseSession,
   saveChatMessage,
   fetchRecentMessages,
-  buildPrompt,
-  sendToGemini,
-  buildWelcomePrompt,
+  detectLanguage,
 } = require("../services/aiservices.js");
 
 router.post("/start", async (req, res) => {
@@ -39,11 +37,13 @@ router.post("/start", async (req, res) => {
       const lastUserMessage =
         recentMessages.filter((m) => m.sender === "user").slice(-1)[0]
           ?.message || "";
-
+      //detect lang
+      const language = detectLanguage(lastUserMessage);
       greetingMessage = await askGeminiWithLangchain({
         user,
         history: recentMessages,
         message: "__resume__", // Special marker
+        language,
         lastUserMessage,
       });
 
@@ -68,11 +68,15 @@ router.post("/send", async (req, res) => {
     // Get user profile from MongoDB
     const user = await User.findOne({ userId });
 
+    //detect lang
+    const language = detectLanguage(message);
+
     // Call Gemini API
     const aiReply = await askGeminiWithLangchain({
       user,
       history,
       message,
+      language,
     });
 
     // Save AI message to Supabase
