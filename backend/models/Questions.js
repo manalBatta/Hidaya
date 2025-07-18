@@ -11,7 +11,8 @@ const questionSchema = new Schema({
   aiAnswer: { type: String }, 
   topAnswerId: { type: String }, 
   tags: [{ type: String }], 
-  category: { type: String } 
+  category: { type: String } ,
+  isFlagged: { type:Boolean, default: false}
 });
 
 module.exports = mongoose.model('Question', questionSchema,'Questions');

@@ -48,9 +48,19 @@ if (!text || !category) {
     next(err);
   }
 };
+
+
+
+
+
+
 exports.getpublicquestions = async (req, res, next) => {
-    const {page,limit} = req.query;
-    const { questions, totalCount } = await UserServices.GetPublicQuestions(page, limit);
+    const {page,limit , userCountry = '' , userTags = ''} = req.query;
+    let tagsArray = [];
+    if(typeof userTags === 'string' && userTags.length > 0){
+      tagsArray= userTags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+    const { questions, totalCount } = await UserServices.GetPublicQuestions(page, limit, userCountry , tagsArray);
   res.status(200).json({
     status: true,
     success: "Getting public Questions  successfully",
@@ -61,6 +71,10 @@ exports.getpublicquestions = async (req, res, next) => {
 
   });
 };
+
+
+
+
 exports.getquestionandanswers = async (req, res, next) => {
   const { id } = req.params;
 
