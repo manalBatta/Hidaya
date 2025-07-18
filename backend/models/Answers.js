@@ -9,7 +9,8 @@ const answerSchema = new Schema({
   answeredBy: { type: String, required: true },
   createdAt: { type: Date, required: true },
   language: { type: String, required: true },
-  upvotesCount: { type: Number, default: 0 }
+  upvotesCount: { type: Number, default: 0 },
+  isFlagged: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Answer', answerSchema, 'Answers');

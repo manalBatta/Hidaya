@@ -1,28 +1,28 @@
 const FlagServices = require('../services/flagsservices');
-
-exports.flagitem= async(req , res , next ) =>{
+const { v4: uuidv4 } = require('uuid');
+exports.reportquestion= async(req , res , next ) =>{
 try{
-    const { itemType, itemId, reason } = req.body;
+    const { questionId, reportType, description , itemType } = req.body;
     console.log("request body is:",req.body);
     const reportedBy = req.userId; //from token
-    if (!itemType || !itemId || !reason) {
+    if (!questionId || !reportType || !description) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const Newflag = {
-     flagId: require('uuid').v4(),
+     flagId: uuidv4(),
       itemType,
-      itemId,
+      itemId: questionId,
       reportedBy,
-      reason,
+      description,
       status: 'pending',
       createdAt: new Date()
     };
 
    const { newFlag } = await FlagServices.SubmitFlag(Newflag);
-
+ 
     const flagToReturn = newFlag.toObject();
-    
+    console.log("flagToReturn is:",flagToReturn);
 res.status(201).json({
   status: true,
   success: 'flag submitted successfully',

@@ -9,17 +9,20 @@ import '../utils/auth_utils.dart';
 import '../constants/colors.dart';
 import 'AIResponseCard.dart';
 import '../widgets/Qustions.dart' as questions_util;
+import '../widgets/ReportModal.dart';
 
 class QuestionCard extends StatefulWidget {
   final Map<String, dynamic> question;
   final VoidCallback? onRefresh;
   final void Function(Map<String, dynamic> updatedFields)? onUpdate;
+  final VoidCallback? onReportSuccess;
 
   const QuestionCard({
     Key? key,
     required this.question,
     this.onRefresh,
     this.onUpdate,
+    this.onReportSuccess,
   }) : super(key: key);
 
   @override
@@ -310,7 +313,6 @@ class _QuestionCardState extends State<QuestionCard> {
           'Content-Type': 'application/json',
         },
       );
-      print("get upvoted Answer initilization :${response.body}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -362,7 +364,6 @@ class _QuestionCardState extends State<QuestionCard> {
         },
         body: jsonEncode({"answerId": answerId}),
       );
-      print('Upvote response body: ${response.body}');
       if (response.statusCode == 200) {
         setState(() {
           isUpvoting = false;
@@ -541,6 +542,19 @@ class _QuestionCardState extends State<QuestionCard> {
     }
   }
 
+  void _handleReportSuccess(String answerId) {
+    setState(() {
+      final answerIndex = allAnswers.indexWhere((a) => a['answerId'] == answerId);
+      if (answerIndex != -1) {
+        allAnswers[answerIndex]['isFlagged'] = true;
+      }
+    });
+
+    if (widget.onReportSuccess != null) {
+      widget.onReportSuccess!();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final question = widget.question;
@@ -549,7 +563,8 @@ class _QuestionCardState extends State<QuestionCard> {
     final askedById = askedBy is String ? askedBy : askedBy?['id'];
     final userId = userProvider.user?['id'];
     final isOwner = askedById == userId;
-
+    final userRole = userProvider.user?['role'] ?? 'user';
+     final itemType = 'question';
     final aiAnswer = widget.question['aiAnswer']?.toString().trim();
     final rawTopAnswer = widget.question['topAnswer'];
     final topAnswerId =
@@ -562,6 +577,9 @@ class _QuestionCardState extends State<QuestionCard> {
         aiAnswer != null &&
         aiAnswer.isNotEmpty &&
         (topAnswerId == null || topAnswerId.isEmpty);
+
+    // In the build method, get the scaffold context
+    final scaffoldContext = context;
 
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -650,6 +668,24 @@ class _QuestionCardState extends State<QuestionCard> {
                             ),
                           ),
                         ),
+                        // Report flag icon for users only
+                        if (userRole == 'user')
+                          IconButton(
+                            icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+                            tooltip: 'Report',
+                            onPressed: () async {
+                              await showDialog(
+                                context: context,
+                                builder: (context) => ReportModal(
+                                  questionId: (widget.question['questionId'] ?? widget.question['_id']).toString(),
+                                  questionText: widget.question['text'] ?? 'No text available',
+                                  itemType: itemType,
+                                  scaffoldContext: scaffoldContext,
+                                  onReportSuccess: widget.onReportSuccess,
+                                ),
+                              );
+                            },
+                          ),
                         // Delete button for owner
                         if (isOwner)
                           IconButton(
@@ -1429,6 +1465,7 @@ class _QuestionCardState extends State<QuestionCard> {
 
   // Widget to display top answer
   Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+    if (topAnswer['isFlagged'] == true) return SizedBox.shrink();
     final answeredBy = topAnswer['answeredBy'];
     final answerText = topAnswer['text']?.toString() ?? '';
     final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
@@ -1560,147 +1597,143 @@ class _QuestionCardState extends State<QuestionCard> {
   }
 
   // Widget to display individual answer in the scrollable list
-  Widget _buildAnswerCard(Map<String, dynamic> answer, int index) {
-    final answeredBy = answer['answeredBy'];
-    final answerText = answer['text']?.toString() ?? '';
-    final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
-    final answererName = _getAnswererDisplayName(answeredBy);
-    final createdAt = answer['createdAt']?.toString() ?? '';
-    final answerId = answer['answerId']?.toString() ?? '';
-    final isCertified = _isCertifiedVolunteer();
-    final isUpvoted = upvotedAnswerId == answerId;
-    final isTopAnswer = index == 0; // First element is the top answer
+  //By Ruba
+ Widget _buildAnswerCard(Map<String, dynamic> answer, int index) {
+  final answeredBy = answer['answeredBy'];
+  final answerText = answer['text']?.toString() ?? '';
+  final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
+  final answererName = _getAnswererDisplayName(answeredBy);
+  final createdAt = answer['createdAt']?.toString() ?? '';
+  final answerId = answer['answerId']?.toString() ?? '';
+  final isCertified = _isCertifiedVolunteer();
+  final isUpvoted = upvotedAnswerId == answerId;
+  final isTopAnswer = index == 0;
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  final userRole = userProvider.user?['role'] ?? 'user';
+  final userId = userProvider.user?['id'];
+  final isFlagged = answer['isFlagged'] ?? false;
+  final isOwner = (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
+  final scaffoldContext = context;
+   if (answer['isFlagged'] == true) return SizedBox.shrink(); // Hide flagged answers
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color:
-            isTopAnswer
-                ? AppColors.islamicGreen400.withOpacity(0.5)
-                : Colors.white,
-        border: Border.all(
-          color:
-              isTopAnswer
-                  ? AppColors.islamicGreen500.withOpacity(0.5)
-                  : AppColors.askPageBorder.withOpacity(0.3),
-          width: isTopAnswer ? 2 : 1,
+  return Stack(
+    children: [
+      Container(
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isTopAnswer
+              ? AppColors.islamicGreen400.withOpacity(0.5)
+              : Colors.white,
+          border: Border.all(
+            color: isTopAnswer
+                ? AppColors.islamicGreen500.withOpacity(0.5)
+                : AppColors.askPageBorder.withOpacity(0.3),
+            width: isTopAnswer ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
         ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Answerer info row
-          Row(
-            children: [
-              // Top answer indicator
-              if (isTopAnswer)
-                Container(
-                  margin: EdgeInsets.only(right: 8),
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.islamicGreen500,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.star,
-                        size: _getResponsiveIconSize(10),
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 2),
-                      Text(
-                        'Top Answer',
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (isTopAnswer)
+                  Container(
+                    margin: EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.islamicGreen500,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star,
+                          size: _getResponsiveIconSize(10),
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 2),
+                        Text(
+                          'Top Answer',
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(10),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Icon(
+                  Icons.verified_user,
+                  size: _getResponsiveIconSize(16),
+                  color: isCertified ? AppColors.islamicGreen500 : Colors.grey,
+                ),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    answererName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.askPageTitle,
+                      fontSize: _getResponsiveFontSize(13),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              Icon(
-                Icons.verified_user,
-                size: _getResponsiveIconSize(16),
-                color: AppColors.islamicGreen500,
-              ),
-              SizedBox(width: 4),
-              Text(
-                answererName,
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(12),
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.askPageTitle,
-                ),
-              ),
-              SizedBox(width: 4),
-              Icon(
-                Icons.verified,
-                size: _getResponsiveIconSize(12),
-                color: AppColors.islamicGreen500,
-              ),
-              Spacer(),
-
-              // Upvote icon for certified volunteers
-              if (answeredBy['id']?.toString() !=
-                  Provider.of<UserProvider>(
-                    context,
-                    listen: false,
-                  ).userId?.toString())
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.thumb_up,
-                        color:
-                            isUpvoted
-                                ? Colors.lightGreen
-                                : AppColors.askPageSubtitle,
-                      ),
-                      tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
-                      onPressed:
-                          isCertified ? () => _handleUpvote(answerId) : () {},
-                    ),
-                    Text(
-                      upvotesCount,
-                      style: TextStyle(
-                        fontSize: _getResponsiveFontSize(12),
-                        color: AppColors.askPageSubtitle,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-          SizedBox(height: 8),
-          // Answer text
-          Text(
-            answerText,
-            style: TextStyle(
-              fontSize: _getResponsiveFontSize(14),
-              color: AppColors.askPageTitle,
-              height: 1.4,
+              ],
             ),
-          ),
-          SizedBox(height: 8),
-          // Timestamp
-          if (createdAt.isNotEmpty)
+            SizedBox(height: 8),
             Text(
-              'Answered on ${_formatDate(createdAt)}',
+              answerText,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(11),
-                color: AppColors.askPageSubtitle,
-                fontStyle: FontStyle.italic,
+                fontSize: _getResponsiveFontSize(14),
+                color: AppColors.askPageTitle,
+                height: 1.4,
               ),
             ),
-        ],
+            SizedBox(height: 8),
+            if (createdAt.isNotEmpty)
+              Text(
+                'Answered on ${_formatDate(createdAt)}',
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(11),
+                  color: AppColors.askPageSubtitle,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ),
       ),
-    );
-  }
+
+      // 🔴 Flag icon positioned top-right
+     // if (userRole == 'user' && !isOwner)
+        Positioned(
+          top: 4,
+          right: 4,
+          child: IconButton(
+            icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+            tooltip: 'Report',
+            onPressed: () async {
+              await showDialog(
+                context: context,
+                builder: (context) => ReportModal(
+                  questionId: answerId,
+                  questionText: answerText,
+                  itemType: 'answer',
+                  scaffoldContext: scaffoldContext,
+                  onReportSuccess: () => _handleReportSuccess(answerId),
+                ),
+              );
+            },
+          ),
+        ),
+    ],
+  );
+}
+
 
   // Helper function to format date
   String _formatDate(String dateString) {

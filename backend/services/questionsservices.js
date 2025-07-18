@@ -31,22 +31,51 @@ class QuestionServices {
     }
   }
 
-
-  static async GetPublicQuestions(page = 1, limit = 3) {
+  static async GetPublicQuestions(page = 1, limit = 3, userCountry = '', userTags = []) {
     try {
+      // Fetch all public questions (no skip/limit yet)
+      const allQuestions = await QuestionModel.find({ isPublic: true }).lean();
+      const totalCount = allQuestions.length;
+     
+      // Custom sort logic
+      function tagSimilarity(qTags) {
+        if (!userTags.length || !qTags || !qTags.length) return 0;
+        return qTags.filter(tag => userTags.includes(tag)).length;
+      }
+      function locationScore(qCountry) {
+        if (!qCountry || !userCountry) return 0;
+        return qCountry.toLowerCase() === userCountry.toLowerCase() ? 1 : 0;
+      }
+      function freshnessScore(createdAt) {
+        const date = new Date(createdAt);
+        return -date.getTime();
+      }
+      // Enrich with user info for sorting
+      const userIds = [...new Set(allQuestions.map(q => q.askedBy))];
+      const users = await UserModel.find({ userId: { $in: userIds } }, { userId: 1, country: 1 }).lean();
+      const userMap = {};
+      users.forEach(u => { userMap[u.userId] = u; });
+      // Sort all questions
+      allQuestions.sort((a, b) => {
+        const aTags = a.tags || [];
+        const bTags = b.tags || [];
+        const aCountry = userMap[a.askedBy]?.country || '';
+        const bCountry = userMap[b.askedBy]?.country || '';
+        const tagA = tagSimilarity(aTags);
+        const tagB = tagSimilarity(bTags);
+        const locA = locationScore(aCountry);
+        const locB = locationScore(bCountry);
+        const freshA = freshnessScore(a.createdAt);
+        const freshB = freshnessScore(b.createdAt);
+        const scoreA = tagA * 100 + locA * 50 + Math.floor(freshA / 1000000);
+        const scoreB = tagB * 100 + locB * 50 + Math.floor(freshB / 1000000);
+        return scoreB - scoreA;
+      });
+      // Pagination for the questions after sorting
       const skip = (page - 1) * limit;
-      console.log("skip:", skip);
-      const [publicQuestions, totalCount] = await Promise.all([
-        QuestionModel.find({ isPublic: true })
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit),
-        QuestionModel.countDocuments({ isPublic: true }),
-      ]);
-  
-      const questionUserIds = [...new Set(publicQuestions.map(q => q.askedBy))];
-      const topAnswerIds = publicQuestions.map(q => q.topAnswerId).filter(Boolean);
-  
+      const paginatedQuestions = allQuestions.slice(skip, skip + limit);
+      // Fetch top answers and enrich as before
+      const topAnswerIds = paginatedQuestions.map(q => q.topAnswerId).filter(Boolean);
       const topAnswers = await AnswerModel.find(
         { answerId: { $in: topAnswerIds } },
         {
@@ -59,11 +88,9 @@ class QuestionServices {
           upvotesCount: 1
         }
       );
-  
       const answerUserIds = [...new Set(topAnswers.map(a => a.answeredBy))];
-      const allUserIds = [...new Set([...questionUserIds, ...answerUserIds])];
-  
-      const users = await UserModel.find(
+      const allUserIds = [...new Set([...userIds, ...answerUserIds])];
+      const fullUsers = await UserModel.find(
         { userId: { $in: allUserIds } },
         {
           userId: 1,
@@ -78,15 +105,13 @@ class QuestionServices {
           createdAt: 1
         }
       );
-  
-      const userMap = {};
-      users.forEach(user => {
-        userMap[user.userId] = user;
+      const fullUserMap = {};
+      fullUsers.forEach(user => {
+        fullUserMap[user.userId] = user;
       });
-  
       const answerMap = {};
       topAnswers.forEach(ans => {
-        const ansUser = userMap[ans.answeredBy];
+        const ansUser = fullUserMap[ans.answeredBy];
         answerMap[ans.answerId] = {
           answerId: ans.answerId,
           questionId: ans.questionId,
@@ -110,32 +135,28 @@ class QuestionServices {
             : null
         };
       });
-  
-      const questionsWithDetails = publicQuestions.map(q => {
-        const qObj = q.toObject();
-  
-        const askedUser = userMap[q.askedBy];
-        qObj.askedBy = askedUser
-          ? {
-              id: askedUser.userId,
-              displayName: askedUser.displayName,
-              country: askedUser.country,
-              gender: askedUser.gender,
-              email: askedUser.email,
-              language: askedUser.language,
-              role: askedUser.role,
-              savedQuestions: askedUser.savedQuestions,
-              savedLessons: askedUser.savedLessons,
-              createdAt: askedUser.createdAt
-            }
-          : null;
-  
-        qObj.topAnswer = q.topAnswerId ? answerMap[q.topAnswerId] || null : null;
-        delete qObj.topAnswerId;
-  
-        return qObj;
+      const questionsWithDetails = paginatedQuestions.map(q => {
+        const askedUser = fullUserMap[q.askedBy];
+        return {
+          ...q,
+          isFlagged: q.isFlagged,
+          askedBy: askedUser
+            ? {
+                id: askedUser.userId,
+                displayName: askedUser.displayName,
+                country: askedUser.country,
+                gender: askedUser.gender,
+                email: askedUser.email,
+                language: askedUser.language,
+                role: askedUser.role,
+                savedQuestions: askedUser.savedQuestions,
+                savedLessons: askedUser.savedLessons,
+                createdAt: askedUser.createdAt
+              }
+            : null,
+          topAnswer: q.topAnswerId ? answerMap[q.topAnswerId] || null : null,
+        };
       });
-  
       return {
         questions: questionsWithDetails,
         totalCount
@@ -145,7 +166,9 @@ class QuestionServices {
       throw err;
     }
   }
+   
   
+
   
 
 
@@ -230,6 +253,7 @@ const { topAnswerId, ...questionWithoutTopAnswerId } = q;
 
 enrichedQuestions.push({
   ...questionWithoutTopAnswerId,
+  isFlagged: q.isFlagged, // Ensure isFlagged is included
   askedBy: askedByUser
     ? {
         id: askedByUser.userId,
