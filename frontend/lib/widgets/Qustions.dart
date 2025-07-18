@@ -819,6 +819,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 Provide a concise, clear Islamic answer to the following question.
 Use proper spacing between all words and punctuation.
 Format the response in a clear, readable manner with correct grammar and spacing.
+Answer is English only.
 Question: "$questionText"
 ''';
 
@@ -894,7 +895,7 @@ Question: "$questionText"
 
   //Done deep checking
   // Helper: Sort community questions by tag similarity, freshness, location
-  List<Map<String, dynamic>> sortCommunityQuestions(
+  /*  List<Map<String, dynamic>> sortCommunityQuestions(
     List<Map<String, dynamic>> questions,
     String userCountry,
     List<String> userTags,
@@ -928,7 +929,7 @@ Question: "$questionText"
     });
     return questions;
   }
-
+ */
   //Done deep checking
 
   int _currentPage = 1;
@@ -957,7 +958,6 @@ Question: "$questionText"
             _recentQuestions = [];
             _communityQuestionsLoaded = true;
           });
-          _trySortCommunityQuestions();
         }
         _isLoadingCommunityQuestions = false;
         return;
@@ -1039,7 +1039,7 @@ Question: "$questionText"
               });
               _communityQuestionsLoaded = true;
             });
-            _trySortCommunityQuestions();
+
             getFavoriteQuestions();
             await retryPendingAIs(_communityQuestions);
           }
@@ -1059,7 +1059,6 @@ Question: "$questionText"
               }
               _communityQuestionsLoaded = true;
             });
-            _trySortCommunityQuestions();
             getFavoriteQuestions();
           }
           _hasMoreCommunityQuestions = false;
@@ -1074,7 +1073,6 @@ Question: "$questionText"
             }
             _communityQuestionsLoaded = true;
           });
-          _trySortCommunityQuestions();
           getFavoriteQuestions();
         }
         _hasMoreCommunityQuestions = false;
@@ -1088,7 +1086,6 @@ Question: "$questionText"
           }
           _communityQuestionsLoaded = true;
         });
-        _trySortCommunityQuestions();
         getFavoriteQuestions();
       }
       print('Error loading community questions: $e');
@@ -1174,7 +1171,7 @@ Question: "$questionText"
                 _myQuestions = updatedMyQuestions;
                 _myQuestionsLoaded = true;
               });
-              _trySortCommunityQuestions();
+
               // Update favorites when my questions are loaded
               getFavoriteQuestions();
               await retryPendingAIs(_myQuestions);
@@ -1185,7 +1182,7 @@ Question: "$questionText"
                 _myQuestions = [];
                 _myQuestionsLoaded = true;
               });
-              _trySortCommunityQuestions();
+
               getFavoriteQuestions();
             }
             print('No my questions found or questions is not a List.');
@@ -1197,7 +1194,7 @@ Question: "$questionText"
               _myQuestions = [];
               _myQuestionsLoaded = true;
             });
-            _trySortCommunityQuestions();
+
             getFavoriteQuestions();
           }
         }
@@ -1208,7 +1205,7 @@ Question: "$questionText"
             _myQuestions = [];
             _myQuestionsLoaded = true;
           });
-          _trySortCommunityQuestions();
+
           getFavoriteQuestions();
         }
       }
@@ -1218,7 +1215,7 @@ Question: "$questionText"
           _myQuestions = [];
           _myQuestionsLoaded = true;
         });
-        _trySortCommunityQuestions();
+
         getFavoriteQuestions();
       }
       print('Error loading my questions: $e');
@@ -1270,21 +1267,12 @@ Question: "$questionText"
             Map<String, dynamic>? question = ans['question'];
             final topAnswerId = question?['topAnswerId'];
             Map<String, dynamic>? topAnswer;
-            for (var q in _recentQuestions) {
-              if (q['questionId'] == question?['questionId'] &&
-                  q['topAnswer'] != null) {
-                question = q;
-                final tA = q['topAnswer'];
-                if (tA['answerId'] == topAnswerId) {
-                  topAnswer = tA;
-                  break;
-                }
-              }
-            }
+            topAnswer = ans["topAnswer"];
             myAnswersList.add({
               'question': question,
               'topAnswer': topAnswer,
               'volunteerAnswer': ans,
+              'askedBy': ans["askedBy"],
             });
           }
           if (!mounted) return;
@@ -1310,7 +1298,7 @@ Question: "$questionText"
     }
   }
 
-  //Done deep checking
+  /*   //Done deep checking
   void _trySortCommunityQuestions() {
     if (_myQuestionsLoaded && _communityQuestionsLoaded) {
       final Set<String> userTagsSet = {};
@@ -1332,7 +1320,7 @@ Question: "$questionText"
       }
     }
   }
-
+ */
   // Helper function to calculate time ago
   String _calculateTimeAgo(String? createdAt) {
     if (createdAt == null) return 'Just now';
@@ -2297,7 +2285,15 @@ Question: "$questionText"
                 itemCount: _myAnswers.length,
                 itemBuilder: (context, index) {
                   final item = _myAnswers[index];
-                  return MyAnswerCard(item: item);
+                  return MyAnswerCard(
+                    item: item,
+                    onDelete: () {
+                      if (!mounted) return;
+                      setState(() {
+                        _myAnswers.removeAt(index);
+                      });
+                    },
+                  );
                 },
               ),
     );

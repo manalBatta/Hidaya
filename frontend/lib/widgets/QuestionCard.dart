@@ -155,21 +155,24 @@ class _QuestionCardState extends State<QuestionCard> {
             isSaved = savedQuestions.contains(widget.question["questionId"]);
           });
         } else {
-          // handle failure
+          if (!mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Failed to save question')));
         }
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Server error: ${response.statusCode}')),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
+      if (!mounted) return;
       setState(() {
         isSaving = false;
       });
@@ -397,15 +400,18 @@ class _QuestionCardState extends State<QuestionCard> {
         // Optionally, refresh all answers from backend for full sync
         // await _fetchAllAnswers();
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to upvote answer')));
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
+      if (!mounted) return;
       setState(() {
         isUpvoting = false;
       });
@@ -469,20 +475,24 @@ class _QuestionCardState extends State<QuestionCard> {
             widget.onRefresh!();
           }
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Failed to submit answer')));
         }
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Server error: ${response.statusCode}')),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
+      if (!mounted) return;
       setState(() {
         isSubmittingAnswer = false;
       });
@@ -531,6 +541,7 @@ class _QuestionCardState extends State<QuestionCard> {
         showAnswerForm = true;
       });
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

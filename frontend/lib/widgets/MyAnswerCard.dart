@@ -1,16 +1,106 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/config.dart';
+import 'package:frontend/providers/UserProvider.dart';
+import 'package:http/http.dart' as http;
 import '../constants/colors.dart';
+import 'package:provider/provider.dart';
 
-class MyAnswerCard extends StatelessWidget {
+class MyAnswerCard extends StatefulWidget {
   final Map<String, dynamic> item;
+  final VoidCallback? onDelete;
   // item should have keys: 'question', 'topAnswer', 'volunteerAnswer'
-  const MyAnswerCard({Key? key, required this.item}) : super(key: key);
+  const MyAnswerCard({Key? key, required this.item, this.onDelete})
+    : super(key: key);
+
+  @override
+  State<MyAnswerCard> createState() => _MyAnswerCardState();
+}
+
+class _MyAnswerCardState extends State<MyAnswerCard> {
+  bool _isDeleting = false;
+  bool _deleted = false;
+  Future<void> _deleteAnswer(String answerId) async {
+    if (!mounted) return;
+    setState(() {
+      _isDeleting = true;
+    });
+    try {
+      final response = await http.delete(Uri.parse('$deleteAns$answerId'));
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Answer deleted successfully')));
+        _deleted = true;
+        if (widget.onDelete != null) {
+          widget.onDelete!();
+          return; // Prevent further code from running after widget is disposed
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete answer: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      // Only call setState if still mounted and onDelete hasn't been called
+      if (mounted)
+        setState(() {
+          _isDeleting = false;
+        });
+    }
+  }
+
+  // Helper function to format date
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  void _confirmDelete(String answerId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Delete Answer'),
+            content: Text('Are you sure you want to delete your answer?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
+    if (confirmed == true) {
+      _deleteAnswer(answerId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final question = item['question'] ?? {};
-    final topAnswer = item['topAnswer'];
-    final volunteerAnswer = item['volunteerAnswer'];
+    final question = widget.item['question'] ?? {};
+    final topAnswer = widget.item['topAnswer'];
+    final volunteerAnswer = widget.item['volunteerAnswer'];
+    final askedBy = widget.item['askedBy'];
+
+    // Determine if the volunteer has an answer to allow delete
+    final Map<String, dynamic>? ownAnswer = volunteerAnswer ?? topAnswer;
+    final String? ownAnswerId =
+        ownAnswer != null ? ownAnswer['answerId']?.toString() : null;
+    final bool canDelete = ownAnswer != null && ownAnswer['answeredBy'] != null;
 
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -22,15 +112,39 @@ class MyAnswerCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Question text
-              Text(
-                question['text']?.toString() ?? 'No question text',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.askPageTitle,
-                  height: 1.4,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      question['text']?.toString() ?? 'No question text',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.askPageTitle,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  if (canDelete && ownAnswerId != null)
+                    IconButton(
+                      icon:
+                          _isDeleting
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Icon(Icons.delete, color: Colors.red),
+                      tooltip: 'Delete your answer',
+                      onPressed:
+                          _isDeleting
+                              ? null
+                              : () => _confirmDelete(ownAnswerId),
+                    ),
+                ],
               ),
               SizedBox(height: 8),
               // Category and meta info
@@ -40,17 +154,17 @@ class MyAnswerCard extends StatelessWidget {
                 children: [
                   if (question['category'] != null)
                     _buildCategoryChip(question['category'].toString()),
-                  if (question['askedBy'] != null)
+                  if (askedBy != null)
                     _buildInfoChip(
                       Icons.person,
-                      question['askedBy'] is Map
-                          ? question['askedBy']['displayName']?.toString()
-                          : question['askedBy']?.toString(),
+                      askedBy is Map
+                          ? askedBy['displayName']?.toString()
+                          : askedBy?.toString(),
                     ),
                   if (question['createdAt'] != null)
                     _buildInfoChip(
                       Icons.access_time,
-                      question['createdAt'].toString(),
+                      _formatDate(question['createdAt'].toString()),
                     ),
                 ],
               ),
@@ -118,13 +232,14 @@ class MyAnswerCard extends StatelessWidget {
     Map<String, dynamic> answer, {
     bool highlight = false,
   }) {
+    final user = Provider.of<UserProvider>(context, listen: false).user;
     final answerer =
         answer['answeredBy'] is Map
             ? answer['answeredBy']['displayName']?.toString()
-            : answer['answeredBy']?.toString();
+            : user?['displayName'];
     final answerText = answer['text']?.toString() ?? '';
     final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
-    final createdAt = answer['createdAt']?.toString() ?? '';
+    final createdAt = _formatDate(answer['createdAt']?.toString() ?? '');
     return Container(
       margin: EdgeInsets.only(top: 8, bottom: 8),
       padding: EdgeInsets.all(12),

@@ -158,15 +158,18 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         ).showSnackBar(SnackBar(content: Text(errorMsg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
 
     userProvider.setChatInitialized(true);
   }
 
   Future<void> _sendMessage([String? message]) async {
+    print("sending message $message");
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final sessionId = userProvider.sessionId;
 
@@ -253,7 +256,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         setState(() {
           _typingText = cleanResponse.substring(0, i);
         });
-        await Future.delayed(const Duration(milliseconds: 30));
+        await Future.delayed(const Duration(milliseconds: 20));
       } else {
         return;
       }
@@ -839,7 +842,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               suggestions.map((suggestion) {
                 return OutlinedButton(
                   onPressed: () {
-                    _inputController.text = suggestion;
+                    _sendMessage(suggestion);
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
@@ -872,24 +875,26 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         spacing: 8,
         children:
             suggestions.map((message) {
-              return ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _isDarkMode
-                          ? Colors.green.shade700.withOpacity(0.9)
-                          : const Color(0xFF10B981),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
+              return OutlinedButton(
                 onPressed: () {
                   _sendMessage(message.content);
                 },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color:
+                        _isDarkMode
+                            ? Colors.green.shade600
+                            : const Color(0xFF059669).withOpacity(0.3),
+                  ),
+                  foregroundColor:
+                      _isDarkMode
+                          ? Colors.green.shade100
+                          : const Color(0xFF059669),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
                 child: Text(
                   message.content,
                   style: const TextStyle(

@@ -48,4 +48,6 @@ router.patch(
   QuestionController.updateAIAnswer
 );
 
+router.delete("/answers/delete/:answerId", AnswerController.deleteAnswer);
+
 module.exports = router;

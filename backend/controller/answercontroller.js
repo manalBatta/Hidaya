@@ -186,3 +186,16 @@ exports.getanswerupvotedbyvolunteer = async (req, res, next) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+exports.deleteAnswer = async (req, res) => {
+  try {
+    const { answerId } = req.params;
+    const result = await AnswerServices.DeleteAnswer(answerId);
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Answer not found" });
+    }
+    res.json({ message: "Answer deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};

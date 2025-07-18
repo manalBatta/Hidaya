@@ -60,7 +60,7 @@ async function askGeminiWithLangchain({
     
     Suggestions must not include apps, links, or full sentences.
     Each suggestion must be under 15 words.  
-    Reply only in ${language}. No transliteration. No English.
+    Reply only in ${language}. No transliteration. No English. No too long answers.
     `.trim();
   } else {
     systemPrompt = `
@@ -82,9 +82,9 @@ Suggestions:
 - [next possible concern or curiosity]
 - [optional third question]
 
-
+Each suggestion must be under 15 words.  
 Suggestions must have no apps suggestions, or links.
-Reply only in ${language}. No transliteration. No English.
+Reply only in ${language}. No transliteration. No English.No too long answers.
 
 `.trim();
   }

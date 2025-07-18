@@ -1,5 +1,4 @@
 const { createClient } = require("@supabase/supabase-js");
-const ISO6391 = require("iso-639-1");
 const cld3 = require("cld3-asm");
 
 let cldFactory = null;

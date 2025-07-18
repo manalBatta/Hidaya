@@ -12,7 +12,6 @@ class AnswerServices {
       if (!newAnswer) return null;
 
       const questionId = newAnswer.questionId;
-      console.log("HELLO !!!!@@@@@@");
       // Find if user already voted on this question
       const existingVote = await VoteModel.findOne({
         votedBy: userId,
@@ -127,19 +126,6 @@ class AnswerServices {
       const user = await UserModel.findOne({ userId }).lean();
       if (!user) throw new Error("User not found");
 
-      const fullUser = {
-        id: user.userId,
-        displayName: user.displayName,
-        country: user.country,
-        gender: user.gender,
-        email: user.email,
-        language: user.language,
-        role: user.role,
-        savedQuestions: user.savedQuestions,
-        savedLessons: user.savedLessons,
-        createdAt: user.createdAt,
-      };
-
       // Extract unique questionIds
       const questionIds = answers.map((a) => a.questionId);
       const questions = await QuestionModel.find({
@@ -152,12 +138,55 @@ class AnswerServices {
         questionMap[q.questionId] = q;
       }
 
-      // Return enriched answers with full user + question info
-      const enrichedAnswers = answers.map(({ questionId, ...answer }) => ({
-        ...answer,
-        answeredBy: fullUser,
-        question: questionMap[questionId] || null,
-      }));
+      // Fetch all askedBy userIds from questions
+      const askedByUserIds = questions.map((q) => q.askedBy).filter(Boolean);
+      const askedByUsers = await UserModel.find({
+        userId: { $in: askedByUserIds },
+      }).lean();
+      const askedByUserMap = {};
+      for (const u of askedByUsers) {
+        askedByUserMap[u.userId] = u;
+      }
+
+      // Fetch top answers for each question
+      const topAnswerIds = questions.map((q) => q.topAnswerId).filter(Boolean);
+      const topAnswers = await AnswerModel.find({
+        answerId: { $in: topAnswerIds },
+      }).lean();
+      const topAnswerMap = {};
+      const topAnswerUserIds = topAnswers
+        .map((a) => a.answeredBy)
+        .filter(Boolean);
+      const topAnswerUsers = await UserModel.find({
+        userId: { $in: topAnswerUserIds },
+      }).lean();
+      const userMap = {};
+      for (const u of topAnswerUsers) {
+        userMap[u.userId] = u;
+      }
+      for (const a of topAnswers) {
+        topAnswerMap[a.answerId] = {
+          ...a,
+          answeredBy: userMap[a.answeredBy] || null,
+        };
+      }
+
+      // Return enriched answers with full question info + top answer (with full user) + askedBy full info
+      const enrichedAnswers = answers.map(({ questionId, ...answer }) => {
+        const question = questionMap[questionId] || null;
+        let askedByFull = null;
+        if (question && question.askedBy) {
+          askedByFull = askedByUserMap[question.askedBy] || null;
+        }
+        return {
+          ...answer,
+          question,
+          topAnswer: question?.topAnswerId
+            ? topAnswerMap[question.topAnswerId] || null
+            : null,
+          askedBy: askedByFull,
+        };
+      });
 
       return enrichedAnswers;
     } catch (err) {
@@ -178,6 +207,46 @@ class AnswerServices {
     } catch (err) {
       console.error("Error in GetTheUpvotedAnswerOfVol:", err);
       throw new Error("Failed to get upvoted answer");
+    }
+  }
+
+  static async DeleteAnswer(answerId) {
+    try {
+      // Find the answer to get its questionId
+      const answer = await AnswerModel.findOne({ answerId }).lean();
+      if (!answer) throw new Error("Answer not found");
+      const questionId = answer.questionId;
+
+      // Find the question
+      const question = await QuestionModel.findOne({ questionId }).lean();
+      if (!question) throw new Error("Question not found");
+
+      // Delete the answer
+      const deleted = await AnswerModel.deleteOne({ answerId });
+
+      // If the deleted answer was the top answer, update the question's topAnswerId
+      if (question.topAnswerId === answerId) {
+        // Find the next top answer (highest upvotes, earliest createdAt)
+        const nextTop = await AnswerModel.find({ questionId })
+          .sort({ upvotesCount: -1, createdAt: 1 })
+          .limit(1)
+          .lean();
+        if (nextTop.length > 0) {
+          await QuestionModel.updateOne(
+            { questionId },
+            { $set: { topAnswerId: nextTop[0].answerId } }
+          );
+        } else {
+          // No more answers, unset topAnswerId
+          await QuestionModel.updateOne(
+            { questionId },
+            { $set: { topAnswerId: "" } }
+          );
+        }
+      }
+      return deleted;
+    } catch (err) {
+      throw err;
     }
   }
 }
