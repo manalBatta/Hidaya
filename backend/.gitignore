@@ -6,8 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 
 
-
-
+backend/serviceAccountKey.json
 # Runtime data
 pids
 *.pid
