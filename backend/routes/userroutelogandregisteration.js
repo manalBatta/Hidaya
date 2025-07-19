@@ -5,10 +5,14 @@ const QuestionController = require("../controller/questioncontroller");
 const AnswerController = require("../controller/answercontroller");
 const FlagController = require("../controller/flagcontroller");
 const LessonController = require("../controller/lessoncontroller");
+const notificationRoutes = require("./notificationroutes.js");
 
 router.post("/register", UserController.register);
 router.post("/login", UserController.login);
 router.put("/profile", authMiddleware, UserController.updateprofile);
+router.put("/onesignal-id", authMiddleware, UserController.updateOneSignalId);
+// Use notification routes
+router.use("/notifications", notificationRoutes);
 router.post("/questions", authMiddleware, QuestionController.submitquestion);
 router.get("/public-questions", QuestionController.getpublicquestions);
 router.get("/questions/:id", QuestionController.getquestionandanswers);

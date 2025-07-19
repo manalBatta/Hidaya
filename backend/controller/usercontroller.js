@@ -1,4 +1,7 @@
 const UserServices = require("../services/userserviceslog&registeration");
+const admin = require("firebase-admin");
+const { sendNotification } = require("../services/notificationService.js");
+const { sendMissedNotifications } = require("./notificationcontroller.js");
 
 exports.register = async (req, res, next) => {
   try {
@@ -101,11 +104,39 @@ exports.login = async (req, res, next) => {
       gender: user.gender,
       country: user.country,
       language: user.language,
-    savedQuestions: user.savedQuestions,
-    savedLessons: user.savedLessons,
+      savedQuestions: user.savedQuestions,
+      savedLessons: user.savedLessons,
       volunteerProfile: user.volunteerProfile,
+      onesignalId: user.onesignalId,
     },
   });
+
+  // Send welcome notification and check for missed notifications
+  try {
+    // Welcome notification using new service
+    const welcomeResult = await sendNotification({
+      userId: user.userId,
+      type: "welcome",
+      title: "Welcome to Hidaya! 🎉",
+      message: `Hello ${user.displayName}! Welcome back to your Islamic learning journey.`,
+      data: {
+        userId: user.userId,
+      },
+    });
+
+    console.log("Welcome notification result:", welcomeResult);
+
+    // Check for missed notifications for volunteers
+    if (
+      user.role === "certified_volunteer" ||
+      user.role === "volunteer_pending"
+    ) {
+      await sendMissedNotifications(user);
+    }
+  } catch (notificationError) {
+    console.log("Failed to send welcome notification:", notificationError);
+    // Don't fail the login if notification fails
+  }
 };
 exports.updateprofile = async (req, res, next) => {
   try {
@@ -174,6 +205,38 @@ exports.updateprofile = async (req, res, next) => {
     });
   } catch (err) {
     console.log("---> err in updateprofile -->", err);
+    next(err);
+  }
+};
+
+// Update OneSignal ID for push notifications
+exports.updateOneSignalId = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { onesignalId } = req.body;
+
+    if (!onesignalId) {
+      return res.status(400).json({
+        status: false,
+        message: "OneSignal ID is required",
+      });
+    }
+
+    const updatedUser = await UserServices.updateOneSignalId(
+      userId,
+      onesignalId
+    );
+
+    res.status(200).json({
+      status: true,
+      success: "OneSignal ID updated successfully",
+      user: {
+        id: updatedUser.userId,
+        onesignalId: updatedUser.onesignalId,
+      },
+    });
+  } catch (err) {
+    console.log("---> err in updateOneSignalId -->", err);
     next(err);
   }
 };

@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import '../constants/colors.dart';
 import 'QuestionCard.dart';
 import 'AIResponseCard.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'dart:async'; // Added for Completer
 import 'package:provider/provider.dart';
@@ -646,8 +646,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   void _submitQuestion() async {
     if (_formKey.currentState!.validate() && _selectedCategory.isNotEmpty) {
       try {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('token');
+        final token = await AuthUtils.getValidToken(context);
+        if (token == null) return;
         final userProvider = Provider.of<UserProvider>(context, listen: false);
         final tags = await extractTagsFromQuestionGemini(
           _questionController.text,

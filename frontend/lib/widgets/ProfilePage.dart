@@ -5,7 +5,7 @@ import 'package:frontend/config.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/CertificationViewer.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/utils/auth_utils.dart';
@@ -16,6 +16,7 @@ import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend/widgets/Qustions.dart';
 import 'package:frontend/providers/NavigationProvider.dart';
+import 'package:frontend/widgets/NotificationCenter.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -195,6 +196,45 @@ class _ProfilePageState extends State {
         _searchedSpokenLanguages = [];
         _isSearchingSpokenLanguages = false;
       });
+    }
+  }
+
+  Future<void> _sendTestNotification() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+
+      final response = await http.post(
+        Uri.parse('${url}notifications/test'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          'message':
+              'Hello! This is a test notification from your Hidaya app! 🎉',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Test notification sent! Check your device.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send test notification'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -1154,6 +1194,39 @@ class _ProfilePageState extends State {
               ),
             ],
           ),
+          SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _sendTestNotification,
+            icon: Icon(Icons.notifications, size: 16),
+            label: Text('Test Notifications'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.islamicGold500,
+              foregroundColor: Colors.white,
+              minimumSize: Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NotificationCenter()),
+              );
+            },
+            icon: Icon(Icons.notifications_active, size: 16),
+            label: Text('View All Notifications'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.islamicGreen500,
+              foregroundColor: Colors.white,
+              minimumSize: Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
         ],
       ],
     );
@@ -1536,6 +1609,7 @@ class _ProfilePageState extends State {
                 ),
               ),
               SizedBox(height: 16),
+
               Divider(),
               SizedBox(height: 16),
               Text(

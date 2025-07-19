@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -147,6 +146,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
       if (response.statusCode == 200) {
         userProvider.setSessionId(data['sessionId']);
+        print("the session id is :${data['sessionId']}");
         _scrollToBottom();
         await _typeAIResponse(data["greeting"]);
         _scrollToBottom();
@@ -175,6 +175,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
     if ((message == null && _inputController.text.trim().isEmpty) ||
         sessionId == null) {
+      print("returned from send $sessionId");
       return;
     }
     final content = message ?? _inputController.text.trim();
@@ -792,7 +793,11 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                             fontSize: 16,
                           ),
                           enabled: !_isResponding,
-                          onSubmitted: (_) => _sendMessage(),
+                          onSubmitted:
+                              _inputController.text.trim().isEmpty ||
+                                      _isResponding
+                                  ? null
+                                  : _sendMessage,
                         ),
                       ),
                     ),

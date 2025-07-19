@@ -79,7 +79,7 @@ async function fetchRecentMessages(sessionId, limit = 10) {
     console.error("Error fetching messages:", error);
     return [];
   }
-  console.log("History messages", data);
+  //console.log("History messages", data);
   return data || [];
 }
 

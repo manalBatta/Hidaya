@@ -1,5 +1,6 @@
 // ignore_for_file: unused_import
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,9 @@ import 'package:frontend/utils/auth_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:frontend/providers/NavigationProvider.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 Future<void> resetAppState() async {
   // Clear SharedPreferences
@@ -48,6 +52,72 @@ void main() async {
       await userProvider.logout();
     }
   }
+
+  //firbase init
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Enable verbose logging for debugging (remove in production)
+  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+  // Initialize with your OneSignal App ID
+  OneSignal.initialize("b068d3f0-99d0-487c-a233-fde4b91a5b8c");
+  // Use this method to prompt for push notifications.
+  // We recommend removing this method after testing and instead use In-App Messages to prompt for notification permission.
+  OneSignal.Notifications.requestPermission(true);
+
+  // Handle notification clicks
+  OneSignal.Notifications.addClickListener((event) {
+    print('Notification clicked: ${event.notification.jsonRepresentation()}');
+
+    // Handle different notification types
+    final data = event.notification.additionalData;
+    if (data != null) {
+      switch (data['type']) {
+        case 'question_answered':
+          // Navigate to the answered question
+          final questionId = data['questionId'];
+          final answerId = data['answerId'];
+          print('Navigate to question: $questionId, answer: $answerId');
+          // You can implement navigation logic here
+          break;
+
+        case 'answer_upvoted':
+          // Navigate to the upvoted answer
+          final questionId = data['questionId'];
+          final answerId = data['answerId'];
+          final upvotesCount = data['upvotesCount'];
+          print(
+            'Navigate to upvoted answer: $answerId with $upvotesCount upvotes',
+          );
+          // You can implement navigation logic here
+          break;
+
+        case 'new_question_for_volunteers':
+          // Navigate to the new question for volunteers
+          final questionId = data['questionId'];
+          final category = data['category'];
+          print('Navigate to new question: $questionId in category: $category');
+          // You can implement navigation logic here
+          break;
+
+        case 'welcome':
+          // Welcome notification - no navigation needed
+          print('Welcome notification clicked');
+          break;
+
+        case 'test':
+          // Test notification - no navigation needed
+          print('Test notification clicked');
+          break;
+
+        case 'missed_questions_summary':
+          // Navigate to questions page to see missed questions
+          final count = data['count'];
+          print('Navigate to questions page - $count missed questions');
+          // You can implement navigation logic here
+          break;
+      }
+    }
+  });
 
   runApp(
     MultiProvider(

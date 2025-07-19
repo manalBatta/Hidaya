@@ -11,6 +11,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:frontend/utils/auth_utils.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -27,6 +29,28 @@ class _SignInPageState extends State<SignInPage> {
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  Future<void> _updateOneSignalId(String onesignalId) async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+
+      final response = await http.put(
+        Uri.parse('${url}onesignal-id'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({'onesignalId': onesignalId}),
+      );
+
+      if (response.statusCode == 200) {
+        print('OneSignal ID updated successfully');
+      }
+    } catch (e) {
+      print('Failed to update OneSignal ID: $e');
+    }
+  }
 
   Future<void> signIn() async {
     final requestbody = {
@@ -50,17 +74,30 @@ class _SignInPageState extends State<SignInPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
 
-      print("sign in returned data: $data");
-      print("About to set user in provider...");
       await Provider.of<UserProvider>(
         context,
         listen: false,
       ).setUser(data['user']);
-      print("User set in provider successfully!");
+
       // Navigate to root so MaterialApp rebuilds and shows ResponsiveLayout
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (context) => HidayaApp()));
+
+      // After login:
+      final userId = Provider.of<UserProvider>(context, listen: false).userId;
+      await OneSignal.login(userId);
+      print('OneSignal External ID set to: $userId');
+
+      // Get OneSignal ID and send to backend
+      try {
+        final onesignalId = await OneSignal.User.pushSubscription.id;
+        if (onesignalId != null) {
+          await _updateOneSignalId(onesignalId);
+        }
+      } catch (e) {
+        print('Failed to get OneSignal ID: $e');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Login failed')),
