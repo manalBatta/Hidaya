@@ -7,6 +7,8 @@ yarn-error.log*
 
 
 backend/serviceAccountKey.json
+serviceAccountKey.json
+Hidaya\backend\serviceAccountKey.json
 # Runtime data
 pids
 *.pid
