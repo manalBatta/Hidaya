@@ -220,20 +220,23 @@ class _ProfilePageState extends State {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Test notification sent! Check your device.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.successGreen,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send test notification'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.errorRed,
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
       );
     }
   }

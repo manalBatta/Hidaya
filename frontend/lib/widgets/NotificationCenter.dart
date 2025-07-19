@@ -152,7 +152,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to delete notifications'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.errorRed,
         ),
       );
     }
@@ -168,7 +168,11 @@ class _NotificationCenterState extends State<NotificationCenter> {
           ),
           title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.warningOrange,
+                size: 28,
+              ),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -185,14 +189,14 @@ class _NotificationCenterState extends State<NotificationCenter> {
           ),
           content: Text(
             'Are you sure you want to delete all notifications? This action cannot be undone.',
-            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            style: TextStyle(fontSize: 16, color: AppColors.grey700),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                style: TextStyle(color: AppColors.grey600, fontSize: 16),
               ),
             ),
             ElevatedButton(
@@ -201,7 +205,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
                 _deleteAllNotifications();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.errorRed,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -280,7 +284,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.islamicWhite,
         elevation: 0,
         iconTheme: IconThemeData(color: AppColors.islamicGreen800),
         actions: [
@@ -322,11 +326,18 @@ class _NotificationCenterState extends State<NotificationCenter> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.grey),
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppColors.grey500,
+                      ),
                       SizedBox(height: 16),
                       Text(
                         'Failed to load notifications',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: AppColors.grey600,
+                        ),
                       ),
                       SizedBox(height: 16),
                       ElevatedButton(
@@ -348,17 +359,23 @@ class _NotificationCenterState extends State<NotificationCenter> {
                       Icon(
                         Icons.notifications_none,
                         size: 64,
-                        color: Colors.grey,
+                        color: AppColors.grey500,
                       ),
                       SizedBox(height: 16),
                       Text(
                         'No notifications yet',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: AppColors.grey600,
+                        ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'You\'ll see notifications here when you receive them',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.grey500,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -443,7 +460,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
                                                     isUnread
                                                         ? AppColors
                                                             .islamicGreen800
-                                                        : Colors.grey[700],
+                                                        : AppColors.grey700,
                                               ),
                                             ),
                                           ),
@@ -465,7 +482,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
                                         notification['message'] ?? '',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey[600],
+                                          color: AppColors.grey600,
                                           height: 1.4,
                                         ),
                                       ),
@@ -476,7 +493,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
                                         ),
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey[500],
+                                          color: AppColors.grey500,
                                         ),
                                       ),
                                     ],
