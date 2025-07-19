@@ -89,37 +89,7 @@ exports.voteonanswer = async (req, res, next) => {
       }
     }
 
-    // Send notification to answer author when their answer is upvoted
-    try {
-      if (updatedAnswer.answeredBy && updatedAnswer.answeredBy !== userId) {
-        const answerAuthor = await UserModel.findOne({
-          userId: updatedAnswer.answeredBy,
-        }).lean();
-
-        if (answerAuthor) {
-          // Send notification using the service
-          const upvoteResult = await sendNotification({
-            userId: answerAuthor.userId,
-            type: "answer_upvoted",
-            title: "Your answer received an upvote! 👍",
-            message: `Someone upvoted your answer to: "${question.text.substring(
-              0,
-              50
-            )}..."`,
-            data: {
-              questionId: updatedAnswer.questionId,
-              answerId: answerId,
-              upvotesCount: updatedAnswer.upvotesCount,
-            },
-          });
-
-          console.log("Upvote notification result:", upvoteResult);
-        }
-      }
-    } catch (notificationError) {
-      console.log("Failed to send upvote notification:", notificationError);
-      // Don't fail the upvote if notification fails
-    }
+    
 
     res.json({
       message: "Upvote successful",

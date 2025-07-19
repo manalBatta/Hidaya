@@ -8,11 +8,13 @@ const { v4: uuidv4 } = require("uuid");
 class AnswerServices {
   static async UpVoteOnAnswer(answerId, userId) {
     try {
-      const newAnswer = await AnswerModel.findOne({ answerId }).lean();
-      if (!newAnswer) return null;
+      // 1. Find the answer being upvoted
+      const answer = await AnswerModel.findOne({ answerId }).lean();
+      if (!answer) return null;
 
-      const questionId = newAnswer.questionId;
-      // Find if user already voted on this question
+      const questionId = answer.questionId;
+
+      // 2. Find if user already voted on this question
       const existingVote = await VoteModel.findOne({
         votedBy: userId,
         questionId,
@@ -20,32 +22,29 @@ class AnswerServices {
 
       if (existingVote) {
         if (existingVote.answerId === answerId) {
-          // 🟥 Case 2: Unvote (same answer clicked again)
+          // Unvote
           await VoteModel.deleteOne({ voteId: existingVote.voteId });
           await AnswerModel.updateOne(
             { answerId },
             { $inc: { upvotesCount: -1 } }
           );
-          console.log("HELLO !!!!@@@@@@");
         } else {
-          // 🟧 Case 3: Change vote to different answer
+          // Change vote to different answer
           await VoteModel.updateOne(
             { voteId: existingVote.voteId },
             { $set: { answerId, updatedAt: new Date() } }
           );
-
           await AnswerModel.updateOne(
             { answerId: existingVote.answerId },
             { $inc: { upvotesCount: -1 } }
           );
-
           await AnswerModel.updateOne(
             { answerId },
             { $inc: { upvotesCount: 1 } }
           );
         }
       } else {
-        // 🟩 Case 1: First time vote
+        // First time vote
         await VoteModel.create({
           voteId: uuidv4(),
           answerId,
@@ -53,24 +52,72 @@ class AnswerServices {
           votedBy: userId,
           createdAt: new Date(),
         });
-
         await AnswerModel.updateOne(
           { answerId },
           { $inc: { upvotesCount: 1 } }
         );
       }
 
-      // 🔄 Always recalculate top answer
+      // 3. Always recalculate top answer
       const top = await AnswerModel.find({ questionId })
         .sort({ upvotesCount: -1, createdAt: 1 })
         .limit(1)
         .lean();
 
-      if (top.length > 0) {
+      // Fetch the question ONCE
+      const question = await QuestionModel.findOne({ questionId });
+      const previousTopAnswerId = question.topAnswerId;
+      const newTopAnswerId = top.length > 0 ? top[0].answerId : null;
+
+      // 4. If the top answer has changed, update and notify
+      if (newTopAnswerId && previousTopAnswerId !== newTopAnswerId) {
         await QuestionModel.updateOne(
           { questionId },
-          { $set: { topAnswerId: top[0].answerId } }
+          { $set: { topAnswerId: newTopAnswerId } }
         );
+
+        // Notify question owner
+        const questionOwner = await UserModel.findOne({
+          userId: question.askedBy,
+        });
+        if (questionOwner) {
+          await sendNotification({
+            userId: questionOwner.userId,
+            type: "top_answer_changed",
+            title: "Your question has a new top answer!",
+            message: `A new answer is now the top answer for your question: "${question.text.substring(
+              0,
+              50
+            )}..."`,
+            data: {
+              questionId: questionId,
+              answerId: newTopAnswerId,
+            },
+          });
+        }
+      }
+
+      // 5. Notify answer author if their answer was upvoted (and not by themselves)
+      if (answer.answeredBy && answer.answeredBy !== userId) {
+        const answerAuthor = await UserModel.findOne({
+          userId: answer.answeredBy,
+        }).lean();
+        if (answerAuthor) {
+          await sendNotification({
+            userId: answerAuthor.userId,
+            type: "answer_upvoted",
+            title: "Your answer received an upvote! 👍",
+            message: `Someone upvoted your answer to: "${question.text.substring(
+              0,
+              50
+            )}..."`,
+            data: {
+              questionId: answer.questionId,
+              answerId: answerId,
+              // You may want to re-fetch upvotesCount if needed
+            },
+          });
+        }
       }
 
       // Return updated state of the answer that was clicked

@@ -118,7 +118,7 @@ exports.login = async (req, res, next) => {
       userId: user.userId,
       type: "welcome",
       title: "Welcome to Hidaya! 🎉",
-      message: `Hello ${user.displayName}! Welcome back to your Islamic learning journey.`,
+      message: `Hello ${user.displayName}! 😊 Welcome back to Hidaya! We're so happy to see you again,We’ve prepared some questions based on your background – ready to explore? and let us know if you need anything!`,
       data: {
         userId: user.userId,
       },
