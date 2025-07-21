@@ -205,6 +205,19 @@ class AnswerServices {
       const user = await UserModel.findOne({ userId }).lean();
       if (!user) throw new Error("User not found");
 
+      const fullUser = {
+        id: user.userId,
+        displayName: user.displayName,
+        country: user.country,
+        gender: user.gender,
+        email: user.email,
+        language: user.language,
+        role: user.role,
+        savedQuestions: user.savedQuestions,
+        savedLessons: user.savedLessons,
+        createdAt: user.createdAt,
+      };
+
       // Extract unique questionIds
       const questionIds = answers.map((a) => a.questionId);
       const questions = await QuestionModel.find({

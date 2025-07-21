@@ -555,7 +555,9 @@ class _QuestionCardState extends State<QuestionCard> {
 
   void _handleReportSuccess(String answerId) {
     setState(() {
-      final answerIndex = allAnswers.indexWhere((a) => a['answerId'] == answerId);
+      final answerIndex = allAnswers.indexWhere(
+        (a) => a['answerId'] == answerId,
+      );
       if (answerIndex != -1) {
         allAnswers[answerIndex]['isFlagged'] = true;
       }
@@ -575,7 +577,7 @@ class _QuestionCardState extends State<QuestionCard> {
     final userId = userProvider.user?['id'];
     final isOwner = askedById == userId;
     final userRole = userProvider.user?['role'] ?? 'user';
-     final itemType = 'question';
+    final itemType = 'question';
     final aiAnswer = widget.question['aiAnswer']?.toString().trim();
     final rawTopAnswer = widget.question['topAnswer'];
     final topAnswerId =
@@ -682,18 +684,27 @@ class _QuestionCardState extends State<QuestionCard> {
                         // Report flag icon for users only
                         if (userRole == 'user')
                           IconButton(
-                            icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+                            icon: Icon(
+                              Icons.flag_outlined,
+                              color: Colors.redAccent,
+                            ),
                             tooltip: 'Report',
                             onPressed: () async {
                               await showDialog(
                                 context: context,
-                                builder: (context) => ReportModal(
-                                  questionId: (widget.question['questionId'] ?? widget.question['_id']).toString(),
-                                  questionText: widget.question['text'] ?? 'No text available',
-                                  itemType: itemType,
-                                  scaffoldContext: scaffoldContext,
-                                  onReportSuccess: widget.onReportSuccess,
-                                ),
+                                builder:
+                                    (context) => ReportModal(
+                                      questionId:
+                                          (widget.question['questionId'] ??
+                                                  widget.question['_id'])
+                                              .toString(),
+                                      questionText:
+                                          widget.question['text'] ??
+                                          'No text available',
+                                      itemType: itemType,
+                                      scaffoldContext: scaffoldContext,
+                                      onReportSuccess: widget.onReportSuccess,
+                                    ),
                               );
                             },
                           ),
@@ -1609,118 +1620,123 @@ class _QuestionCardState extends State<QuestionCard> {
 
   // Widget to display individual answer in the scrollable list
   //By Ruba
- Widget _buildAnswerCard(Map<String, dynamic> answer, int index) {
-  final answeredBy = answer['answeredBy'];
-  final answerText = answer['text']?.toString() ?? '';
-  final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
-  final answererName = _getAnswererDisplayName(answeredBy);
-  final createdAt = answer['createdAt']?.toString() ?? '';
-  final answerId = answer['answerId']?.toString() ?? '';
-  final isCertified = _isCertifiedVolunteer();
-  final isUpvoted = upvotedAnswerId == answerId;
-  final isTopAnswer = index == 0;
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-  final userRole = userProvider.user?['role'] ?? 'user';
-  final userId = userProvider.user?['id'];
-  final isFlagged = answer['isFlagged'] ?? false;
-  final isOwner = (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
-  final scaffoldContext = context;
-   if (answer['isFlagged'] == true) return SizedBox.shrink(); // Hide flagged answers
+  Widget _buildAnswerCard(Map<String, dynamic> answer, int index) {
+    final answeredBy = answer['answeredBy'];
+    final answerText = answer['text']?.toString() ?? '';
+    final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
+    final answererName = _getAnswererDisplayName(answeredBy);
+    final createdAt = answer['createdAt']?.toString() ?? '';
+    final answerId = answer['answerId']?.toString() ?? '';
+    final isCertified = _isCertifiedVolunteer();
+    final isUpvoted = upvotedAnswerId == answerId;
+    final isTopAnswer = index == 0;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userRole = userProvider.user?['role'] ?? 'user';
+    final userId = userProvider.user?['id'];
+    final isFlagged = answer['isFlagged'] ?? false;
+    final isOwner =
+        (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
+    final scaffoldContext = context;
+    if (answer['isFlagged'] == true)
+      return SizedBox.shrink(); // Hide flagged answers
 
-  return Stack(
-    children: [
-      Container(
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isTopAnswer
-              ? AppColors.islamicGreen400.withOpacity(0.5)
-              : Colors.white,
-          border: Border.all(
-            color: isTopAnswer
-                ? AppColors.islamicGreen500.withOpacity(0.5)
-                : AppColors.askPageBorder.withOpacity(0.3),
-            width: isTopAnswer ? 2 : 1,
+    return Stack(
+      children: [
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                isTopAnswer
+                    ? AppColors.islamicGreen400.withOpacity(0.5)
+                    : Colors.white,
+            border: Border.all(
+              color:
+                  isTopAnswer
+                      ? AppColors.islamicGreen500.withOpacity(0.5)
+                      : AppColors.askPageBorder.withOpacity(0.3),
+              width: isTopAnswer ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
           ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (isTopAnswer)
-                  Container(
-                    margin: EdgeInsets.only(right: 8),
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.islamicGreen500,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.star,
-                          size: _getResponsiveIconSize(10),
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 2),
-                        Text(
-                          'Top Answer',
-                          style: TextStyle(
-                            fontSize: _getResponsiveFontSize(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (isTopAnswer)
+                    Container(
+                      margin: EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.islamicGreen500,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.star,
+                            size: _getResponsiveIconSize(10),
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 2),
+                          Text(
+                            'Top Answer',
+                            style: TextStyle(
+                              fontSize: _getResponsiveFontSize(10),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Icon(
+                    Icons.verified_user,
+                    size: _getResponsiveIconSize(16),
+                    color:
+                        isCertified ? AppColors.islamicGreen500 : Colors.grey,
+                  ),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      answererName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.askPageTitle,
+                        fontSize: _getResponsiveFontSize(13),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                Icon(
-                  Icons.verified_user,
-                  size: _getResponsiveIconSize(16),
-                  color: isCertified ? AppColors.islamicGreen500 : Colors.grey,
-                ),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    answererName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.askPageTitle,
-                      fontSize: _getResponsiveFontSize(13),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Text(
-              answerText,
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(14),
-                color: AppColors.askPageTitle,
-                height: 1.4,
+                ],
               ),
-            ),
-            SizedBox(height: 8),
-            if (createdAt.isNotEmpty)
+              SizedBox(height: 8),
               Text(
-                'Answered on ${_formatDate(createdAt)}',
+                answerText,
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(11),
-                  color: AppColors.askPageSubtitle,
-                  fontStyle: FontStyle.italic,
+                  fontSize: _getResponsiveFontSize(14),
+                  color: AppColors.askPageTitle,
+                  height: 1.4,
                 ),
               ),
-          ],
+              SizedBox(height: 8),
+              if (createdAt.isNotEmpty)
+                Text(
+                  'Answered on ${_formatDate(createdAt)}',
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(11),
+                    color: AppColors.askPageSubtitle,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
 
-      // 🔴 Flag icon positioned top-right
-     // if (userRole == 'user' && !isOwner)
+        // 🔴 Flag icon positioned top-right
+        // if (userRole == 'user' && !isOwner)
         Positioned(
           top: 4,
           right: 4,
@@ -1730,21 +1746,21 @@ class _QuestionCardState extends State<QuestionCard> {
             onPressed: () async {
               await showDialog(
                 context: context,
-                builder: (context) => ReportModal(
-                  questionId: answerId,
-                  questionText: answerText,
-                  itemType: 'answer',
-                  scaffoldContext: scaffoldContext,
-                  onReportSuccess: () => _handleReportSuccess(answerId),
-                ),
+                builder:
+                    (context) => ReportModal(
+                      questionId: answerId,
+                      questionText: answerText,
+                      itemType: 'answer',
+                      scaffoldContext: scaffoldContext,
+                      onReportSuccess: () => _handleReportSuccess(answerId),
+                    ),
               );
             },
           ),
         ),
-    ],
-  );
-}
-
+      ],
+    );
+  }
 
   // Helper function to format date
   String _formatDate(String dateString) {

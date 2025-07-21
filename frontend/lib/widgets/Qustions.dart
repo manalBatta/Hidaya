@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import '../constants/colors.dart';
 import 'QuestionCard.dart';
 import 'AIResponseCard.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'dart:async'; // Added for Completer
 import 'package:provider/provider.dart';
@@ -893,45 +893,6 @@ Question: "$questionText"
         .toList();
   }
 
-  //Done deep checking
-  // Helper: Sort community questions by tag similarity, freshness, location
-  /*  List<Map<String, dynamic>> sortCommunityQuestions(
-    List<Map<String, dynamic>> questions,
-    String userCountry,
-    List<String> userTags,
-  ) {
-    int tagSimilarity(List<String> qTags) {
-      if (userTags.isEmpty || qTags.isEmpty) return 0;
-      return qTags.where((tag) => userTags.contains(tag)).length;
-    }
-
-    int locationScore(String? qCountry) {
-      if (qCountry == null) return 0;
-      return qCountry.toLowerCase() == userCountry.toLowerCase() ? 1 : 0;
-    }
-
-    int freshnessScore(String createdAt) {
-      final date = DateTime.tryParse(createdAt) ?? DateTime(1970);
-      return -date.millisecondsSinceEpoch;
-    }
-
-    questions.sort((a, b) {
-      int tagA = tagSimilarity(List<String>.from(a['tags'] ?? []));
-      int tagB = tagSimilarity(List<String>.from(b['tags'] ?? []));
-      int locA = locationScore(a['askedBy']?['country']);
-      int locB = locationScore(b['askedBy']?['country']);
-      int freshA = freshnessScore(a['createdAt'] ?? '');
-      int freshB = freshnessScore(b['createdAt'] ?? '');
-      // Do not include answers in the comparison
-      int scoreA = tagA * 100 + locA * 50 + freshA ~/ 1000000;
-      int scoreB = tagB * 100 + locB * 50 + freshB ~/ 1000000;
-      return scoreB.compareTo(scoreA);
-    });
-    return questions;
-  }
- */
-  //Done deep checking
-
   int _currentPage = 1;
   final int _pageSize = 3;
   bool _hasMoreCommunityQuestions = true;
@@ -1039,7 +1000,6 @@ Question: "$questionText"
               });
               _communityQuestionsLoaded = true;
             });
-
             getFavoriteQuestions();
             await retryPendingAIs(_communityQuestions);
           }
@@ -1171,7 +1131,6 @@ Question: "$questionText"
                 _myQuestions = updatedMyQuestions;
                 _myQuestionsLoaded = true;
               });
-
               // Update favorites when my questions are loaded
               getFavoriteQuestions();
               await retryPendingAIs(_myQuestions);
@@ -1182,7 +1141,6 @@ Question: "$questionText"
                 _myQuestions = [];
                 _myQuestionsLoaded = true;
               });
-
               getFavoriteQuestions();
             }
             print('No my questions found or questions is not a List.');
@@ -1194,7 +1152,6 @@ Question: "$questionText"
               _myQuestions = [];
               _myQuestionsLoaded = true;
             });
-
             getFavoriteQuestions();
           }
         }
@@ -1205,7 +1162,6 @@ Question: "$questionText"
             _myQuestions = [];
             _myQuestionsLoaded = true;
           });
-
           getFavoriteQuestions();
         }
       }
@@ -1215,7 +1171,6 @@ Question: "$questionText"
           _myQuestions = [];
           _myQuestionsLoaded = true;
         });
-
         getFavoriteQuestions();
       }
       print('Error loading my questions: $e');
@@ -1298,29 +1253,6 @@ Question: "$questionText"
     }
   }
 
-  /*   //Done deep checking
-  void _trySortCommunityQuestions() {
-    if (_myQuestionsLoaded && _communityQuestionsLoaded) {
-      final Set<String> userTagsSet = {};
-      for (final q in _myQuestions) {
-        final tags = q['tags'];
-        if (tags is List) {
-          userTagsSet.addAll(tags.map((e) => e.toString()));
-        }
-      }
-      List<String> userTags = userTagsSet.toList();
-      if (mounted) {
-        setState(() {
-          _communityQuestions = sortCommunityQuestions(
-            _communityQuestions,
-            userProvider?.user?["country"] ?? '',
-            userTags,
-          );
-        });
-      }
-    }
-  }
- */
   // Helper function to calculate time ago
   String _calculateTimeAgo(String? createdAt) {
     if (createdAt == null) return 'Just now';

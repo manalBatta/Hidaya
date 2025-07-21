@@ -76,11 +76,13 @@ class _SignInPageState extends State<SignInPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
 
+      print("sign in returned data: $data");
+      print("About to set user in provider...");
       await Provider.of<UserProvider>(
         context,
         listen: false,
       ).setUser(data['user']);
-
+      print("User set in provider successfully!");
       // Navigate to root so MaterialApp rebuilds and shows ResponsiveLayout
       Navigator.of(
         context,

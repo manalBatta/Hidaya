@@ -7,6 +7,7 @@ import 'package:frontend/widgets/CertificationViewer.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/config.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/utils/auth_utils.dart';
@@ -388,6 +389,14 @@ class _ProfilePageState extends State {
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _countryController.dispose();
+    _languageController.dispose();
+    _bioController?.dispose();
+    _certTitleController.dispose();
+    _certInstitutionController.dispose();
+    _spokenLanguagesController.dispose();
     super.dispose();
   }
 
@@ -1720,7 +1729,6 @@ class _ProfilePageState extends State {
                 ),
               ),
               SizedBox(height: 16),
-
               Divider(),
               SizedBox(height: 16),
               Text(

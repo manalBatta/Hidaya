@@ -2,12 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/utils/auth_utils.dart';
 import 'package:frontend/widgets/Qustions.dart';
-import '../constants/colors.dart';
 import 'HomePage.dart';
 import 'LessonsPage.dart';
 import 'ProfilePage.dart';
 import 'package:provider/provider.dart';
 import '../providers/NavigationProvider.dart';
+import 'package:frontend/constants/colors.dart';
+
 
 class ResponsiveLayout extends StatefulWidget {
   final String userRole;
