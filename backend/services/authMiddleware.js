@@ -2,14 +2,11 @@ const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
-console.log("Hello1");
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ status: false, message: 'No token provided' });
   }
-console.log("Hello3");
 
   const token = authHeader.split(' ')[1];
-console.log("Hello2");
 
   try {
     const decoded = jwt.verify(token, 'secret'); // Same key used to sign

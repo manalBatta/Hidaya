@@ -2,6 +2,8 @@ const AnswerServices = require("../services/answersservices");
 const AnswerModel = require("../models/Answers");
 const QuestionModel = require("../models/Questions");
 const UserModel = require("../models/User");
+const admin = require("firebase-admin");
+const { sendNotification } = require("../services/notificationService.js");
 
 exports.voteonanswer = async (req, res, next) => {
   const { answerId } = req.body;
@@ -87,6 +89,8 @@ exports.voteonanswer = async (req, res, next) => {
       }
     }
 
+    
+
     res.json({
       message: "Upvote successful",
       updatedAnswer: fullUpdatedAnswer,
@@ -119,6 +123,40 @@ exports.submitanswerbyvolunteer = async (req, res, next) => {
     const { newAnswer } = await AnswerServices.SubmitAnswer(Newanswer);
 
     const answerToReturn = newAnswer.toObject();
+
+    // Send notification to question owner
+    try {
+      // Get the question to find the owner
+      const question = await QuestionModel.findOne({ questionId }).lean();
+      if (question && question.askedBy) {
+        // Get the question owner's user data
+        const questionOwner = await UserModel.findOne({
+          userId: question.askedBy,
+        }).lean();
+
+        if (questionOwner) {
+          // Send notification using the service
+          const answerResult = await sendNotification({
+            userId: questionOwner.userId,
+            type: "question_answered",
+            title: "Your question was answered!",
+            message: `Someone answered your question: "${question.text.substring(
+              0,
+              50
+            )}..."`,
+            data: {
+              questionId: questionId,
+              answerId: newAnswer.answerId,
+            },
+          });
+
+          console.log("Answer notification result:", answerResult);
+        }
+      }
+    } catch (notificationError) {
+      console.log("Failed to send notification:", notificationError);
+      // Don't fail the answer submission if notification fails
+    }
 
     res.status(201).json({
       status: true,
@@ -184,5 +222,18 @@ exports.getanswerupvotedbyvolunteer = async (req, res, next) => {
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
+  }
+};
+
+exports.deleteAnswer = async (req, res) => {
+  try {
+    const { answerId } = req.params;
+    const result = await AnswerServices.DeleteAnswer(answerId);
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Answer not found" });
+    }
+    res.json({ message: "Answer deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };

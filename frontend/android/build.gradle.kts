@@ -1,3 +1,16 @@
+<<<<<<< HEAD
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.11.1")
+        classpath("com.google.gms:google-services:4.3.15")
+    }
+}
+=======
+>>>>>>> 51a94a448c3625047e81f9713fa3a461fde85844
 allprojects {
     repositories {
         google()
@@ -16,6 +29,17 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+<<<<<<< HEAD
+subprojects {
+    if (name.contains("flutter_plugin_android_lifecycle")) {
+        tasks.withType<Test>().configureEach {
+            enabled = false
+        }
+    }
+}
+
+=======
+>>>>>>> 51a94a448c3625047e81f9713fa3a461fde85844
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

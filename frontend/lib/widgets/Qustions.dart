@@ -646,8 +646,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   void _submitQuestion() async {
     if (_formKey.currentState!.validate() && _selectedCategory.isNotEmpty) {
       try {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('token');
+        final token = await AuthUtils.getValidToken(context);
+        if (token == null) return;
         final userProvider = Provider.of<UserProvider>(context, listen: false);
         final tags = await extractTagsFromQuestionGemini(
           _questionController.text,
@@ -819,6 +819,7 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
 Provide a concise, clear Islamic answer to the following question.
 Use proper spacing between all words and punctuation.
 Format the response in a clear, readable manner with correct grammar and spacing.
+Answer is English only.
 Question: "$questionText"
 ''';
 
@@ -886,45 +887,6 @@ Question: "$questionText"
         .toList();
   }
 
-  //Done deep checking
-  // Helper: Sort community questions by tag similarity, freshness, location
-  List<Map<String, dynamic>> sortCommunityQuestions(
-    List<Map<String, dynamic>> questions,
-    String userCountry,
-    List<String> userTags,
-  ) {
-    int tagSimilarity(List<String> qTags) {
-      if (userTags.isEmpty || qTags.isEmpty) return 0;
-      return qTags.where((tag) => userTags.contains(tag)).length;
-    }
-
-    int locationScore(String? qCountry) {
-      if (qCountry == null) return 0;
-      return qCountry.toLowerCase() == userCountry.toLowerCase() ? 1 : 0;
-    }
-
-    int freshnessScore(String createdAt) {
-      final date = DateTime.tryParse(createdAt) ?? DateTime(1970);
-      return -date.millisecondsSinceEpoch;
-    }
-
-    questions.sort((a, b) {
-      int tagA = tagSimilarity(List<String>.from(a['tags'] ?? []));
-      int tagB = tagSimilarity(List<String>.from(b['tags'] ?? []));
-      int locA = locationScore(a['askedBy']?['country']);
-      int locB = locationScore(b['askedBy']?['country']);
-      int freshA = freshnessScore(a['createdAt'] ?? '');
-      int freshB = freshnessScore(b['createdAt'] ?? '');
-      // Do not include answers in the comparison
-      int scoreA = tagA * 100 + locA * 50 + freshA ~/ 1000000;
-      int scoreB = tagB * 100 + locB * 50 + freshB ~/ 1000000;
-      return scoreB.compareTo(scoreA);
-    });
-    return questions;
-  }
-
-  //Done deep checking
-
   int _currentPage = 1;
   final int _pageSize = 3;
   bool _hasMoreCommunityQuestions = true;
@@ -951,7 +913,6 @@ Question: "$questionText"
             _recentQuestions = [];
             _communityQuestionsLoaded = true;
           });
-          _trySortCommunityQuestions();
         }
         _isLoadingCommunityQuestions = false;
         return;
@@ -1034,7 +995,6 @@ Question: "$questionText"
               });
               _communityQuestionsLoaded = true;
             });
-            _trySortCommunityQuestions();
             getFavoriteQuestions();
             await retryPendingAIs(_communityQuestions);
           }
@@ -1054,7 +1014,6 @@ Question: "$questionText"
               }
               _communityQuestionsLoaded = true;
             });
-            _trySortCommunityQuestions();
             getFavoriteQuestions();
           }
           _hasMoreCommunityQuestions = false;
@@ -1069,7 +1028,6 @@ Question: "$questionText"
             }
             _communityQuestionsLoaded = true;
           });
-          _trySortCommunityQuestions();
           getFavoriteQuestions();
         }
         _hasMoreCommunityQuestions = false;
@@ -1083,7 +1041,6 @@ Question: "$questionText"
           }
           _communityQuestionsLoaded = true;
         });
-        _trySortCommunityQuestions();
         getFavoriteQuestions();
       }
       print('Error loading community questions: $e');
@@ -1170,7 +1127,6 @@ Question: "$questionText"
                 _myQuestions = updatedMyQuestions;
                 _myQuestionsLoaded = true;
               });
-              _trySortCommunityQuestions();
               // Update favorites when my questions are loaded
               getFavoriteQuestions();
               await retryPendingAIs(_myQuestions);
@@ -1181,7 +1137,6 @@ Question: "$questionText"
                 _myQuestions = [];
                 _myQuestionsLoaded = true;
               });
-              _trySortCommunityQuestions();
               getFavoriteQuestions();
             }
             print('No my questions found or questions is not a List.');
@@ -1193,7 +1148,6 @@ Question: "$questionText"
               _myQuestions = [];
               _myQuestionsLoaded = true;
             });
-            _trySortCommunityQuestions();
             getFavoriteQuestions();
           }
         }
@@ -1204,7 +1158,6 @@ Question: "$questionText"
             _myQuestions = [];
             _myQuestionsLoaded = true;
           });
-          _trySortCommunityQuestions();
           getFavoriteQuestions();
         }
       }
@@ -1214,7 +1167,6 @@ Question: "$questionText"
           _myQuestions = [];
           _myQuestionsLoaded = true;
         });
-        _trySortCommunityQuestions();
         getFavoriteQuestions();
       }
       print('Error loading my questions: $e');
@@ -1267,21 +1219,12 @@ Question: "$questionText"
             Map<String, dynamic>? question = ans['question'];
             final topAnswerId = question?['topAnswerId'];
             Map<String, dynamic>? topAnswer;
-            for (var q in _recentQuestions) {
-              if (q['questionId'] == question?['questionId'] &&
-                  q['topAnswer'] != null) {
-                question = q;
-                final tA = q['topAnswer'];
-                if (tA['answerId'] == topAnswerId) {
-                  topAnswer = tA;
-                  break;
-                }
-              }
-            }
+            topAnswer = ans["topAnswer"];
             myAnswersList.add({
               'question': question,
               'topAnswer': topAnswer,
               'volunteerAnswer': ans,
+              'askedBy': ans["askedBy"],
             });
           }
           if (!mounted) return;
@@ -1304,29 +1247,6 @@ Question: "$questionText"
         _myAnswers = [];
         _myAnswersLoaded = true;
       });
-    }
-  }
-
-  //Done deep checking
-  void _trySortCommunityQuestions() {
-    if (_myQuestionsLoaded && _communityQuestionsLoaded) {
-      final Set<String> userTagsSet = {};
-      for (final q in _myQuestions) {
-        final tags = q['tags'];
-        if (tags is List) {
-          userTagsSet.addAll(tags.map((e) => e.toString()));
-        }
-      }
-      List<String> userTags = userTagsSet.toList();
-      if (mounted) {
-        setState(() {
-          _communityQuestions = sortCommunityQuestions(
-            _communityQuestions,
-            userProvider?.user?["country"] ?? '',
-            userTags,
-          );
-        });
-      }
     }
   }
 
@@ -2358,7 +2278,15 @@ if (originalIndex != -1) {
                 itemCount: _myAnswers.length,
                 itemBuilder: (context, index) {
                   final item = _myAnswers[index];
-                  return MyAnswerCard(item: item);
+                  return MyAnswerCard(
+                    item: item,
+                    onDelete: () {
+                      if (!mounted) return;
+                      setState(() {
+                        _myAnswers.removeAt(index);
+                      });
+                    },
+                  );
                 },
               ),
     );

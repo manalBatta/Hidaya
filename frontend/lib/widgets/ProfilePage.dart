@@ -5,6 +5,8 @@ import 'package:frontend/config.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/CertificationViewer.dart';
 import 'package:http/http.dart' as http;
+import 'package:frontend/config.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +18,8 @@ import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend/widgets/Qustions.dart';
 import 'package:frontend/providers/NavigationProvider.dart';
+import 'package:frontend/widgets/NotificationCenter.dart';
+import 'package:frontend/widgets/SignInPage.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -204,6 +208,48 @@ class _ProfilePageState extends State {
     }
   }
 
+  Future<void> _sendTestNotification() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+
+      final response = await http.post(
+        Uri.parse('${url}notifications/test'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          'message':
+              'Hello! This is a test notification from your Hidaya app! 🎉',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Test notification sent! Check your device.'),
+            backgroundColor: AppColors.successGreen,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send test notification'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error Profile: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
+
   Future<void> selectFile() async {
     final result = await FilePicker.platform.pickFiles();
 
@@ -257,6 +303,49 @@ class _ProfilePageState extends State {
     }
 
     return '';
+  }
+
+  Future<void> changePassword() async {
+    //Todo: implement change password logic
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Updated password '),
+          backgroundColor: const Color.fromARGB(255, 0, 111, 59),
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        return;
+      }
+
+      final response = await http.delete(
+        Uri.parse(deletAccounturl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true) {
+          if (!mounted) {
+            return;
+          }
+          await AuthUtils.logout(context);
+        } else {}
+      } else {
+        print("delete failed: ${response.statusCode} ${response.body}");
+      }
+    } catch (e) {
+      print("error deleting : $e");
+    }
   }
 
   @override
@@ -1080,77 +1169,112 @@ class _ProfilePageState extends State {
     bool showEdit = true,
     bool showButtons = true,
   }) {
-    return Column(
+    return Stack(
       children: [
-        // Avatar
-        Container(
-          width: 96,
-          height: 96,
-          margin: EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.islamicGreen500, AppColors.islamicGreen600],
+        Column(
+          children: [
+            // Avatar
+            Container(
+              width: 96,
+              height: 96,
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.islamicGreen500,
+                    AppColors.islamicGreen600,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(48),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha((0.1 * 255).toInt()),
+                    blurRadius: 15,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.person, size: 48, color: Colors.white),
             ),
-            borderRadius: BorderRadius.circular(48),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                blurRadius: 15,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Icon(Icons.person, size: 48, color: Colors.white),
-        ),
-        // User Info
-        Text.rich(
-          TextSpan(
-            children: [
+            // User Info
+            Text.rich(
               TextSpan(
-                text:
-                    userObj['gender'] == 'Female'
-                        ? 'Sister '
-                        : userObj['gender'] == 'Male'
-                        ? 'Brother '
-                        : '',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
+                children: [
+                  TextSpan(
+                    text:
+                        userObj['gender'] == 'Female'
+                            ? 'Sister '
+                            : userObj['gender'] == 'Male'
+                            ? 'Brother '
+                            : '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  TextSpan(
+                    text: userObj['displayName'] as String? ?? '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.islamicGreen800,
+                    ),
+                  ),
+                ],
               ),
-              TextSpan(
-                text: userObj['displayName'] as String? ?? '',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.islamicGreen800,
-                ),
+            ),
+            SizedBox(height: 16),
+            _buildInfoRow(Icons.email, userObj['email'] as String? ?? ''),
+            SizedBox(height: 8),
+            _buildInfoRow(
+              Icons.location_on,
+              userObj['country'] as String? ?? '',
+            ),
+            SizedBox(height: 8),
+            _buildInfoRow(Icons.language, userObj['language'] as String? ?? ''),
+            if (showButtons) ...[
+              SizedBox(height: 24),
+              Divider(color: AppColors.islamicGreen200),
+              SizedBox(height: 24),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _showEditProfileDialog,
+                    icon: Icon(Icons.edit, size: 16),
+                    label: Text('Edit Profile'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.islamicGreen600,
+                      side: BorderSide(color: AppColors.islamicGreen300),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await AuthUtils.logout(context);
+                    },
+                    icon: Icon(Icons.logout, size: 16),
+                    label: Text('Log Out'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red[700],
+                      side: BorderSide(color: Colors.red[300]!),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        SizedBox(height: 16),
-        _buildInfoRow(Icons.email, userObj['email'] as String? ?? ''),
-        SizedBox(height: 8),
-        _buildInfoRow(Icons.location_on, userObj['country'] as String? ?? ''),
-        SizedBox(height: 8),
-        _buildInfoRow(Icons.language, userObj['language'] as String? ?? ''),
-        if (showButtons) ...[
-          SizedBox(height: 24),
-          Divider(color: AppColors.islamicGreen200),
-          SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showEditProfileDialog,
-                  icon: Icon(Icons.edit, size: 16),
-                  label: Text('Edit Profile'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.islamicGreen600,
-                    side: BorderSide(color: AppColors.islamicGreen300),
-                    padding: EdgeInsets.symmetric(vertical: 12),
+              SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _sendTestNotification,
+                icon: Icon(Icons.notifications, size: 16),
+                label: Text('Test Notifications'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.islamicGold500,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -1183,10 +1307,92 @@ class _ProfilePageState extends State {
                   ),
                 ),
               ),
+              SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NotificationCenter(),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.notifications_active, size: 16),
+                label: Text('View All Notifications'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.islamicGreen500,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ],
-          ),
-        ],
+          ],
+        ),
+        // Settings button at top right
+        Positioned(top: 0, right: 0, child: _buildSettingsMenu()),
+
       ],
+    );
+  }
+
+  // Settings menu widget (gear icon with dropdown)
+  Widget _buildSettingsMenu() {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.settings, color: AppColors.islamicGreen600, size: 26),
+      color: AppColors.islamicWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.islamicGreen200),
+      ),
+      onSelected: (value) {
+        if (value == "delete_account") {
+          ConfirmDeleteAccountModal.show(
+            context,
+            onConfirm: () {
+              deleteAccount();
+            },
+            onCancel: () {
+              Navigator.of(context).pop(); // Just close the modal
+            },
+          );
+        } else if (value == "change_password") {
+          changePassword();
+        }
+      },
+      itemBuilder:
+          (context) => [
+            PopupMenuItem<String>(
+              value: 'change_password',
+              child: Row(
+                children: [
+                  Icon(Icons.lock, color: AppColors.islamicGreen500, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Change Password',
+                    style: TextStyle(color: AppColors.islamicGreen800),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'delete_account',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, color: AppColors.errorRed, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Delete Account',
+                    style: TextStyle(color: AppColors.errorRed),
+                  ),
+                ],
+              ),
+            ),
+          ],
+      tooltip: 'Settings',
+      elevation: 8,
     );
   }
 
@@ -2336,5 +2542,245 @@ class QuestionsWithFavoritesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Questions(initialTabIndex: 2);
+  }
+}
+
+class ConfirmDeleteAccountModal extends StatefulWidget {
+  final VoidCallback? onConfirm;
+  final VoidCallback? onCancel;
+
+  const ConfirmDeleteAccountModal({Key? key, this.onConfirm, this.onCancel})
+    : super(key: key);
+
+  static Future<void> show(
+    BuildContext context, {
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return ConfirmDeleteAccountModal(
+          onConfirm: onConfirm,
+          onCancel: onCancel ?? () => Navigator.of(context).pop(),
+        );
+      },
+    );
+  }
+
+  @override
+  State<ConfirmDeleteAccountModal> createState() =>
+      _ConfirmDeleteAccountModalState();
+}
+
+class _ConfirmDeleteAccountModalState extends State<ConfirmDeleteAccountModal> {
+  bool _isDeleting = false;
+  final TextEditingController _confirmController = TextEditingController();
+  bool _inputMatches = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _confirmController.addListener(_checkInput);
+  }
+
+  void _checkInput() {
+    setState(() {
+      _inputMatches =
+          _confirmController.text.trim().toLowerCase() == 'delete my account';
+    });
+  }
+
+  @override
+  void dispose() {
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final maxWidth = isTablet ? 400.0 : screenSize.width * 0.9;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.islamicWhite,
+      child: Container(
+        width: maxWidth,
+        constraints: BoxConstraints(maxHeight: screenSize.height * 0.7),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.errorRed,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Delete Account',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.errorRed,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _isDeleting ? null : widget.onCancel,
+                    icon: Icon(Icons.close, color: AppColors.grey500),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently removed.',
+                    style: TextStyle(
+                      color: AppColors.islamicGreen800,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'We are sad to see you go. May Allah bless you on your journey.',
+                    style: TextStyle(
+                      color: AppColors.islamicGreen600,
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'To confirm, please type "delete my account" below:',
+                    style: TextStyle(
+                      color: AppColors.errorRed,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _confirmController,
+                    enabled: !_isDeleting,
+                    decoration: InputDecoration(
+                      hintText: 'Type: delete my account',
+                      hintStyle: TextStyle(color: AppColors.grey400),
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 255, 255, 255),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppColors.errorRedLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.errorRed,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                    ),
+                    style: TextStyle(
+                      color: AppColors.errorRed,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (!_inputMatches && _confirmController.text.isNotEmpty)
+                    Text(
+                      'You must type "delete my account" to enable deletion.',
+                      style: TextStyle(color: AppColors.errorRed, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Actions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: _isDeleting ? null : widget.onCancel,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.islamicGreen600,
+                      side: BorderSide(color: AppColors.islamicGreen400),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed:
+                        _isDeleting || !_inputMatches
+                            ? null
+                            : () async {
+                              setState(() => _isDeleting = true);
+                              await Future.delayed(
+                                const Duration(milliseconds: 600),
+                              );
+                              if (widget.onConfirm != null) widget.onConfirm!();
+                              if (mounted) Navigator.of(context).pop();
+                            },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.errorRed,
+                      foregroundColor: AppColors.islamicWhite,
+                      disabledBackgroundColor: AppColors.errorRedLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child:
+                        _isDeleting
+                            ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.islamicWhite,
+                                ),
+                              ),
+                            )
+                            : const Text('Delete'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -10,8 +10,12 @@ class UserProvider with ChangeNotifier {
   bool _chatInitialized = false;
   bool get chatInitialized => _chatInitialized;
   void setChatInitialized(bool value) {
-    _chatInitialized = value;
-    notifyListeners();
+    try {
+      _chatInitialized = value;
+      notifyListeners();
+    } catch (e) {
+      print("error setchatInitialized function : $e");
+    }
   }
 
   Map<String, dynamic>? get user => _user;
@@ -76,6 +80,7 @@ class UserProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('user');
     prefs.remove('sessionId');
+    prefs.setString('token', '');
     setChatInitialized(true);
   }
 

@@ -57,7 +57,6 @@ ParsedAIMessage extractSuggestions(String aiMessage) {
       suggestions.add(trimmed);
     }
   }
-
   return ParsedAIMessage(
     cleanMessage: messageWithoutSuggestions,
     suggestions: suggestions,
@@ -149,31 +148,47 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       if (response.statusCode == 200) {
         userProvider.setSessionId(data['sessionId']);
         _scrollToBottom();
-        await _typeAIResponse(data["greeting"]);
+        final dynamic greetingData = data['greeting'];
+        String greetingText;
+        if (greetingData is List) {
+          greetingText = "No response";
+        } else {
+          greetingText =
+              greetingData?.toString() ??
+              'Welcome! How can I assist you with Islam today?';
+        }
+        await _typeAIResponse(greetingText);
         _scrollToBottom();
       } else {
         // handle failure, display error from response if available
         final errorMsg = data['error'] ?? 'Failed to start session';
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+        ).showSnackBar(SnackBar(content: Text("error start chat: $errorMsg")));
+        _scrollToBottom();
+        await _typeAIResponse("Chat is sleeping now zzz");
+        _scrollToBottom();
       }
     } catch (e) {
+
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
+
     }
 
     userProvider.setChatInitialized(true);
   }
 
   Future<void> _sendMessage([String? message]) async {
+    print("sending message $message");
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final sessionId = userProvider.sessionId;
 
     if ((message == null && _inputController.text.trim().isEmpty) ||
         sessionId == null) {
+      print("returned from send $sessionId");
       return;
     }
     final content = message ?? _inputController.text.trim();
@@ -258,7 +273,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         setState(() {
           _typingText = cleanResponse.substring(0, i);
         });
-        await Future.delayed(const Duration(milliseconds: 30));
+        _scrollToBottom();
+        await Future.delayed(const Duration(milliseconds: 10));
       } else {
         return;
       }
@@ -370,7 +386,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
           Flexible(
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.5,
+                maxWidth:
+                    MediaQuery.of(context).size.width < 600
+                        ? MediaQuery.of(context).size.width * 0.9
+                        : MediaQuery.of(context).size.width * 0.5,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -436,8 +455,9 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
             child: Container(
               constraints: BoxConstraints(
                 maxWidth:
-                    MediaQuery.of(context).size.width *
-                    0.5, // Match message bubble
+                    MediaQuery.of(context).size.width < 600
+                        ? MediaQuery.of(context).size.width * 0.9
+                        : MediaQuery.of(context).size.width * 0.5,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -626,9 +646,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
               // Main Content
               // Animation and status area
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildAnimatedWaveform(),
@@ -686,6 +707,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                   ],
                 ),
               ),
+              ),
               // Chat Section
               Expanded(
                 child: Container(
@@ -739,6 +761,11 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                 ),
               ),
               // Input Area
+              if (_isResponding)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: AnimatedRespondingDots(isDarkMode: _isDarkMode),
+                ),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -794,7 +821,11 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                             fontSize: 16,
                           ),
                           enabled: !_isResponding,
-                          onSubmitted: (_) => _sendMessage(),
+                          onSubmitted:
+                              _inputController.text.trim().isEmpty ||
+                                      _isResponding
+                                  ? null
+                                  : _sendMessage,
                         ),
                       ),
                     ),
@@ -834,17 +865,66 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       "What is the significance of Ramadan?",
     ];
 
+    double maxWidth =
+        MediaQuery.of(context).size.width < 600
+            ? MediaQuery.of(context).size.width * 0.9
+            : MediaQuery.of(context).size.width * 0.5;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                suggestions.map((suggestion) {
+                  return OutlinedButton(
+                    onPressed: () {
+                      _sendMessage(suggestion);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color:
+                            _isDarkMode
+                                ? Colors.green.shade600
+                                : const Color(0xFF059669).withOpacity(0.3),
+                      ),
+                      foregroundColor:
+                          _isDarkMode
+                              ? Colors.green.shade100
+                              : const Color(0xFF059669),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Text(suggestion),
+                  );
+                }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildSuggestionsRow(List<ChatMessage> suggestions) {
+    double maxWidth =
+        MediaQuery.of(context).size.width < 600
+            ? MediaQuery.of(context).size.width * 0.9
+            : MediaQuery.of(context).size.width * 0.5;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: Wrap(
           spacing: 8,
-          runSpacing: 8,
           children:
-              suggestions.map((suggestion) {
+              suggestions.map((message) {
                 return OutlinedButton(
                   onPressed: () {
-                    _inputController.text = suggestion;
+                    _sendMessage(message.content);
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
@@ -862,48 +942,16 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                       vertical: 12,
                     ),
                   ),
-                  child: Text(suggestion),
+                  child: Text(
+                    message.content,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 );
               }).toList(),
         ),
-      ),
-    );
-  }
-
-  Widget buildSuggestionsRow(List<ChatMessage> suggestions) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-      child: Wrap(
-        spacing: 8,
-        children:
-            suggestions.map((message) {
-              return ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _isDarkMode
-                          ? Colors.green.shade700.withOpacity(0.9)
-                          : const Color(0xFF10B981),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
-                onPressed: () {
-                  _sendMessage(message.content);
-                },
-                child: Text(
-                  message.content,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              );
-            }).toList(),
       ),
     );
   }
@@ -926,6 +974,19 @@ class WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // GLOW PAINT (drawn first, underneath)
+    final glowColor =
+        isDarkMode ? Colors.green.shade400 : const Color(0xFF059669);
+    final glowOpacity = 0.3;
+    final glowBlur = 8.0;
+    final glowStroke = 10.0;
+    final glowPaint =
+        Paint()
+          ..color = glowColor.withOpacity(glowOpacity)
+          ..strokeWidth = glowStroke
+          ..style = PaintingStyle.stroke
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur);
+
     final paint =
         Paint()
           ..color = isDarkMode ? Colors.green.shade400 : const Color(0xFF059669)
@@ -993,6 +1054,9 @@ class WaveformPainter extends CustomPainter {
       }
     }
 
+    // Draw the glow path first (underneath main waveform)
+    canvas.drawPath(path, glowPaint);
+
     canvas.drawPath(tertiaryPath, tertiaryPaint);
     canvas.drawPath(secondaryPath, secondaryPaint);
     canvas.drawPath(path, paint);
@@ -1023,4 +1087,97 @@ class WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// Animated responding dots indicator
+class AnimatedRespondingDots extends StatefulWidget {
+  final bool isDarkMode;
+  const AnimatedRespondingDots({Key? key, required this.isDarkMode})
+    : super(key: key);
+
+  @override
+  State<AnimatedRespondingDots> createState() => _AnimatedRespondingDotsState();
+}
+
+class _AnimatedRespondingDotsState extends State<AnimatedRespondingDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _dotOneAnim;
+  late Animation<double> _dotTwoAnim;
+  late Animation<double> _dotThreeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+    _dotOneAnim = Tween<double>(begin: 0.2, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      ),
+    );
+    _dotTwoAnim = Tween<double>(begin: 0.2, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeIn),
+      ),
+    );
+    _dotThreeAnim = Tween<double>(begin: 0.2, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        widget.isDarkMode ? Colors.green.shade300 : const Color(0xFF059669);
+    return SizedBox(
+      height: 14,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Opacity(opacity: _dotOneAnim.value, child: _buildDot(color)),
+              const SizedBox(width: 3),
+              Opacity(opacity: _dotTwoAnim.value, child: _buildDot(color)),
+              const SizedBox(width: 3),
+              Opacity(opacity: _dotThreeAnim.value, child: _buildDot(color)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDot(Color color) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 3,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
+    );
+  }
 }

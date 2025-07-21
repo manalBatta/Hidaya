@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  // Primary Islamic Green Colors
   static const islamicGreen50 = Color(0xFFE6F3E9);
   static const islamicGreen100 = Color(0xFFD6E9D9);
   static const islamicGreen200 = Color(0xFFB6D5B8);
@@ -12,6 +13,7 @@ class AppColors {
   static const islamicGreen800 = Color(0xFF1F5234);
   static const islamicGreen900 = Color(0xFF193F27);
 
+  // Secondary Islamic Gold Colors
   static const islamicGold50 = Color(0xFFF9F2D5);
   static const islamicGold100 = Color(0xFFF2E4A7);
   static const islamicGold200 = Color(0xFFEAD873);
@@ -23,9 +25,49 @@ class AppColors {
   static const islamicGold800 = Color(0xFF805B12);
   static const islamicGold900 = Color(0xFF6D4B0F);
 
+  // Neutral Colors
   static const islamicCream = Color(0xFFF4EFD8);
   static const islamicWhite = Color(0xFFFFFFFF);
-  
+
+  // Semantic Colors
+  static const successGreen = Color(0xFF4CAF50); // Material Green 500
+  static const successGreenLight = Color(0xFF81C784); // Material Green 300
+  static const successGreenDark = Color(0xFF388E3C); // Material Green 700
+
+  static const errorRed = Color(0xFFD32F2F); // Material Red 500
+  static const errorRedLight = Color(0xFFE57373); // Material Red 300
+  static const errorRedDark = Color(0xFFD32F2F); // Material Red 700
+
+  static const warningOrange = Color(0xFFFF9800); // Material Orange 500
+  static const warningOrangeLight = Color(0xFFFFB74D); // Material Orange 300
+  static const warningOrangeDark = Color(0xFFF57C00); // Material Orange 700
+
+  static const infoBlue = Color(0xFF2196F3); // Material Blue 500
+  static const infoBlueLight = Color(0xFF64B5F6); // Material Blue 300
+  static const infoBlueDark = Color(0xFF1976D2); // Material Blue 700
+
+  // Grey Scale
+  static const grey50 = Color(0xFFFAFAFA);
+  static const grey100 = Color(0xFFF5F5F5);
+  static const grey200 = Color(0xFFEEEEEE);
+  static const grey300 = Color(0xFFE0E0E0);
+  static const grey400 = Color(0xFFBDBDBD);
+  static const grey500 = Color(0xFF9E9E9E);
+  static const grey600 = Color(0xFF757575);
+  static const grey700 = Color(0xFF616161);
+  static const grey800 = Color(0xFF424242);
+  static const grey900 = Color(0xFF212121);
+
+  // Transparent Colors
+  static const transparent = Colors.transparent;
+  static const whiteTransparent = Color(0x00FFFFFF);
+  static const blackTransparent = Color(0x00000000);
+
+  // Overlay Colors
+  static const overlayLight = Color(0x1A000000); // 10% black
+  static const overlayMedium = Color(0x33000000); // 20% black
+  static const overlayDark = Color(0x66000000); // 40% black
+
   // Additional colors used in AskPage
   static const askPageBackground = Color(0xFFF4FBF8);
   static const askPagePrivateBackground = Color(0xFFFCF7E8);
@@ -48,6 +90,6 @@ class AppColors {
   static const askPageAIText = Color(0xFF1E40AF);
   static const askPageAINote = Color(0xFF1D4ED8);
 
-  // Red color for delete icon
+  // Legacy color (keeping for backward compatibility)
   static const deleteRed = Color(0xFFD32F2F); // Material Red 700
 }
