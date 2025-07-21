@@ -11,6 +11,8 @@ router.post("/register", UserController.register);
 router.post("/login", UserController.login);
 router.put("/profile", authMiddleware, UserController.updateprofile);
 router.put("/onesignal-id", authMiddleware, UserController.updateOneSignalId);
+router.put("/change-password", authMiddleware, UserController.changePassword);
+router.delete("/delete-account", authMiddleware, UserController.deleteAccount);
 // Use notification routes
 router.use("/notifications", notificationRoutes);
 router.post("/questions", authMiddleware, QuestionController.submitquestion);

@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:frontend/utils/auth_utils.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -91,7 +93,10 @@ class _SignInPageState extends State<SignInPage> {
 
       // Get OneSignal ID and send to backend
       try {
-        final onesignalId = await OneSignal.User.pushSubscription.id;
+        String? onesignalId;
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+          onesignalId = await OneSignal.User.pushSubscription.id;
+        }
         if (onesignalId != null) {
           await _updateOneSignalId(onesignalId);
         }

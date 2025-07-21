@@ -198,6 +198,28 @@ exports.updateprofile = async (req, res, next) => {
       : updatedUser;
     delete userToReturn.password;
 
+    // Send real-time notification for profile update
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "profile_updated",
+        title: "✅ Profile Updated",
+        message: "Your profile was updated successfully.",
+        data: {
+          action: "profile_update",
+          updatedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+    } catch (notificationError) {
+      console.log(
+        "Failed to send profile update notification:",
+        notificationError
+      );
+      // Don't fail the profile update if notification fails
+    }
+
     return res.status(200).json({
       status: true,
       success: "Profile updated successfully",
@@ -237,6 +259,148 @@ exports.updateOneSignalId = async (req, res, next) => {
     });
   } catch (err) {
     console.log("---> err in updateOneSignalId -->", err);
+    next(err);
+  }
+};
+
+// Change password
+exports.changePassword = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    // Get user to verify current password
+    const user = await UserServices.checkUserById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await UserServices.verifyPassword(
+      currentPassword,
+      user.password
+    );
+
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({
+        status: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Update password
+    const updatedUser = await UserServices.updateUserById(userId, {
+      password: newPassword,
+    });
+
+    // Send real-time notification for password change
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "password_changed",
+        title: "🔐 Password Changed",
+        message: "Password changed successfully.",
+        data: {
+          action: "password_change",
+          changedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+    } catch (notificationError) {
+      console.log(
+        "Failed to send password change notification:",
+        notificationError
+      );
+      // Don't fail the password change if notification fails
+    }
+
+    res.status(200).json({
+      status: true,
+      success: "Password changed successfully",
+    });
+  } catch (err) {
+    console.log("---> err in changePassword -->", err);
+    next(err);
+  }
+};
+
+// Delete account
+exports.deleteAccount = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        status: false,
+        message: "Password is required to delete account",
+      });
+    }
+
+    // Get user to verify password
+    const user = await UserServices.checkUserById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await UserServices.verifyPassword(
+      password,
+      user.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        status: false,
+        message: "Password is incorrect",
+      });
+    }
+
+    // Send notification before deleting account
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "account_deleted",
+        title: "🗑️ Account Deleted",
+        message: "You've successfully deleted your account.",
+        data: {
+          action: "account_deletion",
+          deletedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+    } catch (notificationError) {
+      console.log(
+        "Failed to send account deletion notification:",
+        notificationError
+      );
+      // Continue with account deletion even if notification fails
+    }
+
+    // Delete user account
+    await UserServices.deleteUserById(userId);
+
+    res.status(200).json({
+      status: true,
+      success: "Account deleted successfully",
+    });
+  } catch (err) {
+    console.log("---> err in deleteAccount -->", err);
     next(err);
   }
 };

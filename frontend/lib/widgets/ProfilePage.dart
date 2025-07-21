@@ -234,7 +234,7 @@ class _ProfilePageState extends State {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text('Error Profile: $e'),
           backgroundColor: AppColors.errorRed,
         ),
       );

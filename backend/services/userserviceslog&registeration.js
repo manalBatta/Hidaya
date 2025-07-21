@@ -198,6 +198,18 @@ class UserServices {
       throw err;
     }
   }
+
+  static async deleteUserById(userId) {
+    try {
+      const result = await UserModel.deleteOne({ userId });
+      if (result.deletedCount === 0) {
+        throw new Error("User not found");
+      }
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  }
 }
 
 module.exports = UserServices;
