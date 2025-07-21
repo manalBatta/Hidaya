@@ -296,6 +296,32 @@ class _ProfilePageState extends State {
     return '';
   }
 
+  Future<void> changePassword() async {
+    //Todo: implement change password logic
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Updated password '),
+          backgroundColor: const Color.fromARGB(255, 0, 111, 59),
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    //Todo: implement delete account
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Your account has been deleted. May Allah bless you on your journey.',
+          ),
+          backgroundColor: const Color.fromARGB(255, 0, 111, 59),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1105,133 +1131,193 @@ class _ProfilePageState extends State {
     bool showEdit = true,
     bool showButtons = true,
   }) {
-    return Column(
+    return Stack(
       children: [
-        // Avatar
-        Container(
-          width: 96,
-          height: 96,
-          margin: EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.islamicGreen500, AppColors.islamicGreen600],
+        Column(
+          children: [
+            // Avatar
+            Container(
+              width: 96,
+              height: 96,
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.islamicGreen500,
+                    AppColors.islamicGreen600,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(48),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha((0.1 * 255).toInt()),
+                    blurRadius: 15,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.person, size: 48, color: Colors.white),
             ),
-            borderRadius: BorderRadius.circular(48),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                blurRadius: 15,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Icon(Icons.person, size: 48, color: Colors.white),
-        ),
-        // User Info
-        Text.rich(
-          TextSpan(
-            children: [
+            // User Info
+            Text.rich(
               TextSpan(
-                text:
-                    userObj['gender'] == 'Female'
-                        ? 'Sister '
-                        : userObj['gender'] == 'Male'
-                        ? 'Brother '
-                        : '',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
+                children: [
+                  TextSpan(
+                    text:
+                        userObj['gender'] == 'Female'
+                            ? 'Sister '
+                            : userObj['gender'] == 'Male'
+                            ? 'Brother '
+                            : '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  TextSpan(
+                    text: userObj['displayName'] as String? ?? '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.islamicGreen800,
+                    ),
+                  ),
+                ],
               ),
-              TextSpan(
-                text: userObj['displayName'] as String? ?? '',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.islamicGreen800,
-                ),
+            ),
+            SizedBox(height: 16),
+            _buildInfoRow(Icons.email, userObj['email'] as String? ?? ''),
+            SizedBox(height: 8),
+            _buildInfoRow(
+              Icons.location_on,
+              userObj['country'] as String? ?? '',
+            ),
+            SizedBox(height: 8),
+            _buildInfoRow(Icons.language, userObj['language'] as String? ?? ''),
+            if (showButtons) ...[
+              SizedBox(height: 24),
+              Divider(color: AppColors.islamicGreen200),
+              SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _showEditProfileDialog,
+                      icon: Icon(Icons.edit, size: 16),
+                      label: Text('Edit Profile'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.islamicGreen600,
+                        side: BorderSide(color: AppColors.islamicGreen300),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await AuthUtils.logout(context);
+                        // Optionally: Navigator.of(context).pushReplacementNamed('/login');
+                      },
+                      icon: Icon(Icons.logout, size: 16),
+                      label: Text('Log Out'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red[700],
+                        side: BorderSide(color: Colors.red[300]!),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        SizedBox(height: 16),
-        _buildInfoRow(Icons.email, userObj['email'] as String? ?? ''),
-        SizedBox(height: 8),
-        _buildInfoRow(Icons.location_on, userObj['country'] as String? ?? ''),
-        SizedBox(height: 8),
-        _buildInfoRow(Icons.language, userObj['language'] as String? ?? ''),
-        if (showButtons) ...[
-          SizedBox(height: 24),
-          Divider(color: AppColors.islamicGreen200),
-          SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showEditProfileDialog,
-                  icon: Icon(Icons.edit, size: 16),
-                  label: Text('Edit Profile'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.islamicGreen600,
-                    side: BorderSide(color: AppColors.islamicGreen300),
-                    padding: EdgeInsets.symmetric(vertical: 12),
+              SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _sendTestNotification,
+                icon: Icon(Icons.notifications, size: 16),
+                label: Text('Test Notifications'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.islamicGold500,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await AuthUtils.logout(context);
-                    // Optionally: Navigator.of(context).pushReplacementNamed('/login');
-                  },
-                  icon: Icon(Icons.logout, size: 16),
-                  label: Text('Log Out'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red[700],
-                    side: BorderSide(color: Colors.red[300]!),
-                    padding: EdgeInsets.symmetric(vertical: 12),
+              SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NotificationCenter(),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.notifications_active, size: 16),
+                label: Text('View All Notifications'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.islamicGreen500,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
             ],
-          ),
-          SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _sendTestNotification,
-            icon: Icon(Icons.notifications, size: 16),
-            label: Text('Test Notifications'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.islamicGold500,
-              foregroundColor: Colors.white,
-              minimumSize: Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => NotificationCenter()),
-              );
-            },
-            icon: Icon(Icons.notifications_active, size: 16),
-            label: Text('View All Notifications'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.islamicGreen500,
-              foregroundColor: Colors.white,
-              minimumSize: Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
+        // Settings button at top right
+        Positioned(top: 0, right: 0, child: _buildSettingsMenu()),
       ],
+    );
+  }
+
+  // Settings menu widget (gear icon with dropdown)
+  Widget _buildSettingsMenu() {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.settings, color: AppColors.islamicGreen600, size: 26),
+      color: AppColors.islamicWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.islamicGreen200),
+      ),
+      onSelected: (value) {
+        value == "change_password" ? changePassword() : deleteAccount();
+      },
+      itemBuilder:
+          (context) => [
+            PopupMenuItem<String>(
+              value: 'change_password',
+              child: Row(
+                children: [
+                  Icon(Icons.lock, color: AppColors.islamicGreen500, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Change Password',
+                    style: TextStyle(color: AppColors.islamicGreen800),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'delete_account',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, color: AppColors.errorRed, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Delete Account',
+                    style: TextStyle(color: AppColors.errorRed),
+                  ),
+                ],
+              ),
+            ),
+          ],
+      tooltip: 'Settings',
+      elevation: 8,
     );
   }
 
