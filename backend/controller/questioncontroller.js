@@ -103,12 +103,19 @@ exports.submitquestion = async (req, res, next) => {
     next(err);
   }
 };
+
+
+
+
+
+
 exports.getpublicquestions = async (req, res, next) => {
-  const { page, limit } = req.query;
-  const { questions, totalCount } = await UserServices.GetPublicQuestions(
-    page,
-    limit
-  );
+    const {page,limit , userCountry = '' , userTags = ''} = req.query;
+    let tagsArray = [];
+    if(typeof userTags === 'string' && userTags.length > 0){
+      tagsArray= userTags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+    const { questions, totalCount } = await UserServices.GetPublicQuestions(page, limit, userCountry , tagsArray);
   res.status(200).json({
     status: true,
     success: "Getting public Questions  successfully",
@@ -118,6 +125,10 @@ exports.getpublicquestions = async (req, res, next) => {
     totalPages: Math.ceil(totalCount / limit),
   });
 };
+
+
+
+
 exports.getquestionandanswers = async (req, res, next) => {
   const { id } = req.params;
 
@@ -257,13 +268,8 @@ exports.savequestion = async (req, res, next) => {
 exports.deletequestion = async (req, res, next) => {
   const userId = req.userId;
   const { id } = req.params;
-  if (!id) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "questionId is required to delete a question",
-      });
+  if (!id){
+    return res.status(400).json({ success: false, message: 'questionId is required to delete a question'})
   }
   try {
     const question = await UserServices.DeleteQuestion(userId, id);
@@ -330,13 +336,7 @@ exports.updateAIAnswer = async (req, res, next) => {
     }
     question.aiAnswer = aiAnswer;
     await question.save();
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "AI answer updated successfully",
-        question,
-      });
+    return res.status(200).json({ success: true, message: 'AI answer updated successfully', question });
   } catch (err) {
     console.error("Error updating AI answer:", err);
     return res.status(500).json({ success: false, message: "Server error" });

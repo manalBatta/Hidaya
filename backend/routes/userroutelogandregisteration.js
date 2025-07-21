@@ -24,7 +24,11 @@ router.post(
   AnswerController.submitanswerbyvolunteer
 );
 router.put("/answers/vote", authMiddleware, AnswerController.voteonanswer);
+<<<<<<< HEAD
 router.post("/flags", authMiddleware, FlagController.flagitem);
+=======
+//router.post("/flags", authMiddleware, FlagController.flagitem);
+>>>>>>> ad69a5f (flaging)
 router.get(
   "/myquestion",
   authMiddleware,
@@ -53,6 +57,10 @@ router.patch(
   authMiddleware,
   QuestionController.updateAIAnswer
 );
+<<<<<<< HEAD
+=======
+router.post("/reportquestion", authMiddleware, FlagController.reportquestion);
+>>>>>>> ad69a5f (flaging)
 
 router.delete("/answers/delete/:answerId", AnswerController.deleteAnswer);
 
