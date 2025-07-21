@@ -1,11 +1,15 @@
 const UserModel = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
+const crypto = require("crypto");
+const sendVerificationEmail = require("../utils/sendEmail");
 const { v4: uuidv4 } = require("uuid");
 class UserServices {
   static async registerUser(userData) {
     try {
+      const rawToken = uuidv4();
+const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
       const newUser = new UserModel({
         userId: uuidv4(),
         displayName: userData.displayName,
@@ -17,7 +21,8 @@ class UserServices {
         role: (userData.role || "user").toLowerCase(),
         language: userData.language,
         createdAt: new Date(),
-
+        verificationToken: hashedToken,
+        verificationTokenExpires: new Date(Date.now() + 3600000), 
         // Add ai_session_id if provided
         ai_session_id: userData.ai_session_id || undefined,
 
@@ -37,6 +42,7 @@ class UserServices {
       });
 
       await newUser.save();
+      sendVerificationEmail(newUser.email, rawToken);
       return newUser;
     } catch (err) {
       throw err;
@@ -75,6 +81,64 @@ class UserServices {
       throw err;
     }
   }
+
+  static async verifyEmail(token) {
+    if (!token) throw new Error("Token is required");
+  
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  
+    const user = await UserModel.findOne({
+      verificationToken: hashedToken,
+      verificationTokenExpires: { $gt: Date.now() },
+    });
+  
+    if (!user) {
+      const error = new Error("Invalid or expired verification token");
+      error.statusCode = 400;
+      throw error;
+    }
+  
+    if (user.isEmailVerified) {
+      const error = new Error("Email already verified");
+      error.statusCode = 400;
+      throw error;
+    }
+  
+    user.isEmailVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+  
+    await user.save();
+  
+    return user;
+  }
+
+  static async getUserById(userId) {
+    try {
+      return await UserModel.findOne({ userId });
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async hashPassword(password) {
+    return await bcrypt.hash(password, 10);
+  }
+
+  static async getUserByEmail(email) {
+    try {
+      return await UserModel.findOne({ email });
+    } catch (err) {
+      throw err;
+    }
+  }
+
+
+
+
+
+
+
 }
 
 module.exports = UserServices;

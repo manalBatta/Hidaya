@@ -133,6 +133,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     if (!mounted) return;
     try {
       final token = await AuthUtils.getValidToken(context);
+      if (!mounted) return;
 
       final response = await http.post(
         Uri.parse(startChat),
@@ -158,6 +159,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         ).showSnackBar(SnackBar(content: Text(errorMsg)));
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -189,6 +191,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
     try {
       final token = await AuthUtils.getValidToken(context);
+      if (!mounted) return;
 
       final response = await http.post(
         Uri.parse(sendChat),
@@ -202,6 +205,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
           "message": content,
         }),
       );
+      if (!mounted) return;
 
       final data = jsonDecode(response.body);
 
@@ -218,6 +222,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       print("answer is : $data");
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       debugPrint('Failed to send message: $e');
       await _typeAIResponse(
         "I'm sorry, I couldn't process your question at the moment. Please try again, or ask another question about Islam and I'll do my best to help you.",

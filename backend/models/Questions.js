@@ -13,6 +13,7 @@ const questionSchema = new Schema({
   tags: [{ type: String }], 
   category: { type: String } ,
   isFlagged: { type:Boolean, default: false}
+
 });
 
 module.exports = mongoose.model('Question', questionSchema,'Questions');

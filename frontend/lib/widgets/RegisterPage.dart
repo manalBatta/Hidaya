@@ -348,18 +348,31 @@ class _RegisterPageState extends State<RegisterPage> {
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body);
       if (response.statusCode == 201 && data['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.green,
-            content: Text('Register successfully done'),
-          ),
+        
+           showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Registration Successful'),
+              content: const Text(
+                  'A verification email has been sent to your email address. Please check your inbox to complete the registration.'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const SignInPage()),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
         );
       }
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const SignInPage()),
-      );
     }
   }
 

@@ -31,13 +31,15 @@ const userSchema = new Schema({
   language: String,
   savedQuestions: [String],
   savedLessons: [String],
-  
   //edited by manal
   // Add ai_session_id for AI chat sessions
   ai_session_id: { type: String },
 
   createdAt: { type: Date, default: Date.now },
   volunteerProfile: volunteerProfileSchema,
+  isEmailVerified: { type: Boolean, default: false },
+  verificationToken: {type: String },
+  verificationTokenExpires: {type: Date },
 });
 
 userSchema.pre("save", async function () {

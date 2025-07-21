@@ -62,6 +62,12 @@ class _ProfilePageState extends State {
   late TextEditingController _certInstitutionController;
   late TextEditingController _spokenLanguagesController;
 
+  // Password change controllers
+  final _passwordFormKey = GlobalKey<FormState>();
+  late TextEditingController _currentPasswordController;
+  late TextEditingController _newPasswordController;
+  late TextEditingController _confirmPasswordController;
+
   // File handling
   PlatformFile? _selectedFile;
   String? _uploadedFileUrl;
@@ -308,7 +314,19 @@ class _ProfilePageState extends State {
     _certTitleController.dispose();
     _certInstitutionController.dispose();
     _spokenLanguagesController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _showChangePasswordDialog() {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      builder: (context) =>
+          ChangePasswordDialog(scaffoldMessenger: scaffoldMessenger),
+    );
   }
 
   void _showEditProfileDialog() {
@@ -1139,6 +1157,19 @@ class _ProfilePageState extends State {
               SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
+                  onPressed: _showChangePasswordDialog,
+                  icon: Icon(Icons.lock, size: 16),
+                  label: Text('Change Password'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.islamicGreen600,
+                    side: BorderSide(color: AppColors.islamicGreen300),
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
                   onPressed: () async {
                     await AuthUtils.logout(context);
                     // Optionally: Navigator.of(context).pushReplacementNamed('/login');
@@ -1933,6 +1964,304 @@ class _ProfilePageState extends State {
         );
       }
     }
+  }
+}
+
+class ChangePasswordDialog extends StatefulWidget {
+  final ScaffoldMessengerState scaffoldMessenger;
+
+  const ChangePasswordDialog({super.key, required this.scaffoldMessenger});
+
+  @override
+  _ChangePasswordDialogState createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
+  final _passwordFormKey = GlobalKey<FormState>();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    // Keep references before the async gap.
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = widget.scaffoldMessenger;
+
+    if (!mounted) return;
+
+    final token = await AuthUtils.getValidToken(context);
+    if (token == null || !mounted) return;
+
+    final response = await http.post(
+      Uri.parse(changePassword),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'currentPassword': _currentPasswordController.text,
+        'newPassword': _newPasswordController.text,
+      }),
+    );
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Password changed successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Pop the dialog after a short delay
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) navigator.pop();
+    } else {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+            content: Text('Failed to change password. Please try again.'),
+            backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _showForgotPasswordDialog() {
+    Navigator.of(context).pop(); // Close the current dialog
+    showDialog(
+      context: context,
+      builder: (context) =>
+          ForgotPasswordDialog(scaffoldMessenger: widget.scaffoldMessenger),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.islamicWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.islamicGreen200),
+      ),
+      title: const Text('Change Password',
+          style: TextStyle(
+              color: AppColors.islamicGreen800, fontWeight: FontWeight.bold)),
+      content: Form(
+        key: _passwordFormKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _currentPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                  labelStyle: TextStyle(
+                      color: AppColors.islamicGreen700,
+                      fontWeight: FontWeight.w500)),
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Enter your current password'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _newPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  labelStyle: TextStyle(
+                      color: AppColors.islamicGreen700,
+                      fontWeight: FontWeight.w500)),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Enter a new password';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters long';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _confirmPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                  labelText: 'Confirm New Password',
+                  labelStyle: TextStyle(
+                      color: AppColors.islamicGreen700,
+                      fontWeight: FontWeight.w500)),
+              validator: (value) {
+                if (value != _newPasswordController.text) {
+                  return 'Passwords do not match';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _showForgotPasswordDialog,
+                child: const Text('Forgot Password?',
+                    style: TextStyle(color: AppColors.islamicGreen600)),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel',
+              style: TextStyle(
+                  color: AppColors.islamicGreen600,
+                  fontWeight: FontWeight.w600)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.islamicGreen500,
+              foregroundColor: Colors.white),
+          onPressed: () {
+            if (_passwordFormKey.currentState!.validate()) {
+              _changePassword();
+            }
+          },
+          child: const Text('Change Password'),
+        ),
+      ],
+    );
+  }
+}
+
+class ForgotPasswordDialog extends StatefulWidget {
+  final ScaffoldMessengerState scaffoldMessenger;
+
+  const ForgotPasswordDialog({super.key, required this.scaffoldMessenger});
+
+  @override
+  _ForgotPasswordDialogState createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendResetLink() async {
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = widget.scaffoldMessenger;
+    if (!mounted) return;
+
+    // TODO: Implement API call to backend
+    final token = await AuthUtils.getValidToken(context);
+    if (token == null || !mounted) return;
+
+    final response = await http.post(
+      Uri.parse(forgotPassword),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'email': _emailController.text,
+      }),
+    );
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Password reset link sent to your email.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Failed to send reset link. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    // Pop the dialog after a short delay
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.islamicWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.islamicGreen200),
+      ),
+      title: const Text('Forgot Password',
+          style: TextStyle(
+              color: AppColors.islamicGreen800, fontWeight: FontWeight.bold)),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+                'Enter your email address and we will send you a link to reset your password.'),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                  labelText: 'Email',
+                  labelStyle: TextStyle(
+                      color: AppColors.islamicGreen700,
+                      fontWeight: FontWeight.w500)),
+              validator: (value) {
+                if (value == null || value.isEmpty || !value.contains('@')) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel',
+              style: TextStyle(
+                  color: AppColors.islamicGreen600,
+                  fontWeight: FontWeight.w600)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.islamicGreen500,
+              foregroundColor: Colors.white),
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              _sendResetLink();
+            }
+          },
+          child: const Text('Send Reset Link'),
+        ),
+      ],
+    );
   }
 }
 
