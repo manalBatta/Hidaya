@@ -43,8 +43,8 @@ router.post("/start", async (req, res) => {
         user,
         history: recentMessages,
         message: "__resume__", // Special marker
-        language,
-        lastUserMessage,
+        /*         language,
+         */ lastUserMessage,
       });
 
       await saveChatMessage(session.id, "ai", greetingMessage);

@@ -85,12 +85,12 @@ class _SignInPageState extends State<SignInPage> {
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (context) => HidayaApp()));
-
-      // After login:
-      final userId = Provider.of<UserProvider>(context, listen: false).userId;
-      await OneSignal.login(userId);
-      print('OneSignal External ID set to: $userId');
-
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        // After login:
+        final userId = Provider.of<UserProvider>(context, listen: false).userId;
+        await OneSignal.login(userId);
+        print('OneSignal External ID set to: $userId');
+      }
       // Get OneSignal ID and send to backend
       try {
         String? onesignalId;

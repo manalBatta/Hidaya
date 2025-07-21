@@ -84,6 +84,5 @@ class AuthUtils {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     userProvider.logout();
 
-    // Optionally navigate to login screen or show a message
   }
 }

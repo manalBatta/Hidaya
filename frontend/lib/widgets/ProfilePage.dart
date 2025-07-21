@@ -5,6 +5,7 @@ import 'package:frontend/config.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/CertificationViewer.dart';
 import 'package:http/http.dart' as http;
+import 'package:frontend/config.dart';
 
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend/widgets/Qustions.dart';
 import 'package:frontend/providers/NavigationProvider.dart';
 import 'package:frontend/widgets/NotificationCenter.dart';
+import 'package:frontend/widgets/SignInPage.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -309,16 +311,33 @@ class _ProfilePageState extends State {
   }
 
   Future<void> deleteAccount() async {
-    //Todo: implement delete account
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Your account has been deleted. May Allah bless you on your journey.',
-          ),
-          backgroundColor: const Color.fromARGB(255, 0, 111, 59),
-        ),
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        return;
+      }
+
+      final response = await http.delete(
+        Uri.parse(deletAccounturl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
       );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true) {
+          if (!mounted) {
+            return;
+          }
+          await AuthUtils.logout(context);
+        } else {}
+      } else {
+        print("delete failed: ${response.statusCode} ${response.body}");
+      }
+    } catch (e) {
+      print("error deleting : $e");
     }
   }
 
@@ -369,14 +388,6 @@ class _ProfilePageState extends State {
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _countryController.dispose();
-    _languageController.dispose();
-    _bioController?.dispose();
-    _certTitleController.dispose();
-    _certInstitutionController.dispose();
-    _spokenLanguagesController.dispose();
     super.dispose();
   }
 
@@ -1218,7 +1229,6 @@ class _ProfilePageState extends State {
                     child: OutlinedButton.icon(
                       onPressed: () async {
                         await AuthUtils.logout(context);
-                        // Optionally: Navigator.of(context).pushReplacementNamed('/login');
                       },
                       icon: Icon(Icons.logout, size: 16),
                       label: Text('Log Out'),
@@ -1285,7 +1295,19 @@ class _ProfilePageState extends State {
         side: BorderSide(color: AppColors.islamicGreen200),
       ),
       onSelected: (value) {
-        value == "change_password" ? changePassword() : deleteAccount();
+        if (value == "delete_account") {
+          ConfirmDeleteAccountModal.show(
+            context,
+            onConfirm: () {
+              deleteAccount();
+            },
+            onCancel: () {
+              Navigator.of(context).pop(); // Just close the modal
+            },
+          );
+        } else if (value == "change_password") {
+          changePassword();
+        }
       },
       itemBuilder:
           (context) => [
@@ -2170,5 +2192,245 @@ class QuestionsWithFavoritesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Questions(initialTabIndex: 2);
+  }
+}
+
+class ConfirmDeleteAccountModal extends StatefulWidget {
+  final VoidCallback? onConfirm;
+  final VoidCallback? onCancel;
+
+  const ConfirmDeleteAccountModal({Key? key, this.onConfirm, this.onCancel})
+    : super(key: key);
+
+  static Future<void> show(
+    BuildContext context, {
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return ConfirmDeleteAccountModal(
+          onConfirm: onConfirm,
+          onCancel: onCancel ?? () => Navigator.of(context).pop(),
+        );
+      },
+    );
+  }
+
+  @override
+  State<ConfirmDeleteAccountModal> createState() =>
+      _ConfirmDeleteAccountModalState();
+}
+
+class _ConfirmDeleteAccountModalState extends State<ConfirmDeleteAccountModal> {
+  bool _isDeleting = false;
+  final TextEditingController _confirmController = TextEditingController();
+  bool _inputMatches = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _confirmController.addListener(_checkInput);
+  }
+
+  void _checkInput() {
+    setState(() {
+      _inputMatches =
+          _confirmController.text.trim().toLowerCase() == 'delete my account';
+    });
+  }
+
+  @override
+  void dispose() {
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final maxWidth = isTablet ? 400.0 : screenSize.width * 0.9;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.islamicWhite,
+      child: Container(
+        width: maxWidth,
+        constraints: BoxConstraints(maxHeight: screenSize.height * 0.7),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.errorRed,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Delete Account',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.errorRed,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _isDeleting ? null : widget.onCancel,
+                    icon: Icon(Icons.close, color: AppColors.grey500),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently removed.',
+                    style: TextStyle(
+                      color: AppColors.islamicGreen800,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'We are sad to see you go. May Allah bless you on your journey.',
+                    style: TextStyle(
+                      color: AppColors.islamicGreen600,
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'To confirm, please type "delete my account" below:',
+                    style: TextStyle(
+                      color: AppColors.errorRed,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _confirmController,
+                    enabled: !_isDeleting,
+                    decoration: InputDecoration(
+                      hintText: 'Type: delete my account',
+                      hintStyle: TextStyle(color: AppColors.grey400),
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 255, 255, 255),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppColors.errorRedLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppColors.errorRed,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                    ),
+                    style: TextStyle(
+                      color: AppColors.errorRed,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (!_inputMatches && _confirmController.text.isNotEmpty)
+                    Text(
+                      'You must type "delete my account" to enable deletion.',
+                      style: TextStyle(color: AppColors.errorRed, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Actions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: _isDeleting ? null : widget.onCancel,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.islamicGreen600,
+                      side: BorderSide(color: AppColors.islamicGreen400),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed:
+                        _isDeleting || !_inputMatches
+                            ? null
+                            : () async {
+                              setState(() => _isDeleting = true);
+                              await Future.delayed(
+                                const Duration(milliseconds: 600),
+                              );
+                              if (widget.onConfirm != null) widget.onConfirm!();
+                              if (mounted) Navigator.of(context).pop();
+                            },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.errorRed,
+                      foregroundColor: AppColors.islamicWhite,
+                      disabledBackgroundColor: AppColors.errorRedLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child:
+                        _isDeleting
+                            ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.islamicWhite,
+                                ),
+                              ),
+                            )
+                            : const Text('Delete'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

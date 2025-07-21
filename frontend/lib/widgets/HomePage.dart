@@ -145,16 +145,27 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
       if (response.statusCode == 200) {
         userProvider.setSessionId(data['sessionId']);
-        print("the session id is :${data['sessionId']}");
         _scrollToBottom();
-        await _typeAIResponse(data["greeting"]);
+        final dynamic greetingData = data['greeting'];
+        String greetingText;
+        if (greetingData is List) {
+          greetingText = "No response";
+        } else {
+          greetingText =
+              greetingData?.toString() ??
+              'Welcome! How can I assist you with Islam today?';
+        }
+        await _typeAIResponse(greetingText);
         _scrollToBottom();
       } else {
         // handle failure, display error from response if available
         final errorMsg = data['error'] ?? 'Failed to start session';
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+        ).showSnackBar(SnackBar(content: Text("error start chat: $errorMsg")));
+        _scrollToBottom();
+        await _typeAIResponse("Chat is sleeping now zzz");
+        _scrollToBottom();
       }
     } catch (e) {
       if (mounted) {

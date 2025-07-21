@@ -1,6 +1,6 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 
- //final url = 'http://192.168.100.189:5000/';
+//final url = 'http://192.168.100.189:5000/';
 final url = 'http://localhost:5000/';
 final registeration = url + "register";
 final login = url + "login";
@@ -22,3 +22,4 @@ final updateQuestionUrl =
     url +
     "updatequestions/"; // usage: updateQuestionUrl + questionId to update a question
 final deleteAns = url + "answers/delete/";
+final deletAccounturl = url + "delete-account";

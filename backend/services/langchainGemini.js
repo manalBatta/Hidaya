@@ -6,14 +6,6 @@ const model = new ChatGoogleGenerativeAI({
   temperature: 0.3,
   apiKey: process.env.GEMINI_API_KEY,
 });
-// Converts your message history to LangChain format
-function formatToLangchainMessages(history) {
-  return history.map((item) => {
-    return item.sender === "user"
-      ? new HumanMessage(item.message)
-      : new AIMessage(item.message);
-  });
-}
 
 // Main call: formats prompt and calls Gemini via LangChain
 async function askGeminiWithLangchain({
@@ -105,6 +97,7 @@ IMPORTANT: Your answer must be less than 50 words. Do not exceed this limit.
   const prompt = [new AIMessage(systemPrompt), ...chatHistory];
 
   const result = await model.invoke(prompt);
+  console.log("ai result.content", result);
   return result.content;
 }
 

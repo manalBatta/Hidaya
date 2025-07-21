@@ -339,14 +339,6 @@ exports.changePassword = async (req, res, next) => {
 exports.deleteAccount = async (req, res, next) => {
   try {
     const userId = req.userId;
-    const { password } = req.body;
-
-    if (!password) {
-      return res.status(400).json({
-        status: false,
-        message: "Password is required to delete account",
-      });
-    }
 
     // Get user to verify password
     const user = await UserServices.checkUserById(userId);
@@ -357,26 +349,14 @@ exports.deleteAccount = async (req, res, next) => {
       });
     }
 
-    // Verify password
-    const isPasswordValid = await UserServices.verifyPassword(
-      password,
-      user.password
-    );
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        status: false,
-        message: "Password is incorrect",
-      });
-    }
-
     // Send notification before deleting account
     try {
       await sendNotification({
         userId: userId,
         type: "account_deleted",
         title: "🗑️ Account Deleted",
-        message: "You've successfully deleted your account.",
+        message:
+          "Your account has been deleted. It's okay to take a breath and empty your mind. Take your time, we are waiting for you. May Allah lead you to the right path.",
         data: {
           action: "account_deletion",
           deletedAt: new Date().toISOString(),
