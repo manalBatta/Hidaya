@@ -38,17 +38,24 @@ class ParsedAIMessage {
 
 ParsedAIMessage extractSuggestions(String aiMessage) {
   final suggestions = <String>[];
-  final suggestionsStart = aiMessage.indexOf("Suggestions:");
 
-  if (suggestionsStart == -1) {
+  // Normalize different suggestion markers
+  final suggestionsPattern = RegExp(
+    r'\*{0,2}Suggestions:\*{0,2}',
+    caseSensitive: false,
+  );
+  final match = suggestionsPattern.firstMatch(aiMessage);
+
+  if (match == null) {
     return ParsedAIMessage(cleanMessage: aiMessage.trim(), suggestions: []);
   }
 
+  final suggestionsStart = match.start;
+
   final messageWithoutSuggestions =
       aiMessage.substring(0, suggestionsStart).trim();
-  final suggestionsText = aiMessage.substring(
-    suggestionsStart + "Suggestions:".length,
-  );
+  final suggestionsText = aiMessage.substring(match.end).trim();
+
   final lines = suggestionsText.split('\n');
 
   for (var line in lines) {
@@ -57,6 +64,7 @@ ParsedAIMessage extractSuggestions(String aiMessage) {
       suggestions.add(trimmed);
     }
   }
+
   return ParsedAIMessage(
     cleanMessage: messageWithoutSuggestions,
     suggestions: suggestions,
@@ -194,7 +202,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     final content = message ?? _inputController.text.trim();
     final userMessage = ChatMessage(type: 'user', content: content);
 
-    if (!mounted) return;
+    if (!mounted) {
+      print("HomePage not mounted can't send message");
+      return;
+    }
     setState(() {
       userProvider.addMessage(userMessage);
       _isResponding = true;
@@ -223,12 +234,14 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       if (!mounted) return;
 
       final data = jsonDecode(response.body);
-
+      print("ai response from sending: $data");
       if (response.statusCode == 200 && data["reply"] != null) {
+        print("ai response from sending: $data");
         _scrollToBottom();
         await _typeAIResponse(data["reply"]);
         _scrollToBottom();
       } else {
+        print("error sending message: $data");
         // Handle error or missing reply
         await _typeAIResponse(
           "I'm sorry, I couldn't process your question at the moment. Please try again, or ask another question about Islam and I'll do my best to help you.",
@@ -239,6 +252,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     } catch (e) {
       if (!mounted) return;
       debugPrint('Failed to send message: $e');
+      print('Failed to send message: $e');
       await _typeAIResponse(
         "I'm sorry, I couldn't process your question at the moment. Please try again, or ask another question about Islam and I'll do my best to help you.",
       );

@@ -1,8 +1,7 @@
-
 const FlagModel = require("../models/Flags");
 const QuestionModel = require("../models/Questions");
 const AnswerModel = require("../models/Answers");
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 class FlagServices {
   static async SubmitFlag(data) {
     try {
@@ -79,4 +78,4 @@ module.exports = FlagServices;
 
 
 
-*/ 
+*/
