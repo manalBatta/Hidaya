@@ -63,13 +63,10 @@ router.post("/reportquestion", authMiddleware, FlagController.reportquestion);
 router.get("/verify/:token", UserController.verifyEmail);
 router.post("/change-password", authMiddleware, UserController.changepassword);
 router.post("/forgot-password", UserController.forgotpassword);
-
-
-
-
-
-
-
+router.get("/reset-password/:token", UserController.resetpassword);
+router.post("/reset-password", authMiddleware, UserController.changeresetpassword);
 router.delete("/answers/delete/:answerId", AnswerController.deleteAnswer);
+
+
 
 module.exports = router;

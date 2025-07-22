@@ -18,4 +18,4 @@ async function sendVerificationEmail(email, token) {
   });
 }
 
-module.exports = sendVerificationEmail;
+module.exports = sendVerificationEmail; 

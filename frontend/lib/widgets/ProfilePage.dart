@@ -1239,27 +1239,29 @@ class _ProfilePageState extends State {
               SizedBox(height: 24),
               Row(
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: _showEditProfileDialog,
-                    icon: Icon(Icons.edit, size: 16),
-                    label: Text('Edit Profile'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.islamicGreen600,
-                      side: BorderSide(color: AppColors.islamicGreen300),
-                      padding: EdgeInsets.symmetric(vertical: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _showEditProfileDialog,
+                      icon: Icon(Icons.edit, size: 16),
+                      label: Text('Edit Profile'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.islamicGreen600,
+                        side: BorderSide(color: AppColors.islamicGreen300),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
                   SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await AuthUtils.logout(context);
-                    },
-                    icon: Icon(Icons.logout, size: 16),
-                    label: Text('Log Out'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red[700],
-                      side: BorderSide(color: Colors.red[300]!),
-                      padding: EdgeInsets.symmetric(vertical: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _showChangePasswordDialog,
+                      icon: Icon(Icons.lock, size: 16),
+                      label: Text('Change Password'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.islamicGreen600,
+                        side: BorderSide(color: AppColors.islamicGreen300),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
                 ],
@@ -1275,35 +1277,6 @@ class _ProfilePageState extends State {
                   minimumSize: Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showChangePasswordDialog,
-                  icon: Icon(Icons.lock, size: 16),
-                  label: Text('Change Password'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.islamicGreen600,
-                    side: BorderSide(color: AppColors.islamicGreen300),
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await AuthUtils.logout(context);
-                    // Optionally: Navigator.of(context).pushReplacementNamed('/login');
-                  },
-                  icon: Icon(Icons.logout, size: 16),
-                  label: Text('Log Out'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red[700],
-                    side: BorderSide(color: Colors.red[300]!),
-                    padding: EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
@@ -1326,6 +1299,20 @@ class _ProfilePageState extends State {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                ),
+              ),
+              SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await AuthUtils.logout(context);
+                },
+                icon: Icon(Icons.logout, size: 16),
+                label: Text('Log Out'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red[700],
+                  side: BorderSide(color: Colors.red[300]!),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  minimumSize: Size(double.infinity, 48),
                 ),
               ),
             ],
@@ -1359,7 +1346,7 @@ class _ProfilePageState extends State {
             },
           );
         } else if (value == "change_password") {
-          changePassword();
+          _showChangePasswordDialog();
         }
       },
       itemBuilder:
@@ -2386,7 +2373,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
         'email': _emailController.text,
       }),
     );
-
+    print(response.body);
     if (!mounted) return;
 
     if (response.statusCode == 200) {

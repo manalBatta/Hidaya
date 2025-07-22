@@ -3,7 +3,7 @@ const sendVerificationEmail = require("../utils/sendEmail");
 const admin = require("firebase-admin");
 const { sendNotification } = require("../services/notificationService.js");
 const { sendMissedNotifications } = require("./notificationcontroller.js");
-
+const sendResetPasswordEmail = require("../utils/resetPassword");
 exports.register = async (req, res, next) => {
   try {
     console.log("--- req body ---", req.body);
@@ -291,6 +291,7 @@ exports.changepassword = async (req, res, next) => {
     console.log("--- req body ---", req.body);
     const { currentPassword, newPassword } = req.body;
     const userId = req.userId;//coming from token middleware
+    console.log("--- userId ---", userId);
     const user = await UserServices.getUserById(userId);
     const isPasswordValid = await UserServices.verifyPassword(currentPassword, user.password);
     if (!isPasswordValid) {
@@ -301,6 +302,30 @@ exports.changepassword = async (req, res, next) => {
     }
     const hashedNewPassword = await UserServices.hashPassword(newPassword);
     await UserServices.updateUserById(userId, { password: hashedNewPassword });
+   
+    // Send real-time notification for password change
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "password_changed",
+        title: "🔐 Password Changed",
+        message: "Password changed successfully.",
+        data: {
+          action: "password_change",
+          changedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+
+    } catch (notificationError) {
+      console.log(
+        "Failed to send password change notification:",
+        notificationError
+      );
+      // Don't fail the password change if notification fails
+    }
+     
     res.status(200).json({ status: true, message: "Password changed successfully" });
   } catch (err) {
     console.log("---> err in changepassword -->", err);
@@ -341,12 +366,15 @@ exports.updateOneSignalId = async (req, res, next) => {
 exports.forgotpassword = async (req, res, next) => {
   try {
     const { email } = req.body;
+    console.log("--- email ---", email);
     const user = await UserServices.getUserByEmail(email);
     if (!user) {
       return res.status(404).json({ status: false, message: "User not found" });
     }
-    const token = await UserServices.generateAccessToken(user, "secret", "1h");
-    await sendVerificationEmail(email, token);
+    console.log("--- user ---", user);
+    const tokenData = { _id: user.userId, email: user.email, role: user.role };
+    const token = await UserServices.generateAccessToken(tokenData, "secret", "1h");
+    await sendResetPasswordEmail(email, token);
     res.status(200).json({ status: true, message: "Password reset email sent", token: token });
   } catch (err) {
     console.log("---> err in forgotpassword -->", err);
@@ -473,4 +501,154 @@ exports.deleteAccount = async (req, res, next) => {
     console.log("---> err in deleteAccount -->", err);
     next(err);
   }
+};
+
+exports.resetpassword = async (req, res, next) => {
+  const { token } = req.params;
+  try {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Reset Password</title>
+          <style>
+            body {
+              background-color: #ffffff;
+              font-family: Arial, sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+            }
+            .container {
+              text-align: center;
+              max-width: 400px;
+              width: 100%;
+            }
+            input[type="password"] {
+              padding: 12px;
+              width: 100%;
+              font-size: 16px;
+              margin-bottom: 20px;
+              border: 1px solid #ccc;
+              border-radius: 6px;
+            }
+            button {
+              padding: 12px 20px;
+              font-size: 16px;
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+            }
+            button:hover {
+              background-color: #45a049;
+            }
+            .message {
+              margin-top: 20px;
+              font-size: 16px;
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Reset Your Password</h2>
+            <input type="password" id="newPassword" placeholder="Enter new password" />
+            <button onclick="submitPassword()">Reset Password</button>
+            <div class="message" id="message"></div>
+          </div>
+
+          <script>
+  const token = "${token}"; // ← خزن التوكن كقيمة ثابتة
+  async function submitPassword() {
+    const newPassword = document.getElementById("newPassword").value;
+    const messageEl = document.getElementById("message");
+
+    if (!newPassword || newPassword.length < 6) {
+      messageEl.textContent = "Password must be at least 6 characters.";
+      return;
+    }
+
+    try {
+      const response = await fetch("/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ newPassword })
+      });
+
+      const data = await response.json();
+
+      if (data.status) {
+        messageEl.textContent = "Password reset successfully. You can close this window.";
+        messageEl.style.color = "green";
+      } else {
+        messageEl.textContent = "Something went wrong. Try again.";
+        messageEl.style.color = "red";
+      }
+    } catch (err) {
+      messageEl.textContent = "Request failed. Check your connection.";
+      messageEl.style.color = "red";
+    }
+  }
+</script>
+
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.log("---> err in resetpassword -->", err);
+    next(err);
+  }
+};
+
+
+  exports.changeresetpassword = async (req, res, next) => {
+    try {
+    console.log("--- req body ---", req.body);
+    const { newPassword } = req.body;
+    const userId = req.userId;//coming from token middleware
+    console.log("--- userId ---", userId);
+    const user = await UserServices.getUserById(userId);
+    if (user.password === newPassword) {
+      return res.status(400).json({ status: false, message: "New password cannot be the same as old password" });
+    }
+    const hashedNewPassword = await UserServices.hashPassword(newPassword);
+    await UserServices.updateUserById(userId, { password: hashedNewPassword });
+   
+    // Send real-time notification for password reset 
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "password_changed",
+        title: "🔐 Password Changed",
+        message: "Password changed successfully.",
+        data: {
+          action: "password_change",
+          changedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+
+    } catch (notificationError) {
+      console.log(
+        "Failed to send password change notification:",
+        notificationError
+      );
+      // Don't fail the password change if notification fails
+    }
+     
+    res.status(200).json({ status: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.log("---> err in changeresetpassword -->", err);
+    next(err);
+  }
+  
 };

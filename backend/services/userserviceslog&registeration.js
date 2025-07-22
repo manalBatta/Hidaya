@@ -68,6 +68,7 @@ const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
   static async verifyPassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
+  
   static async generateAccessToken(tokenData, JWTSecret_Key, JWT_EXPIRE) {
     return jwt.sign(tokenData, JWTSecret_Key, { expiresIn: JWT_EXPIRE });
   }
