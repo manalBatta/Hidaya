@@ -1251,7 +1251,7 @@ class _ProfilePageState extends State {
                 ],
               ),
               SizedBox(height: 12),
-              ElevatedButton.icon(
+              /* ElevatedButton.icon(
                 onPressed: _sendTestNotification,
                 icon: Icon(Icons.notifications, size: 16),
                 label: Text('Test Notifications'),
@@ -1264,7 +1264,7 @@ class _ProfilePageState extends State {
                   ),
                 ),
               ),
-              SizedBox(height: 12),
+              SizedBox(height: 12), */
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(

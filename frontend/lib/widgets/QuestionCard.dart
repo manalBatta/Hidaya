@@ -681,33 +681,6 @@ class _QuestionCardState extends State<QuestionCard> {
                             ),
                           ),
                         ),
-                        // Report flag icon for users only
-                        if (userRole == 'user')
-                          IconButton(
-                            icon: Icon(
-                              Icons.flag_outlined,
-                              color: Colors.redAccent,
-                            ),
-                            tooltip: 'Report',
-                            onPressed: () async {
-                              await showDialog(
-                                context: context,
-                                builder:
-                                    (context) => ReportModal(
-                                      questionId:
-                                          (widget.question['questionId'] ??
-                                                  widget.question['_id'])
-                                              .toString(),
-                                      questionText:
-                                          widget.question['text'] ??
-                                          'No text available',
-                                      itemType: itemType,
-                                      scaffoldContext: scaffoldContext,
-                                      onReportSuccess: widget.onReportSuccess,
-                                    ),
-                              );
-                            },
-                          ),
                         // Delete button for owner
                         if (isOwner)
                           IconButton(
@@ -1047,6 +1020,37 @@ class _QuestionCardState extends State<QuestionCard> {
                       Icons.access_time,
                       question['timeAgo']?.toString(),
                     ),
+                    // Move the flag icon here, only for users
+                    if (userRole == 'user')
+                      IconButton(
+                        icon: Icon(
+                          Icons.flag_outlined,
+                          color: const Color.fromARGB(255, 224, 76, 76),
+                          size: 18,
+                          weight: 200, // Use a thinner weight if supported
+                        ),
+                        tooltip: 'Report',
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                        onPressed: () async {
+                          await showDialog(
+                            context: context,
+                            builder:
+                                (context) => ReportModal(
+                                  questionId:
+                                      (widget.question['questionId'] ??
+                                              widget.question['_id'])
+                                          .toString(),
+                                  questionText:
+                                      widget.question['text'] ??
+                                      'No text available',
+                                  itemType: itemType,
+                                  scaffoldContext: scaffoldContext,
+                                  onReportSuccess: widget.onReportSuccess,
+                                ),
+                          );
+                        },
+                      ),
                   ],
                 ),
                 SizedBox(height: 8),

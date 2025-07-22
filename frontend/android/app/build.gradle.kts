@@ -4,12 +4,9 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-<<<<<<< HEAD
 
 //added plugin to enable onesignal notifications
     id("com.google.gms.google-services")
-=======
->>>>>>> 51a94a448c3625047e81f9713fa3a461fde85844
 }
 
 android {
