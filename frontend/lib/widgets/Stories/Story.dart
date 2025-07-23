@@ -1,103 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/config.dart';
+import 'package:frontend/utils/auth_utils.dart';
 import 'dart:ui';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:frontend/constants/colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:frontend/providers/UserProvider.dart';
 
 // Story Data Models
-enum ContentType { video, image, text }
 
-enum Language { english, arabic, french, spanish, urdu }
-
-enum Gender { male, female, preferNotToSay }
+enum StoryType { video, image }
 
 class Story {
   final String id;
   final String title;
-  final StoryContent content;
-  final Author author;
-  final StoryMetadata metadata;
-  final Quote? quote;
-  final FullStory fullStory;
+  final String? background;
+  final String? journeyToIslam;
+  final String? afterIslam;
+  final StoryType type;
+  final String mediaUrl;
+  final String? quote;
+  int saveCount;
+  int likeCount;
+  final int views;
+  final String name;
+  final String country;
+  final List<String> tags;
+  final DateTime createdAt;
+  final String? description;
 
   Story({
     required this.id,
     required this.title,
-    required this.content,
-    required this.author,
-    required this.metadata,
-    this.quote,
-    required this.fullStory,
-  });
-}
-
-class StoryContent {
-  final ContentType type;
-  final String? url;
-  final String? text;
-  final String? thumbnail;
-
-  StoryContent({required this.type, this.url, this.text, this.thumbnail});
-}
-
-class Author {
-  final String name;
-  final String location;
-  final String country;
-  final Gender gender;
-  final String? profileImage;
-
-  Author({
-    required this.name,
-    required this.location,
-    required this.country,
-    required this.gender,
-    this.profileImage,
-  });
-}
-
-class StoryMetadata {
-  final int likes;
-  final int saves;
-  final int? duration;
-  final List<String> tags;
-  final Language language;
-  final DateTime dateShared;
-
-  StoryMetadata({
-    required this.likes,
-    required this.saves,
-    this.duration,
-    required this.tags,
-    required this.language,
-    required this.dateShared,
-  });
-}
-
-class Quote {
-  final String text;
-  final QuotePosition position;
-
-  Quote({required this.text, required this.position});
-}
-
-enum QuotePosition { top, center, bottom }
-
-class FullStory {
-  final String? background;
-  final String testimonial;
-  final String? beforeIslam;
-  final String? journey;
-  final String? afterIslam;
-
-  FullStory({
     this.background,
-    required this.testimonial,
-    this.beforeIslam,
-    this.journey,
+    this.journeyToIslam,
     this.afterIslam,
+    required this.type,
+    required this.mediaUrl,
+    this.quote,
+    required this.saveCount,
+    required this.likeCount,
+    required this.views,
+    required this.name,
+    required this.country,
+    required this.tags,
+    required this.createdAt,
+    this.description,
   });
+
+  factory Story.fromJson(Map<String, dynamic> json) {
+    return Story(
+      id: json['_id'],
+      title: json['title'],
+      background: json['background'],
+      journeyToIslam: json['journeyToIslam'],
+      afterIslam: json['afterIslam'],
+      type: json['type'] == 'video' ? StoryType.video : StoryType.image,
+      mediaUrl: json['mediaUrl'],
+      quote: json['quote'],
+      saveCount: int.tryParse(json['SaveCount'] ?? '0') ?? 0,
+      likeCount: int.tryParse(json['likeCount'] ?? '0') ?? 0,
+      views: int.tryParse(json['views'] ?? '0') ?? 0,
+      name: json['name'],
+      country: json['country'],
+      tags: (json['tags'] as List<dynamic>).map((e) => e.toString()).toList(),
+      createdAt: DateTime.parse(json['createdAt']),
+      description: json['description'],
+    );
+  }
 }
 
 // Islamic Theme Colors
@@ -118,124 +92,17 @@ class IslamicTheme {
   ];
 }
 
-// Mock Data
-List<Story> mockStories = [
-  Story(
-    id: '1',
-    title: 'Finding Peace in Prayer',
-    content: StoryContent(
-      type: ContentType.video,
-      url: 'assets/StoryImages/story2vid.mp4',
-      thumbnail: 'assets/StoryImages/story1.jpg',
-    ),
-    author: Author(
-      name: 'Sarah Johnson',
-      location: 'London, UK',
-      country: 'United Kingdom',
-      gender: Gender.female,
-      profileImage: 'assets/StoryImages/profile.jpg',
-    ),
-    metadata: StoryMetadata(
-      likes: 1247,
-      saves: 834,
-      duration: 45,
-      tags: ['prayer', 'peace', 'spirituality', 'london'],
-      language: Language.english,
-      dateShared: DateTime(2024, 1, 15),
-    ),
-    quote: Quote(
-      text: 'Islam gave me the peace I was searching for my entire life',
-      position: QuotePosition.center,
-    ),
-    fullStory: FullStory(
-      background:
-          'Raised in a Christian family, always felt something was missing',
-      testimonial:
-          'After years of searching for spiritual fulfillment, I discovered Islam through a university friend.',
-      beforeIslam:
-          'I was struggling with anxiety and depression, feeling lost in modern society',
-      journey:
-          'Started reading the Quran, attending mosque, learning Arabic prayers',
-      afterIslam:
-          'Found inner peace, stronger sense of community, and clear life purpose',
-    ),
-  ),
-  Story(
-    id: '2',
-    title: 'Journey to Understanding',
-    content: StoryContent(
-      type: ContentType.video,
-      url: 'assets/StoryImages/story1vid.mp4',
-      thumbnail: 'assets/StoryImages/story2.jpg',
-    ),
-    author: Author(
-      name: 'Marcus Thompson',
-      location: 'New York, USA',
-      country: 'United States',
-      gender: Gender.male,
-      profileImage: 'assets/StoryImages/profile.jpg',
-    ),
-    metadata: StoryMetadata(
-      likes: 892,
-      saves: 445,
-      tags: ['knowledge', 'quran', 'study', 'newyork'],
-      language: Language.english,
-      dateShared: DateTime(2024, 1, 10),
-    ),
-    quote: Quote(
-      text: 'The Quran answered questions I didn\'t even know I had',
-      position: QuotePosition.bottom,
-    ),
-    fullStory: FullStory(
-      background:
-          'College professor of philosophy, always questioned existence',
-      testimonial:
-          'Through academic study of world religions, I became fascinated by Islamic philosophy and theology.',
-      beforeIslam: 'Agnostic, believed only in what science could prove',
-      journey:
-          'Started with academic interest, progressed to personal spiritual journey',
-      afterIslam: 'Combined intellectual understanding with spiritual practice',
-    ),
-  ),
-  Story(
-    id: '3',
-    title: 'From Darkness to Light',
-    content: StoryContent(
-      type: ContentType.video,
-      url: 'assets/StoryImages/story1vid.mp4',
-      thumbnail: 'assets/StoryImages/story3.jpg',
-    ),
-    author: Author(
-      name: 'Ahmed (formerly David) Williams',
-      location: 'Toronto, Canada',
-      country: 'Canada',
-      gender: Gender.male,
-      profileImage: 'assets/StoryImages/profile.jpg',
-    ),
-    metadata: StoryMetadata(
-      likes: 2156,
-      saves: 1289,
-      tags: ['recovery', 'addiction', 'community', 'strength'],
-      language: Language.english,
-      dateShared: DateTime(2024, 1, 8),
-    ),
-    quote: Quote(
-      text: 'Islam saved my life when I had nowhere else to turn',
-      position: QuotePosition.top,
-    ),
-    fullStory: FullStory(
-      background:
-          'Struggled with substance abuse, lost job and family relationships',
-      testimonial:
-          'When I hit rock bottom, a Muslim friend invited me to the mosque.',
-      beforeIslam: 'Felt hopeless, isolated, controlled by addiction',
-      journey:
-          'Gradual healing through prayer, community support, Islamic counseling',
-      afterIslam:
-          'Rebuilt life, repaired relationships, now helping others in recovery',
-    ),
-  ),
-];
+// Fetch stories from API
+Future<List<Story>> fetchStories() async {
+  final response = await http.get(Uri.parse('$storyUrl?page=1&limit=5'));
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final List<dynamic> storiesJson = data['data']['stories'];
+    return storiesJson.map((json) => Story.fromJson(json)).toList();
+  } else {
+    throw Exception('Failed to load stories');
+  }
+}
 
 // Main Stories Page
 class StoriesPage extends StatefulWidget {
@@ -252,12 +119,15 @@ class _StoriesPageState extends State<StoriesPage>
   Set<String> _likedStories = {};
   Set<String> _savedStories = {};
   String? _expandedStory;
-  List<Story> _filteredStories = mockStories;
+  List<Story> _filteredStories = [];
+  bool _isLoading = true;
+  String? _error;
+  int _currentPage = 1;
+  int _totalPages = 1;
+  bool _isFetchingMore = false;
 
   // Filter states
-  Set<ContentType> _contentTypeFilters = {};
-  Set<Language> _languageFilters = {};
-  Set<Gender> _genderFilters = {};
+  // Removed ContentType, Language, Gender filter states as they are not used with API data
 
   late AnimationController _heartAnimController;
   late AnimationController _bookmarkAnimController;
@@ -297,6 +167,141 @@ class _StoriesPageState extends State<StoriesPage>
         curve: Curves.elasticOut,
       ),
     );
+    // Initialize _savedStories from UserProvider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      setState(() {
+        _savedStories = Set<String>.from(userProvider.savedStories);
+      });
+    });
+    // Initialize _likedStories from UserProvider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      setState(() {
+        _likedStories = Set<String>.from(userProvider.likedStories);
+      });
+    });
+    _fetchAndSetStories();
+  }
+
+  Future<void> _fetchAndSetStories({int page = 1, bool append = false}) async {
+    if (_isFetchingMore) return;
+    if (append && (page > _totalPages)) return;
+    setState(() {
+      if (!append) _isLoading = true;
+      _error = null;
+      _isFetchingMore = append;
+    });
+    try {
+      final response = await http.get(
+        Uri.parse('$storyUrl?page=$page&limit=5'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> storiesJson = data['data']['stories'];
+        final List<Story> newStories =
+            storiesJson.map((json) => Story.fromJson(json)).toList();
+        final pagination = data['data']['pagination'];
+        setState(() {
+          if (append) {
+            _filteredStories.addAll(newStories);
+          } else {
+            _filteredStories = newStories;
+          }
+          _isLoading = false;
+          _isFetchingMore = false;
+          _currentPage = pagination['page'] ?? page;
+          _totalPages = pagination['totalPages'] ?? 1;
+        });
+      } else {
+        throw Exception('Failed to load stories');
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+        _isFetchingMore = false;
+      });
+    }
+  }
+
+  void _preinitializeNextVideo(int currentIndex) {
+    if (currentIndex + 1 < _filteredStories.length) {
+      final nextStory = _filteredStories[currentIndex + 1];
+      if (nextStory.type == StoryType.video &&
+          !_videoControllers.containsKey(nextStory.id)) {
+        final controller = VideoPlayerController.networkUrl(
+          Uri.parse(nextStory.mediaUrl),
+        );
+        _videoControllers[nextStory.id] = controller;
+        _videoInitFutures[nextStory.id] = controller.initialize();
+      }
+    }
+  }
+
+  void _saveStory() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        return;
+      }
+
+      var response = await http.post(
+        Uri.parse(saveStoryUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({"id": _filteredStories[_currentIndex].id}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['status'] == true) {
+        print("response from saving= $data");
+        final user = data["data"];
+        Provider.of<UserProvider>(context, listen: false).setUser(user);
+
+        if (mounted) {
+          setState(() {
+            _toggleSave(_filteredStories[_currentIndex].id);
+          });
+        }
+      }
+    } catch (e) {
+      print("error saving story: $e");
+    }
+  }
+
+  void _likeStory() async {
+    print("like story");
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        return;
+      }
+
+      var response = await http.post(
+        Uri.parse(likeStoryUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({"id": _filteredStories[_currentIndex].id}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['status'] == true) {
+        print("response from like = $data");
+        final user = data["data"];
+        Provider.of<UserProvider>(context, listen: false).setUser(user);
+
+        if (mounted) {
+          setState(() {
+            _toggleLike(_filteredStories[_currentIndex].id);
+          });
+        }
+      }
+    } catch (e) {
+      print("error saving story: $e");
+    }
   }
 
   @override
@@ -313,38 +318,29 @@ class _StoriesPageState extends State<StoriesPage>
   void _filterStories() {
     setState(() {
       _filteredStories =
-          mockStories.where((story) {
+          _filteredStories.where((story) {
             bool matchesSearch =
                 _searchQuery.isEmpty ||
                 story.title.toLowerCase().contains(
                   _searchQuery.toLowerCase(),
                 ) ||
-                story.author.name.toLowerCase().contains(
+                story.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                story.country.toLowerCase().contains(
                   _searchQuery.toLowerCase(),
                 ) ||
-                story.author.location.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                story.fullStory.testimonial.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                );
-
-            bool matchesContentType =
-                _contentTypeFilters.isEmpty ||
-                _contentTypeFilters.contains(story.content.type);
-
-            bool matchesLanguage =
-                _languageFilters.isEmpty ||
-                _languageFilters.contains(story.metadata.language);
-
-            bool matchesGender =
-                _genderFilters.isEmpty ||
-                _genderFilters.contains(story.author.gender);
-
-            return matchesSearch &&
-                matchesContentType &&
-                matchesLanguage &&
-                matchesGender;
+                (story.background?.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ??
+                    false) ||
+                (story.journeyToIslam?.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ??
+                    false) ||
+                (story.afterIslam?.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ??
+                    false);
+            return matchesSearch;
           }).toList();
     });
   }
@@ -353,7 +349,11 @@ class _StoriesPageState extends State<StoriesPage>
     setState(() {
       if (_likedStories.contains(storyId)) {
         _likedStories.remove(storyId);
+        _filteredStories[_currentIndex].likeCount =
+            _filteredStories[_currentIndex].likeCount - 1;
       } else {
+        _filteredStories[_currentIndex].likeCount =
+            _filteredStories[_currentIndex].likeCount + 1;
         _likedStories.add(storyId);
         _heartAnimController.forward().then(
           (_) => _heartAnimController.reverse(),
@@ -366,7 +366,11 @@ class _StoriesPageState extends State<StoriesPage>
     setState(() {
       if (_savedStories.contains(storyId)) {
         _savedStories.remove(storyId);
+        _filteredStories[_currentIndex].saveCount =
+            _filteredStories[_currentIndex].saveCount - 1;
       } else {
+        _filteredStories[_currentIndex].saveCount =
+            _filteredStories[_currentIndex].saveCount + 1;
         _savedStories.add(storyId);
         _bookmarkAnimController.forward().then(
           (_) => _bookmarkAnimController.reverse(),
@@ -404,15 +408,19 @@ class _StoriesPageState extends State<StoriesPage>
           _videoInitFutures.remove(_expandedStory);
         }
         _expandedStory = storyId;
-        // Find the story object by ID
         final story = _filteredStories.firstWhere((s) => s.id == storyId);
-        final controller = VideoPlayerController.asset(story.content.url!);
-        _videoControllers[storyId] = controller;
-        _videoInitFutures[storyId] = controller.initialize().then((_) {
-          controller.setLooping(true);
-          controller.play();
-          setState(() {});
-        });
+        // Only create a video controller for video stories!
+        if (story.type == StoryType.video) {
+          final controller = VideoPlayerController.networkUrl(
+            Uri.parse(story.mediaUrl),
+          );
+          _videoControllers[storyId] = controller;
+          _videoInitFutures[storyId] = controller.initialize().then((_) {
+            controller.setLooping(true);
+            controller.play();
+            setState(() {});
+          });
+        }
       }
     });
   }
@@ -424,21 +432,19 @@ class _StoriesPageState extends State<StoriesPage>
       autofocus: true,
       onKey: (node, event) {
         if (event is RawKeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            if (_currentIndex < _filteredStories.length - 1) {
-              _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
+          if (_currentIndex < _filteredStories.length - 1 &&
+              event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            _pageController.nextPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
             return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            if (_currentIndex > 0) {
-              _pageController.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
+          } else if (_currentIndex > 0 &&
+              event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            _pageController.previousPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
             return KeyEventResult.handled;
           }
         }
@@ -498,27 +504,43 @@ class _StoriesPageState extends State<StoriesPage>
             // Main content
             Stack(
               children: [
-                // Stories PageView
-                PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.horizontal,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                      _expandedStory =
-                          null; // Close expanded story when changing pages
-                    });
-                  },
-                  itemCount: _filteredStories.length,
-                  itemBuilder: (context, index) {
-                    return _buildStoryPage(_filteredStories[index]);
-                  },
-                ),
+                if (_isLoading) Center(child: CircularProgressIndicator()),
+                if (_error != null)
+                  Center(
+                    child: Text(_error!, style: TextStyle(color: Colors.red)),
+                  ),
+                if (!_isLoading && _error == null)
+                  PageView.builder(
+                    controller: _pageController,
+                    scrollDirection: Axis.horizontal,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                        _expandedStory =
+                            null; // Close expanded story when changing pages
+                      });
+                      // If user reaches the last card, fetch more if available
+                      if (index == _filteredStories.length - 1 &&
+                          !_isFetchingMore &&
+                          _currentPage < _totalPages) {
+                        _fetchAndSetStories(
+                          page: _currentPage + 1,
+                          append: true,
+                        );
+                      }
+                      // Pre-initialize next video
+                      _preinitializeNextVideo(index);
+                    },
+                    itemCount: _filteredStories.length,
+                    itemBuilder: (context, index) {
+                      return _buildStoryPage(_filteredStories[index]);
+                    },
+                  ),
                 // Search Header
                 _buildSearchHeader(),
                 // Filter Panel
                 if (_showFilters) _buildFilterPanel(),
-                // Page Indicators
+                // (Page indicators removed as requested)
               ],
             ),
           ],
@@ -646,67 +668,7 @@ class _StoriesPageState extends State<StoriesPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Content Type', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children:
-                  ContentType.values.map((type) {
-                    bool isSelected = _contentTypeFilters.contains(type);
-                    return FilterChip(
-                      label: Text(type.toString().split('.').last),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _contentTypeFilters.add(type);
-                          } else {
-                            _contentTypeFilters.remove(type);
-                          }
-                        });
-                        _filterStories();
-                      },
-                      selectedColor: IslamicTheme.primary,
-                      labelStyle: TextStyle(
-                        color:
-                            isSelected
-                                ? Colors.white
-                                : IslamicTheme.textPrimary,
-                      ),
-                    );
-                  }).toList(),
-            ),
-            SizedBox(height: 16),
-            Text('Language', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children:
-                  Language.values.map((lang) {
-                    bool isSelected = _languageFilters.contains(lang);
-                    return FilterChip(
-                      label: Text(lang.toString().split('.').last),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _languageFilters.add(lang);
-                          } else {
-                            _languageFilters.remove(lang);
-                          }
-                        });
-                        _filterStories();
-                      },
-                      selectedColor: IslamicTheme.primary,
-                      labelStyle: TextStyle(
-                        color:
-                            isSelected
-                                ? Colors.white
-                                : IslamicTheme.textPrimary,
-                      ),
-                    );
-                  }).toList(),
-            ),
+            // Removed ContentType and Language filter chips as they are not used with API data
           ],
         ),
       ),
@@ -818,7 +780,8 @@ class _StoriesPageState extends State<StoriesPage>
                                       isExpanded,
                                     ),
                                   ),
-                                  if (story.quote != null)
+                                  if (story.quote != null &&
+                                      story.quote!.isNotEmpty)
                                     _buildQuoteOverlay(
                                       story.quote!,
                                       isExpanded: true,
@@ -994,15 +957,14 @@ class _StoriesPageState extends State<StoriesPage>
                             ),
                           ),
                         ),
-                        // Video Controls (if video)
-                        if (story.content.type == ContentType.video)
-                          _buildVideoControls(),
+                        // Removed ContentType.video check for _buildVideoControls()
                         // Story Info
                         _buildStoryInfo(story),
                         // Action Buttons
                         _buildActionButtons(story),
+                        // Removed Quote overlay widget and all references as Quote is not used in API data
                         // Quote overlay (collapsed state)
-                        if (story.quote != null)
+                        if (story.quote != null && story.quote!.isNotEmpty)
                           _buildQuoteOverlay(
                             story.quote!,
                             isExpanded: !isLargeScreen,
@@ -1020,7 +982,7 @@ class _StoriesPageState extends State<StoriesPage>
   }
 
   Widget _buildStoryContent(Story story, bool isExpanded) {
-    if (story.content.type == ContentType.video) {
+    if (story.type == StoryType.video) {
       if (isExpanded && _videoControllers.containsKey(story.id)) {
         final controller = _videoControllers[story.id]!;
         return FutureBuilder(
@@ -1031,9 +993,7 @@ class _StoriesPageState extends State<StoriesPage>
                 child: AspectRatio(
                   aspectRatio: controller.value.aspectRatio,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                      20,
-                    ), // Set your desired radius
+                    borderRadius: BorderRadius.circular(20),
                     child: Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
@@ -1050,101 +1010,51 @@ class _StoriesPageState extends State<StoriesPage>
           },
         );
       }
-      // Show thumbnail
+      // Show thumbnail (use a placeholder if needed)
       return Container(
         width: double.infinity,
         height: double.infinity,
         color: Colors.black,
-        child:
-            story.content.thumbnail != null
-                ? CachedNetworkImage(
-                  imageUrl: story.content.thumbnail!,
-                  fit: BoxFit.cover,
-                  placeholder:
-                      (context, url) => Container(
-                        color: IslamicTheme.primary.withOpacity(0.2),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              IslamicTheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                )
-                : Container(
-                  color: IslamicTheme.primary.withOpacity(0.2),
-                  child: Center(
-                    child: Icon(
-                      Icons.play_circle_outline,
-                      size: 80,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+        child: Center(
+          child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
+        ),
       );
     }
-    // ... existing code for image and text ...
-    switch (story.content.type) {
-      case ContentType.image:
-        return CachedNetworkImage(
-          imageUrl: story.content.url!,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          placeholder:
-              (context, url) => Container(
-                color: IslamicTheme.primary.withOpacity(0.2),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      IslamicTheme.primary,
-                    ),
+    // For images
+    if (story.type == StoryType.image) {
+      return CachedNetworkImage(
+        imageUrl: story.mediaUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder:
+            (context, url) => Container(
+              color: IslamicTheme.primary.withOpacity(0.2),
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    IslamicTheme.primary,
                   ),
                 ),
               ),
-        );
-      case ContentType.text:
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: IslamicTheme.gradientColors,
             ),
-          ),
-          padding: EdgeInsets.all(32),
-          child: Center(
-            child: Text(
-              story.content.text!,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      default:
-        return SizedBox.shrink();
+      );
     }
+    return SizedBox.shrink();
   }
 
-  Widget _buildQuoteOverlay(Quote quote, {required bool isExpanded}) {
+  // Add this helper widget for quote overlay
+  Widget _buildQuoteOverlay(String quote, {required bool isExpanded}) {
     final verticalPosition =
         isExpanded ? 10.0 : MediaQuery.of(context).size.height * 0.35;
-    final leftPostison = isExpanded ? 0.0 : 16.0;
+    final leftPosition = isExpanded ? 0.0 : 16.0;
     final textAlign = isExpanded ? TextAlign.left : TextAlign.center;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
       top: verticalPosition,
-      left: leftPostison,
+      left: leftPosition,
       right: 16,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -1163,7 +1073,7 @@ class _StoriesPageState extends State<StoriesPage>
               ),
             ],
           ),
-          child: Text('"${quote.text}"'),
+          child: Text('"$quote"'),
         ),
       ),
     );
@@ -1215,10 +1125,22 @@ class _StoriesPageState extends State<StoriesPage>
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if (story.description != null && story.description!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                child: Text(
+                  story.description!,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
             SizedBox(height: 8),
             Row(
               children: [
-                if (story.author.profileImage != null)
+                if (story.name != null)
                   Container(
                     width: 32,
                     height: 32,
@@ -1228,7 +1150,7 @@ class _StoriesPageState extends State<StoriesPage>
                     ),
                     child: ClipOval(
                       child: CachedNetworkImage(
-                        imageUrl: story.author.profileImage!,
+                        imageUrl: "assets/StoryImages/profile.jpg",
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -1239,7 +1161,7 @@ class _StoriesPageState extends State<StoriesPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        story.author.name,
+                        story.name,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
@@ -1247,7 +1169,7 @@ class _StoriesPageState extends State<StoriesPage>
                         ),
                       ),
                       Text(
-                        story.author.location,
+                        story.country,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
                           fontSize: 12,
@@ -1261,7 +1183,7 @@ class _StoriesPageState extends State<StoriesPage>
             if (_expandedStory != story.id) ...[
               SizedBox(height: 8),
               Text(
-                story.fullStory.testimonial,
+                story.background ?? '',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
                   fontSize: 14,
@@ -1275,6 +1197,22 @@ class _StoriesPageState extends State<StoriesPage>
         ),
       ),
     );
+  }
+
+  // Helper to extract description sections
+  Map<String, String> extractDescriptionParts(String description) {
+    final parts = <String, String>{};
+    // Match 'Background' and 'Journey to Islam' sections, even if no blank lines between
+    final regex = RegExp(
+      r'(Background|Journey to Islam)\s*([\s\S]*?)(?=Background|Journey to Islam|\$)',
+      multiLine: true,
+    );
+    for (final match in regex.allMatches(description)) {
+      final key = match.group(1)!;
+      final value = match.group(2)!.trim();
+      parts[key] = value;
+    }
+    return parts;
   }
 
   Widget _buildExpandedDetails(Story story) {
@@ -1294,7 +1232,21 @@ class _StoriesPageState extends State<StoriesPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (story.fullStory.background != null) ...[
+              if (story.description != null &&
+                  story.description!.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    story.description!,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+              if (story.background != null && story.background!.isNotEmpty) ...[
                 Text(
                   'Background',
                   style: TextStyle(
@@ -1305,7 +1257,7 @@ class _StoriesPageState extends State<StoriesPage>
                 ),
                 SizedBox(height: 4),
                 Text(
-                  story.fullStory.background!,
+                  story.background!,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 13,
@@ -1313,26 +1265,10 @@ class _StoriesPageState extends State<StoriesPage>
                 ),
                 SizedBox(height: 12),
               ],
-              Text(
-                'Journey to Islam',
-                style: TextStyle(
-                  color: IslamicTheme.primaryLight,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                story.fullStory.testimonial,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 13,
-                ),
-              ),
-              if (story.fullStory.beforeIslam != null) ...[
-                SizedBox(height: 12),
+              if (story.journeyToIslam != null &&
+                  story.journeyToIslam!.isNotEmpty) ...[
                 Text(
-                  'Before Islam',
+                  'Journey to Islam',
                   style: TextStyle(
                     color: IslamicTheme.primaryLight,
                     fontSize: 14,
@@ -1341,15 +1277,15 @@ class _StoriesPageState extends State<StoriesPage>
                 ),
                 SizedBox(height: 4),
                 Text(
-                  story.fullStory.beforeIslam!,
+                  story.journeyToIslam!,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 13,
                   ),
                 ),
-              ],
-              if (story.fullStory.afterIslam != null) ...[
                 SizedBox(height: 12),
+              ],
+              if (story.afterIslam != null && story.afterIslam!.isNotEmpty) ...[
                 Text(
                   'After Islam',
                   style: TextStyle(
@@ -1360,19 +1296,19 @@ class _StoriesPageState extends State<StoriesPage>
                 ),
                 SizedBox(height: 4),
                 Text(
-                  story.fullStory.afterIslam!,
+                  story.afterIslam!,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 13,
                   ),
                 ),
+                SizedBox(height: 12),
               ],
-              SizedBox(height: 12),
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
                 children:
-                    story.metadata.tags.map((tag) {
+                    story.tags.map((tag) {
                       return Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: 8,
@@ -1416,10 +1352,22 @@ class _StoriesPageState extends State<StoriesPage>
             fontWeight: FontWeight.bold,
           ),
         ),
+        if (story.description != null && story.description!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+            child: Text(
+              story.description!,
+              style: TextStyle(
+                color: textColor.withOpacity(0.7),
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
         SizedBox(height: 8),
         Row(
           children: [
-            if (story.author.profileImage != null)
+            if (story.name != null)
               Container(
                 width: 32,
                 height: 32,
@@ -1429,7 +1377,7 @@ class _StoriesPageState extends State<StoriesPage>
                 ),
                 child: ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl: story.author.profileImage!,
+                    imageUrl: "assets/StoryImages/profile.jpg",
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -1440,7 +1388,7 @@ class _StoriesPageState extends State<StoriesPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    story.author.name,
+                    story.name,
                     style: TextStyle(
                       color: textColor,
                       fontSize: 14,
@@ -1448,7 +1396,7 @@ class _StoriesPageState extends State<StoriesPage>
                     ),
                   ),
                   Text(
-                    story.author.location,
+                    story.country,
                     style: TextStyle(color: secondaryColor, fontSize: 12),
                   ),
                 ],
@@ -1471,7 +1419,7 @@ class _StoriesPageState extends State<StoriesPage>
                   return Transform.scale(
                     scale: _heartScale.value,
                     child: GestureDetector(
-                      onTap: () => _toggleLike(story.id),
+                      onTap: _likeStory,
                       child: Container(
                         padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -1498,7 +1446,7 @@ class _StoriesPageState extends State<StoriesPage>
               ),
               SizedBox(width: 8),
               Text(
-                '${story.metadata.likes + (_likedStories.contains(story.id) ? 1 : 0)}',
+                '${story.likeCount}',
                 style: TextStyle(color: textColor, fontSize: 12),
               ),
               SizedBox(width: 24),
@@ -1509,7 +1457,7 @@ class _StoriesPageState extends State<StoriesPage>
                   return Transform.scale(
                     scale: _bookmarkScale.value,
                     child: GestureDetector(
-                      onTap: () => _toggleSave(story.id),
+                      onTap: _saveStory,
                       child: Container(
                         padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -1536,7 +1484,7 @@ class _StoriesPageState extends State<StoriesPage>
               ),
               SizedBox(width: 8),
               Text(
-                '${story.metadata.saves + (_savedStories.contains(story.id) ? 1 : 0)}',
+                '${story.saveCount}',
                 style: TextStyle(color: textColor, fontSize: 12),
               ),
             ],
@@ -1559,7 +1507,7 @@ class _StoriesPageState extends State<StoriesPage>
               return Transform.scale(
                 scale: _heartScale.value,
                 child: GestureDetector(
-                  onTap: () => _toggleLike(story.id),
+                  onTap: _likeStory,
                   child: Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -1583,7 +1531,7 @@ class _StoriesPageState extends State<StoriesPage>
           ),
           SizedBox(height: 4),
           Text(
-            '${story.metadata.likes + (_likedStories.contains(story.id) ? 1 : 0)}',
+            '${story.likeCount}',
             style: TextStyle(color: Colors.white, fontSize: 12),
           ),
           SizedBox(height: 16),
@@ -1595,7 +1543,7 @@ class _StoriesPageState extends State<StoriesPage>
               return Transform.scale(
                 scale: _bookmarkScale.value,
                 child: GestureDetector(
-                  onTap: () => _toggleSave(story.id),
+                  onTap: _saveStory,
                   child: Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -1619,7 +1567,7 @@ class _StoriesPageState extends State<StoriesPage>
           ),
           SizedBox(height: 4),
           Text(
-            '${story.metadata.saves + (_savedStories.contains(story.id) ? 1 : 0)}',
+            '${story.saveCount}',
             style: TextStyle(color: Colors.white, fontSize: 12),
           ),
         ],

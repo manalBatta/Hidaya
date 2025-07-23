@@ -23,4 +23,6 @@ final forgotPassword = url + "forgot-password"; //to forgot password
  
 final deleteAns = url + "answers/delete/";
 final deletAccounturl = url + "delete-account";
-
+final storyUrl = url + "story";
+final saveStoryUrl = url + "story/savestory";
+final likeStoryUrl = url + "story/likestory";

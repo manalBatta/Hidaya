@@ -78,7 +78,6 @@ exports.login = async (req, res, next) => {
     (user.role === "volunteer_pending" || user.role === "certified_volunteer")
   ) {
     // continue, treat as authorized
-    
   } else if (user.role !== role) {
     return res
       .status(403)
@@ -111,6 +110,8 @@ exports.login = async (req, res, next) => {
       volunteerProfile: user.volunteerProfile,
       isEmailVerified: user.isEmailVerified,
       onesignalId: user.onesignalId,
+      savedStories: user.savedStories,
+      notifications: user.notifications,
     },
   });
 
@@ -279,30 +280,40 @@ exports.verifyEmail = async (req, res, next) => {
         </body>
       </html>
     `);
-    res.status(200).json({ status: true, message: "Email verified successfully" });
+    res
+      .status(200)
+      .json({ status: true, message: "Email verified successfully" });
   } catch (err) {
     console.log("---> err in verifyEmail -->", err);
     next(err);
   }
-}; 
+};
 
 exports.changepassword = async (req, res, next) => {
   try {
     console.log("--- req body ---", req.body);
     const { currentPassword, newPassword } = req.body;
-    const userId = req.userId;//coming from token middleware
+    const userId = req.userId; //coming from token middleware
     console.log("--- userId ---", userId);
     const user = await UserServices.getUserById(userId);
-    const isPasswordValid = await UserServices.verifyPassword(currentPassword, user.password);
+    const isPasswordValid = await UserServices.verifyPassword(
+      currentPassword,
+      user.password
+    );
     if (!isPasswordValid) {
-      return res.status(401).json({ status: false, message: "Invalid old password" });
+      return res
+        .status(401)
+        .json({ status: false, message: "Invalid old password" });
     }
     if (currentPassword === newPassword) {
-      return res.status(400).json({ status: false, message: "New password cannot be the same as old password" });
+      return res.status(400).json({
+        status: false,
+        message: "New password cannot be the same as old password",
+      });
     }
     const hashedNewPassword = await UserServices.hashPassword(newPassword);
     await UserServices.updateUserById(userId, { password: hashedNewPassword });
-   
+
     // Send real-time notification for password change
     try {
       await sendNotification({
@@ -317,7 +328,6 @@ exports.changepassword = async (req, res, next) => {
         },
         saveToDatabase: true,
       });
-
     } catch (notificationError) {
       console.log(
         "Failed to send password change notification:",
@@ -325,8 +335,10 @@ exports.changepassword = async (req, res, next) => {
       );
       // Don't fail the password change if notification fails
     }
-     
-    res.status(200).json({ status: true, message: "Password changed successfully" });
+
+    res
+      .status(200)
+      .json({ status: true, message: "Password changed successfully" });
   } catch (err) {
     console.log("---> err in changepassword -->", err);
   }
@@ -373,9 +385,17 @@ exports.forgotpassword = async (req, res, next) => {
     }
     console.log("--- user ---", user);
     const tokenData = { _id: user.userId, email: user.email, role: user.role };
-    const token = await UserServices.generateAccessToken(tokenData, "secret", "1h");
+    const token = await UserServices.generateAccessToken(
+      tokenData,
+      "secret",
+      "1h"
+    );
     await sendResetPasswordEmail(email, token);
-    res.status(200).json({ status: true, message: "Password reset email sent", token: token });
+    res.status(200).json({
+      status: true,
+      message: "Password reset email sent",
+      token: token,
+    });
   } catch (err) {
     console.log("---> err in forgotpassword -->", err);
     next(err);
@@ -608,21 +628,23 @@ exports.resetpassword = async (req, res, next) => {
   }
 };
 
-
-  exports.changeresetpassword = async (req, res, next) => {
-    try {
+exports.changeresetpassword = async (req, res, next) => {
+  try {
     console.log("--- req body ---", req.body);
     const { newPassword } = req.body;
-    const userId = req.userId;//coming from token middleware
+    const userId = req.userId; //coming from token middleware
     console.log("--- userId ---", userId);
     const user = await UserServices.getUserById(userId);
     if (user.password === newPassword) {
-      return res.status(400).json({ status: false, message: "New password cannot be the same as old password" });
+      return res.status(400).json({
+        status: false,
+        message: "New password cannot be the same as old password",
+      });
     }
     const hashedNewPassword = await UserServices.hashPassword(newPassword);
     await UserServices.updateUserById(userId, { password: hashedNewPassword });
-   
-    // Send real-time notification for password reset 
+
+    // Send real-time notification for password reset
     try {
       await sendNotification({
         userId: userId,
@@ -636,7 +658,6 @@ exports.resetpassword = async (req, res, next) => {
         },
         saveToDatabase: true,
       });
-
     } catch (notificationError) {
       console.log(
         "Failed to send password change notification:",
@@ -644,11 +665,12 @@ exports.resetpassword = async (req, res, next) => {
       );
       // Don't fail the password change if notification fails
     }
-     
-    res.status(200).json({ status: true, message: "Password changed successfully" });
+
+    res
+      .status(200)
+      .json({ status: true, message: "Password changed successfully" });
   } catch (err) {
     console.log("---> err in changeresetpassword -->", err);
     next(err);
   }
-  
 };
