@@ -42,6 +42,7 @@ const userSchema = new Schema({
   savedQuestions: [String],
   savedLessons: [String],
   savedStories: [String],
+  likedStories: [String],
   //edited by manal
   // Add ai_session_id for AI chat sessions
   ai_session_id: { type: String },

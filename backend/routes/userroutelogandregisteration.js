@@ -6,6 +6,7 @@ const AnswerController = require("../controller/answercontroller");
 const FlagController = require("../controller/flagcontroller");
 const LessonController = require("../controller/lessoncontroller");
 const notificationRoutes = require("./notificationroutes.js");
+const StoryController = require("../controller/StoryController");
 
 router.post("/register", UserController.register);
 router.post("/login", UserController.login);
@@ -66,7 +67,12 @@ router.post("/forgot-password", UserController.forgotpassword);
 router.get("/reset-password/:token", UserController.resetpassword);
 router.post("/reset-password", authMiddleware, UserController.changeresetpassword);
 router.delete("/answers/delete/:answerId", AnswerController.deleteAnswer);
-
-
+router.get("/story", StoryController.getallstories);
+//save story
+router.post("/story/savestory", authMiddleware, StoryController.savestory);
+//like story
+router.post("/story/likestory", authMiddleware, StoryController.likestory);
+//get story by id
+router.get("/getstorybyid", authMiddleware, StoryController.getstorybyid);
 
 module.exports = router;
