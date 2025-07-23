@@ -998,6 +998,7 @@ class _StoriesPageState extends State<StoriesPage>
                       alignment: Alignment.bottomCenter,
                       children: [
                         VideoPlayer(controller),
+
                         _buildVideoControlOverlay(controller, story.id),
                       ],
                     ),
@@ -1010,35 +1011,130 @@ class _StoriesPageState extends State<StoriesPage>
           },
         );
       }
-      // Show thumbnail (use a placeholder if needed)
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: Colors.black,
-        child: Center(
-          child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
-        ),
-      );
+      // Show paused video with semi-transparent overlay and play icon as thumbnail
+      if (_videoControllers.containsKey(story.id)) {
+        final controller = _videoControllers[story.id]!;
+        return FutureBuilder(
+          future: _videoInitFutures[story.id],
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              controller.pause();
+              return Center(
+                child: AspectRatio(
+                  aspectRatio: controller.value.aspectRatio,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      children: [
+                        VideoPlayer(controller),
+                        Container(color: Colors.black.withOpacity(0.7)),
+                        Center(
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            } else {
+              return Center(child: CircularProgressIndicator());
+            }
+          },
+        );
+      } else {
+        // Initialize controller for thumbnail if not already
+        final controller = VideoPlayerController.networkUrl(
+          Uri.parse(story.mediaUrl),
+        );
+        _videoControllers[story.id] = controller;
+        _videoInitFutures[story.id] = controller.initialize();
+        return FutureBuilder(
+          future: _videoInitFutures[story.id],
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              controller.pause();
+              return Center(
+                child: AspectRatio(
+                  aspectRatio: controller.value.aspectRatio,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      children: [
+                        VideoPlayer(controller),
+                        Container(color: Colors.black.withOpacity(0.5)),
+                        Center(
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            } else {
+              return Center(child: CircularProgressIndicator());
+            }
+          },
+        );
+      }
     }
     // For images
     if (story.type == StoryType.image) {
-      return CachedNetworkImage(
-        imageUrl: story.mediaUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        placeholder:
-            (context, url) => Container(
-              color: IslamicTheme.primary.withOpacity(0.2),
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    IslamicTheme.primary,
+      if (isExpanded) {
+        // Show image at actual size if smaller than container, else fit
+        return Center(
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: CachedNetworkImage(
+                imageUrl: story.mediaUrl,
+                fit:
+                    BoxFit
+                        .contain, // This will always fit the image inside the box
+                placeholder:
+                    (context, url) => Container(
+                      color: IslamicTheme.primary.withOpacity(0.2),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            IslamicTheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+              ),
+            ),
+          ),
+        );
+      } else {
+        // Collapsed: keep current logic (cover)
+        return CachedNetworkImage(
+          imageUrl: story.mediaUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          placeholder:
+              (context, url) => Container(
+                color: IslamicTheme.primary.withOpacity(0.2),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      IslamicTheme.primary,
+                    ),
                   ),
                 ),
               ),
-            ),
-      );
+        );
+      }
     }
     return SizedBox.shrink();
   }
