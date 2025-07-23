@@ -4,6 +4,7 @@ const UserRoute = require("./routes/userroutelogandregisteration");
 const ChatRoute = require("./routes/chat");
 const app = express();
 const cors = require("cors");
+const db = require("./config/db");
 const admin = require("firebase-admin");
 const cronService = require("./services/cronService");
 // Firebase Admin SDK initialization

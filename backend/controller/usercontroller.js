@@ -1,8 +1,9 @@
 const UserServices = require("../services/userserviceslog&registeration");
+const sendVerificationEmail = require("../utils/sendEmail");
 const admin = require("firebase-admin");
 const { sendNotification } = require("../services/notificationService.js");
 const { sendMissedNotifications } = require("./notificationcontroller.js");
-
+const sendResetPasswordEmail = require("../utils/resetPassword");
 exports.register = async (req, res, next) => {
   try {
     console.log("--- req body ---", req.body);
@@ -40,7 +41,7 @@ exports.register = async (req, res, next) => {
     };
 
     const createdUser = await UserServices.registerUser(NewuserData);
-
+    await sendVerificationEmail(email, createdUser.verificationToken);
     const userToReturn = createdUser.toObject();
     delete userToReturn.password;
 
@@ -77,6 +78,7 @@ exports.login = async (req, res, next) => {
     (user.role === "volunteer_pending" || user.role === "certified_volunteer")
   ) {
     // continue, treat as authorized
+    
   } else if (user.role !== role) {
     return res
       .status(403)
@@ -107,6 +109,7 @@ exports.login = async (req, res, next) => {
       savedQuestions: user.savedQuestions,
       savedLessons: user.savedLessons,
       volunteerProfile: user.volunteerProfile,
+      isEmailVerified: user.isEmailVerified,
       onesignalId: user.onesignalId,
     },
   });
@@ -231,6 +234,103 @@ exports.updateprofile = async (req, res, next) => {
   }
 };
 
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const user = await UserServices.verifyEmail(token);
+    res.send(`
+      <html>
+        <head>
+          <title>Email Verified</title>
+          <style>
+            body {
+              background-color: #f5f5f5;
+              font-family: sans-serif;
+              text-align: center;
+              padding-top: 100px;
+            }
+            .checkmark-circle {
+              width: 100px;
+              height: 100px;
+              border-radius: 50%;
+              background: white;
+              border: 5px solid #4CAF50;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 20px;
+            }
+            .checkmark {
+              font-size: 48px;
+              color: #4CAF50;
+            }
+            .message {
+              font-size: 20px;
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="checkmark-circle">
+            <div class="checkmark">✔</div>
+          </div>
+          <h2 class="message">Email verified successfully</h2>
+          <p class="message">You can now login to the app.</p>
+        </body>
+      </html>
+    `);
+    res.status(200).json({ status: true, message: "Email verified successfully" });
+  } catch (err) {
+    console.log("---> err in verifyEmail -->", err);
+    next(err);
+  }
+}; 
+
+exports.changepassword = async (req, res, next) => {
+  try {
+    console.log("--- req body ---", req.body);
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.userId;//coming from token middleware
+    console.log("--- userId ---", userId);
+    const user = await UserServices.getUserById(userId);
+    const isPasswordValid = await UserServices.verifyPassword(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ status: false, message: "Invalid old password" });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ status: false, message: "New password cannot be the same as old password" });
+    }
+    const hashedNewPassword = await UserServices.hashPassword(newPassword);
+    await UserServices.updateUserById(userId, { password: hashedNewPassword });
+   
+    // Send real-time notification for password change
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "password_changed",
+        title: "🔐 Password Changed",
+        message: "Password changed successfully.",
+        data: {
+          action: "password_change",
+          changedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+
+    } catch (notificationError) {
+      console.log(
+        "Failed to send password change notification:",
+        notificationError
+      );
+      // Don't fail the password change if notification fails
+    }
+     
+    res.status(200).json({ status: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.log("---> err in changepassword -->", err);
+  }
+};
 // Update OneSignal ID for push notifications
 exports.updateOneSignalId = async (req, res, next) => {
   try {
@@ -263,6 +363,24 @@ exports.updateOneSignalId = async (req, res, next) => {
   }
 };
 
+exports.forgotpassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    console.log("--- email ---", email);
+    const user = await UserServices.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ status: false, message: "User not found" });
+    }
+    console.log("--- user ---", user);
+    const tokenData = { _id: user.userId, email: user.email, role: user.role };
+    const token = await UserServices.generateAccessToken(tokenData, "secret", "1h");
+    await sendResetPasswordEmail(email, token);
+    res.status(200).json({ status: true, message: "Password reset email sent", token: token });
+  } catch (err) {
+    console.log("---> err in forgotpassword -->", err);
+    next(err);
+  }
+};
 // Change password
 exports.changePassword = async (req, res, next) => {
   try {
@@ -383,4 +501,154 @@ exports.deleteAccount = async (req, res, next) => {
     console.log("---> err in deleteAccount -->", err);
     next(err);
   }
+};
+
+exports.resetpassword = async (req, res, next) => {
+  const { token } = req.params;
+  try {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Reset Password</title>
+          <style>
+            body {
+              background-color: #ffffff;
+              font-family: Arial, sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+            }
+            .container {
+              text-align: center;
+              max-width: 400px;
+              width: 100%;
+            }
+            input[type="password"] {
+              padding: 12px;
+              width: 100%;
+              font-size: 16px;
+              margin-bottom: 20px;
+              border: 1px solid #ccc;
+              border-radius: 6px;
+            }
+            button {
+              padding: 12px 20px;
+              font-size: 16px;
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+            }
+            button:hover {
+              background-color: #45a049;
+            }
+            .message {
+              margin-top: 20px;
+              font-size: 16px;
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Reset Your Password</h2>
+            <input type="password" id="newPassword" placeholder="Enter new password" />
+            <button onclick="submitPassword()">Reset Password</button>
+            <div class="message" id="message"></div>
+          </div>
+
+          <script>
+  const token = "${token}"; // ← خزن التوكن كقيمة ثابتة
+  async function submitPassword() {
+    const newPassword = document.getElementById("newPassword").value;
+    const messageEl = document.getElementById("message");
+
+    if (!newPassword || newPassword.length < 6) {
+      messageEl.textContent = "Password must be at least 6 characters.";
+      return;
+    }
+
+    try {
+      const response = await fetch("/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ newPassword })
+      });
+
+      const data = await response.json();
+
+      if (data.status) {
+        messageEl.textContent = "Password reset successfully. You can close this window.";
+        messageEl.style.color = "green";
+      } else {
+        messageEl.textContent = "Something went wrong. Try again.";
+        messageEl.style.color = "red";
+      }
+    } catch (err) {
+      messageEl.textContent = "Request failed. Check your connection.";
+      messageEl.style.color = "red";
+    }
+  }
+</script>
+
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.log("---> err in resetpassword -->", err);
+    next(err);
+  }
+};
+
+
+  exports.changeresetpassword = async (req, res, next) => {
+    try {
+    console.log("--- req body ---", req.body);
+    const { newPassword } = req.body;
+    const userId = req.userId;//coming from token middleware
+    console.log("--- userId ---", userId);
+    const user = await UserServices.getUserById(userId);
+    if (user.password === newPassword) {
+      return res.status(400).json({ status: false, message: "New password cannot be the same as old password" });
+    }
+    const hashedNewPassword = await UserServices.hashPassword(newPassword);
+    await UserServices.updateUserById(userId, { password: hashedNewPassword });
+   
+    // Send real-time notification for password reset 
+    try {
+      await sendNotification({
+        userId: userId,
+        type: "password_changed",
+        title: "🔐 Password Changed",
+        message: "Password changed successfully.",
+        data: {
+          action: "password_change",
+          changedAt: new Date().toISOString(),
+          userId: userId,
+        },
+        saveToDatabase: true,
+      });
+
+    } catch (notificationError) {
+      console.log(
+        "Failed to send password change notification:",
+        notificationError
+      );
+      // Don't fail the password change if notification fails
+    }
+     
+    res.status(200).json({ status: true, message: "Password changed successfully" });
+  } catch (err) {
+    console.log("---> err in changeresetpassword -->", err);
+    next(err);
+  }
+  
 };

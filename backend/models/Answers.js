@@ -11,6 +11,7 @@ const answerSchema = new Schema({
   language: { type: String, required: true },
   upvotesCount: { type: Number, default: 0 },
   isFlagged: { type: Boolean, default: false }
+
 });
 
 module.exports = mongoose.model('Answer', answerSchema, 'Answers');

@@ -140,6 +140,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     if (!mounted) return;
     try {
       final token = await AuthUtils.getValidToken(context);
+      if (!mounted) return;
 
       final response = await http.post(
         Uri.parse(startChat),
@@ -177,11 +178,12 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         _scrollToBottom();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error Home Page: $e')));
-      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+
     }
 
     userProvider.setChatInitialized(true);
@@ -215,6 +217,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
     try {
       final token = await AuthUtils.getValidToken(context);
+      if (!mounted) return;
 
       final response = await http.post(
         Uri.parse(sendChat),
@@ -228,6 +231,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
           "message": content,
         }),
       );
+      if (!mounted) return;
 
       final data = jsonDecode(response.body);
       print("ai response from sending: $data");
@@ -246,6 +250,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       print("answer is : $data");
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
+      debugPrint('Failed to send message: $e');
       print('Failed to send message: $e');
       await _typeAIResponse(
         "I'm sorry, I couldn't process your question at the moment. Please try again, or ask another question about Islam and I'll do my best to help you.",
@@ -654,9 +660,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
               // Main Content
               // Animation and status area
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildAnimatedWaveform(),
@@ -713,6 +720,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                       ),
                   ],
                 ),
+              ),
               ),
               // Chat Section
               Expanded(

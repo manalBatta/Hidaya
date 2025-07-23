@@ -5,6 +5,7 @@ final url = 'http://localhost:5000/';
 final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
+final changePassword = url + "change-password"; //to change password
 final questions = url + "questions"; //to get all questions
 final publicQuestions = url + "public-questions"; //to get public questions
 final saveQuestionUrl = url + "saveQuestion";
@@ -15,11 +16,11 @@ final upvotedAnswerUrl = url + 'upvotedAnswer';
 final myAnswersUrl = url + "myAnwers";
 final startChat = url + 'chat/start';
 final sendChat = url + 'chat/send';
-final deleteQuestionUrl =
-    url +
-    "deletequestions/"; // usage: deleteQuestionUrl + questionId to delete a question
-final updateQuestionUrl =
-    url +
-    "updatequestions/"; // usage: updateQuestionUrl + questionId to update a question
+
+final deleteQuestionUrl = url + "deletequestions/"; // usage: deleteQuestionUrl + questionId to delete a question
+final updateQuestionUrl = url + "updatequestions/";// usage: updateQuestionUrl + questionId to update a question
+final forgotPassword = url + "forgot-password"; //to forgot password
+ 
 final deleteAns = url + "answers/delete/";
 final deletAccounturl = url + "delete-account";
+

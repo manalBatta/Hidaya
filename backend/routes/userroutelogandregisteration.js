@@ -6,6 +6,7 @@ const AnswerController = require("../controller/answercontroller");
 const FlagController = require("../controller/flagcontroller");
 const LessonController = require("../controller/lessoncontroller");
 const notificationRoutes = require("./notificationroutes.js");
+const StoryController = require("../controller/StoryController");
 
 router.post("/register", UserController.register);
 router.post("/login", UserController.login);
@@ -24,8 +25,13 @@ router.post(
   AnswerController.submitanswerbyvolunteer
 );
 router.put("/answers/vote", authMiddleware, AnswerController.voteonanswer);
-/* router.post("/flags", authMiddleware, FlagController.flagitem);
- */ router.get(
+//router.post("/flags", authMiddleware, FlagController.flagitem);
+router.get(
+  "/myquestion",
+  authMiddleware,
+  QuestionController.getquestionsofaspecificuser
+);
+router.get(
   "/my-questions",
   authMiddleware,
   QuestionController.getquestionsofaspecificuser
@@ -53,8 +59,20 @@ router.patch(
   authMiddleware,
   QuestionController.updateAIAnswer
 );
-router.post("/reportquestion", authMiddleware, FlagController.reportquestion);
 
+router.post("/reportquestion", authMiddleware, FlagController.reportquestion);
+router.get("/verify/:token", UserController.verifyEmail);
+router.post("/change-password", authMiddleware, UserController.changepassword);
+router.post("/forgot-password", UserController.forgotpassword);
+router.get("/reset-password/:token", UserController.resetpassword);
+router.post("/reset-password", authMiddleware, UserController.changeresetpassword);
 router.delete("/answers/delete/:answerId", AnswerController.deleteAnswer);
+router.get("/story", StoryController.getallstories);
+//save story
+router.post("/story/savestory", authMiddleware, StoryController.savestory);
+//like story
+router.post("/story/likestory", authMiddleware, StoryController.likestory);
+//get story by id
+router.get("/getstorybyid", authMiddleware, StoryController.getstorybyid);
 
 module.exports = router;

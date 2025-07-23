@@ -8,6 +8,8 @@ class ReportModal extends StatefulWidget {
   final String itemType;
      final BuildContext scaffoldContext;  // هذا جديد
   final VoidCallback? onReportSuccess;
+  final VoidCallback? onReportAnswerSuccess;
+  
 
   const ReportModal({
     Key? key,
@@ -16,6 +18,7 @@ class ReportModal extends StatefulWidget {
     required this.itemType,
     required this.scaffoldContext,
     this.onReportSuccess,
+    this.onReportAnswerSuccess,
   }) : super(key: key);
 
   @override
@@ -71,12 +74,18 @@ class _ReportModalState extends State<ReportModal> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         _showSnackBar('Report submitted successfully. Thank you!');
-        
+          
         if (widget.onReportSuccess != null) {
-          widget.onReportSuccess!();
-          print('📣 Calling onReportSuccess callback...');
+          // Close the dialog
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+          // Then call the success callback
+          //Adding a small delay to ensure the dialog is closed before the parent state is updated.
+          await Future.delayed(const Duration(milliseconds: 100));
+          widget.onReportSuccess?.call();
+          widget.onReportAnswerSuccess?.call();
         }
-        if (mounted) Navigator.of(context).pop();
       } else {
         debugPrint('Response: ${response.body}');
         _showSnackBar('Failed to submit report. Try again.', isError: true);

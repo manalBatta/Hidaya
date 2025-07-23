@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +17,7 @@ class QuestionCard extends StatefulWidget {
   final VoidCallback? onRefresh;
   final void Function(Map<String, dynamic> updatedFields)? onUpdate;
   final VoidCallback? onReportSuccess;
+  final VoidCallback? onReportAnswerSuccess;
 
   const QuestionCard({
     Key? key,
@@ -23,6 +25,7 @@ class QuestionCard extends StatefulWidget {
     this.onRefresh,
     this.onUpdate,
     this.onReportSuccess,
+    this.onReportAnswerSuccess,
   }) : super(key: key);
 
   @override
@@ -278,7 +281,9 @@ class _QuestionCardState extends State<QuestionCard> {
             return bUpvotes.compareTo(aUpvotes);
           });
 
-          allAnswers = answers;
+          //allAnswers = answers;
+          // ✅ Remove flagged answers
+  allAnswers = answers.where((a) => a['isFlagged'] != true).toList();
 
           isLoadingAnswers = false;
         });
@@ -555,16 +560,21 @@ class _QuestionCardState extends State<QuestionCard> {
 
   void _handleReportSuccess(String answerId) {
     setState(() {
-      final answerIndex = allAnswers.indexWhere(
-        (a) => a['answerId'] == answerId,
-      );
+
+      final answerIndex =
+          allAnswers.indexWhere((a) => a['answerId'] == answerId);
+
       if (answerIndex != -1) {
         allAnswers[answerIndex]['isFlagged'] = true;
       }
+      if (widget.question['topAnswer'] != null &&
+          widget.question['topAnswer']['answerId'] == answerId) {
+        widget.question['topAnswer']['isFlagged'] = true;
+      }
     });
 
-    if (widget.onReportSuccess != null) {
-      widget.onReportSuccess!();
+    if (widget.onReportAnswerSuccess != null) {
+      widget.onReportAnswerSuccess!();
     }
   }
 
@@ -681,6 +691,35 @@ class _QuestionCardState extends State<QuestionCard> {
                             ),
                           ),
                         ),
+
+                        // Report flag icon for users only to flag the question
+                        if ((userRole == 'user' || userRole == 'certified_volunteer') && !isOwner)//TODO: remove this after testing
+                          IconButton(
+                            icon: Icon(
+                              Icons.flag_outlined,
+                              color: Colors.redAccent,
+                            ),
+                            tooltip: 'Report',
+                            onPressed: () async {
+                              await showDialog(
+                                context: context,
+                                builder:
+                                    (context) => ReportModal(
+                                      questionId:
+                                          (widget.question['questionId'] ??
+                                                  widget.question['_id'])
+                                              .toString(),
+                                      questionText:
+                                          widget.question['text'] ??
+                                          'No text available',
+                                      itemType: itemType,
+                                      scaffoldContext: scaffoldContext,
+                                      onReportSuccess: widget.onReportSuccess,
+                                    ),
+                              );
+                            },
+                          ),
+
                         // Delete button for owner
                         if (isOwner)
                           IconButton(
@@ -871,7 +910,7 @@ class _QuestionCardState extends State<QuestionCard> {
                                                       ? 'Public'
                                                       : 'Private',
                                                 ),
-                                                Spacer(),
+                                                SizedBox(width: 8),
                                                 Switch(
                                                   value: isPublic,
                                                   onChanged: (val) {
@@ -1068,7 +1107,7 @@ class _QuestionCardState extends State<QuestionCard> {
                 // Show "Show/Hide all answers" button for certified volunteers
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Row(
+                  child: Wrap(
                     spacing: 5,
                     children: [
                       if (_isCertifiedVolunteer() &&
@@ -1137,7 +1176,6 @@ class _QuestionCardState extends State<QuestionCard> {
                           ),
                         ),
                       ],
-                      Spacer(),
                       if (question['responseType']?.toString() == 'ai')
                         _buildResponseBadge(
                           question['responseType']?.toString(),
@@ -1196,15 +1234,13 @@ class _QuestionCardState extends State<QuestionCard> {
                     )
                   else
                     Column(
-                      children:
-                          allAnswers
-                              .asMap()
-                              .entries
-                              .map(
-                                (entry) =>
-                                    _buildAnswerCard(entry.value, entry.key),
-                              )
-                              .toList(),
+                      children: allAnswers
+                          .where((answer) => answer['isFlagged'] != true)
+                          .toList() // ← حولها لـ List
+                          .asMap()
+                          .entries
+                          .map((entry) => _buildAnswerCard(entry.value, entry.key))
+                          .toList(),
                     ),
                 ],
               ),
@@ -1336,7 +1372,8 @@ class _QuestionCardState extends State<QuestionCard> {
           // Display top answer for human-answered questions
           if (question['responseType'] == 'human' &&
               question['topAnswer'] != null &&
-              !showAllAnswers)
+              !showAllAnswers &&
+              question['topAnswer']['isFlagged'] != true)
             _buildTopAnswerCard(question['topAnswer']),
         ],
       ),
@@ -1490,137 +1527,156 @@ class _QuestionCardState extends State<QuestionCard> {
   }
 
   // Widget to display top answer
-  Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
-    if (topAnswer['isFlagged'] == true) return SizedBox.shrink();
-    final answeredBy = topAnswer['answeredBy'];
-    final answerText = topAnswer['text']?.toString() ?? '';
-    final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
-    final answererName = _getAnswererDisplayName(answeredBy);
-    final createdAt = topAnswer['createdAt']?.toString() ?? '';
+Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+  final isFlagged = topAnswer['isFlagged'];
+  if (isFlagged == true) return SizedBox.shrink();
+  final answeredBy = topAnswer['answeredBy'];
+  final answerText = topAnswer['text']?.toString() ?? '';
+  final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
+  final answererName = _getAnswererDisplayName(answeredBy);
+  final createdAt = topAnswer['createdAt']?.toString() ?? '';
+  final answerId = topAnswer['answerId']?.toString() ?? '';
+  final scaffoldContext = context;
 
-    return Container(
-      margin: EdgeInsets.only(top: 8),
-      padding: EdgeInsets.all(6), // Outer white padding
+  debugPrint("🔍 isFlagged: $isFlagged");
+
+  return Container(
+    margin: EdgeInsets.only(top: 8),
+    padding: EdgeInsets.all(6),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Container(
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.islamicGreen400.withOpacity(0.5),
-          border: Border.all(
-            color: AppColors.islamicGreen500.withOpacity(0.5),
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(8),
+        color: AppColors.islamicGreen400.withOpacity(0.5),
+        border: Border.all(
+          color: AppColors.islamicGreen500.withOpacity(0.5),
+          width: 2,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Answerer info row
-            Row(
-              children: [
-                // Top answer indicator
-                Container(
-                  margin: EdgeInsets.only(right: 8),
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.islamicGreen500,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.star,
-                        size: _getResponsiveIconSize(10),
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 2),
-                      Text(
-                        'Top Answer',
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(10),
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.verified_user,
-                  size: _getResponsiveIconSize(16),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Answerer info row
+          Row(
+            children: [
+              // Top answer indicator
+              Container(
+                margin: EdgeInsets.only(right: 8),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
                   color: AppColors.islamicGreen500,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                SizedBox(width: 4),
-                Text(
-                  answererName,
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(12),
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.askPageTitle,
-                  ),
-                ),
-                SizedBox(width: 4),
-                Icon(
-                  Icons.verified,
-                  size: _getResponsiveIconSize(12),
-                  color: AppColors.islamicGreen500,
-                ),
-                Spacer(),
-                Row(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Tooltip(
-                      message:
-                          _isCertifiedVolunteer()
-                              ? "Expand to upvote this answer"
-                              : "$upvotesCount Muslims approved this",
-                      child: Icon(
-                        Icons.thumb_up,
-                        size: _getResponsiveIconSize(12),
-                        color: AppColors.askPageSubtitle,
-                      ),
+                    Icon(
+                      Icons.star,
+                      size: _getResponsiveIconSize(10),
+                      color: Colors.white,
                     ),
-                    SizedBox(width: 4),
+                    SizedBox(width: 2),
                     Text(
-                      upvotesCount,
+                      'Top Answer',
                       style: TextStyle(
-                        fontSize: _getResponsiveFontSize(12),
-                        color: AppColors.askPageSubtitle,
+                        fontSize: _getResponsiveFontSize(10),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            SizedBox(height: 8),
-            // Answer text
-            Text(
-              answerText,
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(14),
-                color: AppColors.askPageTitle,
-                height: 1.4,
               ),
-            ),
-            SizedBox(height: 8),
-            // Timestamp
-            if (createdAt.isNotEmpty)
+              Icon(
+                Icons.verified_user,
+                size: _getResponsiveIconSize(16),
+                color: AppColors.islamicGreen500,
+              ),
+              SizedBox(width: 4),
               Text(
-                'Answered on ${_formatDate(createdAt)}',
+                answererName,
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(11),
-                  color: AppColors.askPageSubtitle,
-                  fontStyle: FontStyle.italic,
+                  fontSize: _getResponsiveFontSize(12),
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.askPageTitle,
                 ),
               ),
-          ],
-        ),
+              SizedBox(width: 4),
+              Icon(
+                Icons.verified,
+                size: _getResponsiveIconSize(12),
+                color: AppColors.islamicGreen500,
+              ),
+              // Report icon
+              IconButton(
+                icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+                tooltip: 'Report',
+                onPressed: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (context) => ReportModal(
+                      questionId: answerId,
+                      questionText: answerText,
+                      itemType: 'answer',
+                      scaffoldContext: scaffoldContext,
+                      onReportSuccess: () => _handleReportSuccess(answerId),
+                    ),
+                  );
+                },
+              ),
+              SizedBox(width: 4),
+              // Upvote section
+              Tooltip(
+                message: _isCertifiedVolunteer()
+                    ? "Expand to upvote this answer"
+                    : "$upvotesCount Muslims approved this",
+                child: Icon(
+                  Icons.thumb_up,
+                  size: _getResponsiveIconSize(12),
+                  color: AppColors.askPageSubtitle,
+                ),
+              ),
+              SizedBox(width: 4),
+              Text(
+                upvotesCount,
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(12),
+                  color: AppColors.askPageSubtitle,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          // Answer text
+          Text(
+            answerText,
+            style: TextStyle(
+              fontSize: _getResponsiveFontSize(14),
+              color: AppColors.askPageTitle,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 8),
+          // Timestamp
+          if (createdAt.isNotEmpty)
+            Text(
+              'Answered on ${_formatDate(createdAt)}',
+              style: TextStyle(
+                fontSize: _getResponsiveFontSize(11),
+                color: AppColors.askPageSubtitle,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // Widget to display individual answer in the scrollable list
   //By Ruba
@@ -1739,9 +1795,11 @@ class _QuestionCardState extends State<QuestionCard> {
           ),
         ),
 
-        // 🔴 Flag icon positioned top-right
-        // if (userRole == 'user' && !isOwner)
-        Positioned(
+
+      // 🔴 Flag icon positioned top-right
+      if ((userRole == 'user' || userRole == 'certified_volunteer') && !isOwner)
+      Positioned(
+
           top: 4,
           right: 4,
           child: IconButton(
