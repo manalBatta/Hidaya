@@ -1,6 +1,6 @@
-const axios = require("axios");
-const UserServices = require("./userserviceslog&registeration.js");
-const { v4: uuidv4 } = require("uuid");
+import axios from "axios";
+import UserServices from "./userserviceslog&registeration.js";
+import { v4 as uuidv4 } from "uuid";
 
 // OneSignal configuration
 const ONESIGNAL_APP_ID = "b068d3f0-99d0-487c-a233-fde4b91a5b8c";
@@ -239,11 +239,10 @@ async function getNotificationStats(userId) {
   }
 }
 
-module.exports = {
+export {
   sendNotification,
   sendNotificationToMultiple,
   sendNotificationToAllVolunteers,
   sendNotificationToInactiveVolunteers,
   getNotificationStats,
 };
- 

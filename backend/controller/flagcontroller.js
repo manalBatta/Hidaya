@@ -1,7 +1,7 @@
-const FlagServices = require("../services/flagsservices");
-const { v4: uuidv4 } = require("uuid");
+import FlagServices from "../services/flagsservices.js";
+import { v4 as uuidv4 } from "uuid";
 
-exports.reportquestion = async (req, res, next) => {
+export async function reportquestion(req, res, next) {
   try {
     const { questionId, reportType, description, itemType } = req.body;
     console.log("request body is:", req.body);
@@ -33,4 +33,4 @@ exports.reportquestion = async (req, res, next) => {
     console.log("---> err -->", err);
     next(err);
   }
-};
+}

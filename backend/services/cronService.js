@@ -1,7 +1,7 @@
-const cron = require("node-cron");
-const AnswerModel = require("../models/Answers");
-const UserModel = require("../models/User");
-const { sendNotification } = require("./notificationService");
+import cron from "node-cron";
+import AnswerModel from "../models/Answers.js";
+import UserModel from "../models/User.js";
+import { sendNotification } from "./notificationService.js";
 
 class CronService {
   constructor() {
@@ -475,4 +475,4 @@ class CronService {
   }
 }
 
-module.exports = CronService;
+export default CronService;
