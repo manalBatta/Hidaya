@@ -1,7 +1,6 @@
-//const StoryModel = require("../models/Stories");
-const StoryServices = require("../services/storyservices");
+import StoryServices from "../services/storyservices.js";
 
-exports.getallstories = async (req, res, next) => {
+export async function getallstories(req, res, next) {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -17,9 +16,9 @@ exports.getallstories = async (req, res, next) => {
     console.log("---> err in getallstories -->", err);
     next(err);
   }
-};
+}
 
-exports.savestory = async (req, res, next) => {
+export async function savestory(req, res, next) {
   console.log("---> req.body in savestory -->", req.body);
   const storyId = req.body.id;
   const userId = req.userId; //from token
@@ -33,10 +32,9 @@ exports.savestory = async (req, res, next) => {
     console.log("---> err in savestory -->", err);
     next(err);
   }
-};
+}
 
-//like story
-exports.likestory = async (req, res, next) => {
+export async function likestory(req, res, next) {
   const storyId = req.body.id;
   const userId = req.userId;
 
@@ -47,10 +45,9 @@ exports.likestory = async (req, res, next) => {
     console.log("---> err in likestory -->", err);
     next(err);
   }
-};
+}
 
-//get story by id
-exports.getstorybyid = async (req, res, next) => {
+export async function getstorybyid(req, res, next) {
   const storyId = req.body.id;
   const userId = req.userId;
   console.log("---> userId in getstorybyid -->", userId);
@@ -62,4 +59,4 @@ exports.getstorybyid = async (req, res, next) => {
     console.log("---> err in getstorybyid -->", err);
     next(err);
   }
-};
+}

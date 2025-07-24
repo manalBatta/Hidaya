@@ -1,5 +1,5 @@
-const { createClient } = require("@supabase/supabase-js");
-const cld3 = require("cld3-asm");
+import { createClient } from "@supabase/supabase-js";
+import cld3 from "cld3-asm";
 
 let cldFactory = null;
 let identifier = null;
@@ -83,7 +83,7 @@ async function fetchRecentMessages(sessionId, limit = 10) {
   return data || [];
 }
 
-module.exports = {
+export {
   getLastSession,
   createNewSupabaseSession,
   saveChatMessage,

@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   service: "Gmail",
@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVerificationEmail(email, token) {
-  const link = `http://localhost:5000/verify/${token}`; 
+  const link = `http://localhost:5000/verify/${token}`;
   await transporter.sendMail({
     from: '"Islamic AI" <hidayaislamicapp@gmail.com>',
     to: email,
@@ -18,4 +18,4 @@ async function sendVerificationEmail(email, token) {
   });
 }
 
-module.exports = sendVerificationEmail; 
+export default sendVerificationEmail;

@@ -1,5 +1,6 @@
-const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
-const { HumanMessage, AIMessage } = require("@langchain/core/messages");
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
+
 // Set up Gemini LLM
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-1.5-flash",
@@ -101,4 +102,4 @@ IMPORTANT: Your answer must be less than 50 words. Do not exceed this limit.
   return result.content;
 }
 
-module.exports = { askGeminiWithLangchain };
+export { askGeminiWithLangchain };

@@ -1,78 +1,83 @@
-const router = require("express").Router();
-const UserController = require("../controller/usercontroller");
-const authMiddleware = require("../services/authMiddleware");
-const QuestionController = require("../controller/questioncontroller");
-const AnswerController = require("../controller/answercontroller");
-const FlagController = require("../controller/flagcontroller");
-const LessonController = require("../controller/lessoncontroller");
-const notificationRoutes = require("./notificationroutes.js");
-const StoryController = require("../controller/StoryController");
+import express from "express";
+const router = express.Router();
+import {
+  register,
+  login,
+  updateprofile,
+  verifyEmail,
+  changepassword,
+  updateOneSignalId,
+  forgotpassword,
+  changePassword,
+  deleteAccount,
+  resetpassword,
+  changeresetpassword,
+} from "../controller/usercontroller.js";
+import authMiddleware from "../services/authMiddleware.js";
+import {
+  submitquestion,
+  getpublicquestions,
+  getquestionandanswers,
+  getquestionsofaspecificuser,
+  savequestion,
+  deletequestion,
+  updatequestion,
+  updateAIAnswer,
+} from "../controller/questioncontroller.js";
+import {
+  submitanswerbyvolunteer,
+  voteonanswer,
+  getanswersofvolunteer,
+  getanswerupvotedbyvolunteer,
+  deleteAnswer,
+} from "../controller/answercontroller.js";
+import { reportquestion } from "../controller/flagcontroller.js";
+import { getalllesson } from "../controller/lessoncontroller.js";
+import notificationRoutes from "./notificationroutes.js";
+import {
+  getallstories,
+  savestory,
+  likestory,
+  getstorybyid,
+} from "../controller/StoryController.js";
 
-router.post("/register", UserController.register);
-router.post("/login", UserController.login);
-router.put("/profile", authMiddleware, UserController.updateprofile);
-router.put("/onesignal-id", authMiddleware, UserController.updateOneSignalId);
-router.put("/change-password", authMiddleware, UserController.changePassword);
-router.delete("/delete-account", authMiddleware, UserController.deleteAccount);
+router.post("/register", register);
+router.post("/login", login);
+router.put("/profile", authMiddleware, updateprofile);
+router.put("/onesignal-id", authMiddleware, updateOneSignalId);
+router.put("/change-password", authMiddleware, changePassword);
+router.delete("/delete-account", authMiddleware, deleteAccount);
 // Use notification routes
 router.use("/notifications", notificationRoutes);
-router.post("/questions", authMiddleware, QuestionController.submitquestion);
-router.get("/public-questions", QuestionController.getpublicquestions);
-router.get("/questions/:id", QuestionController.getquestionandanswers);
-router.post(
-  "/answers",
-  authMiddleware,
-  AnswerController.submitanswerbyvolunteer
-);
-router.put("/answers/vote", authMiddleware, AnswerController.voteonanswer);
+router.post("/questions", authMiddleware, submitquestion);
+router.get("/public-questions", getpublicquestions);
+router.get("/questions/:id", getquestionandanswers);
+router.post("/answers", authMiddleware, submitanswerbyvolunteer);
+router.put("/answers/vote", authMiddleware, voteonanswer);
 //router.post("/flags", authMiddleware, FlagController.flagitem);
-router.get(
-  "/myquestion",
-  authMiddleware,
-  QuestionController.getquestionsofaspecificuser
-);
-router.get(
-  "/my-questions",
-  authMiddleware,
-  QuestionController.getquestionsofaspecificuser
-);
-router.post("/saveQuestion", authMiddleware, QuestionController.savequestion);
-router.get("/myAnwers", authMiddleware, AnswerController.getanswersofvolunteer);
-router.get(
-  "/upvotedAnswer",
-  authMiddleware,
-  AnswerController.getanswerupvotedbyvolunteer
-);
-router.get("/api/lessons", LessonController.getalllesson);
-router.delete(
-  "/deletequestions/:id",
-  authMiddleware,
-  QuestionController.deletequestion
-);
-router.put(
-  "/updatequestions/:id",
-  authMiddleware,
-  QuestionController.updatequestion
-);
-router.patch(
-  "/questions/:id/ai-answer",
-  authMiddleware,
-  QuestionController.updateAIAnswer
-);
+router.get("/myquestion", authMiddleware, getquestionsofaspecificuser);
+router.get("/my-questions", authMiddleware, getquestionsofaspecificuser);
+router.post("/saveQuestion", authMiddleware, savequestion);
+router.get("/myAnwers", authMiddleware, getanswersofvolunteer);
+router.get("/upvotedAnswer", authMiddleware, getanswerupvotedbyvolunteer);
+router.get("/api/lessons", getalllesson);
+router.delete("/deletequestions/:id", authMiddleware, deletequestion);
+router.put("/updatequestions/:id", authMiddleware, updatequestion);
+router.patch("/questions/:id/ai-answer", authMiddleware, updateAIAnswer);
 
-router.post("/reportquestion", authMiddleware, FlagController.reportquestion);
-router.get("/verify/:token", UserController.verifyEmail);
-router.post("/change-password", authMiddleware, UserController.changepassword);
-router.post("/forgot-password", UserController.forgotpassword);
-router.get("/reset-password/:token", UserController.resetpassword);
-router.post("/reset-password", authMiddleware, UserController.changeresetpassword);
-router.delete("/answers/delete/:answerId", AnswerController.deleteAnswer);
-router.get("/story", StoryController.getallstories);
+router.post("/reportquestion", authMiddleware, reportquestion);
+router.get("/verify/:token", verifyEmail);
+router.post("/change-password", authMiddleware, changepassword);
+router.post("/forgot-password", forgotpassword);
+router.get("/reset-password/:token", resetpassword);
+router.post("/reset-password", authMiddleware, changeresetpassword);
+router.delete("/answers/delete/:answerId", deleteAnswer);
+router.get("/story", getallstories);
 //save story
-router.post("/story/savestory", authMiddleware, StoryController.savestory);
+router.post("/story/savestory", authMiddleware, savestory);
 //like story
-router.post("/story/likestory", authMiddleware, StoryController.likestory);
+router.post("/story/likestory", authMiddleware, likestory);
 //get story by id
-router.get("/getstorybyid", authMiddleware, StoryController.getstorybyid);
+router.get("/getstorybyid", authMiddleware, getstorybyid);
 
-module.exports = router;
+export default router;

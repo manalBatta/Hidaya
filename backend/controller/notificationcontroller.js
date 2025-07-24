@@ -1,18 +1,17 @@
-const UserServices = require("../services/userserviceslog&registeration");
-const { sendNotification } = require("../services/notificationService.js");
+import UserServices from "../services/userserviceslog&registeration.js";
+import { sendNotification } from "../services/notificationService.js";
+import QuestionsModel from "../models/Questions.js";
+import AnswersModel from "../models/Answers.js";
 
 // Get user notifications
-exports.getNotifications = async (req, res, next) => {
+export const getNotifications = async (req, res, next) => {
   try {
     const userId = req.userId;
-
     const notifications = await UserServices.getNotifications(userId);
-
     // Sort notifications by createdAt (newest first)
     const sortedNotifications = notifications.sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
-
     res.status(200).json({
       status: true,
       success: "Notifications retrieved successfully",
@@ -25,13 +24,11 @@ exports.getNotifications = async (req, res, next) => {
 };
 
 // Mark notification as read
-exports.markNotificationAsRead = async (req, res, next) => {
+export const markNotificationAsRead = async (req, res, next) => {
   try {
     const userId = req.userId;
     const { notificationId } = req.params;
-
     await UserServices.markNotificationAsRead(userId, notificationId);
-
     res.status(200).json({
       status: true,
       success: "Notification marked as read",
@@ -49,12 +46,10 @@ exports.markNotificationAsRead = async (req, res, next) => {
 };
 
 // Mark all notifications as read
-exports.markAllNotificationsAsRead = async (req, res, next) => {
+export const markAllNotificationsAsRead = async (req, res, next) => {
   try {
     const userId = req.userId;
-
     await UserServices.markAllNotificationsAsRead(userId);
-
     res.status(200).json({
       status: true,
       success: "All notifications marked as read",
@@ -66,12 +61,10 @@ exports.markAllNotificationsAsRead = async (req, res, next) => {
 };
 
 // Delete all notifications
-exports.deleteAllNotifications = async (req, res, next) => {
+export const deleteAllNotifications = async (req, res, next) => {
   try {
     const userId = req.userId;
-
     await UserServices.deleteAllNotifications(userId);
-
     res.status(200).json({
       status: true,
       success: "All notifications deleted successfully",
@@ -83,11 +76,10 @@ exports.deleteAllNotifications = async (req, res, next) => {
 };
 
 // Test notification endpoint
-exports.sendTestNotification = async (req, res, next) => {
+export const sendTestNotification = async (req, res, next) => {
   try {
     const userId = req.userId;
     const { message = "This is a test notification!" } = req.body;
-
     // Get user data
     const user = await UserServices.checkUserById(userId);
     if (!user) {
@@ -96,7 +88,6 @@ exports.sendTestNotification = async (req, res, next) => {
         message: "User not found",
       });
     }
-
     const testResult = await sendNotification({
       userId: user.userId,
       type: "test",
@@ -107,7 +98,6 @@ exports.sendTestNotification = async (req, res, next) => {
         timestamp: new Date().toISOString(),
       },
     });
-
     if (testResult.pushSent || testResult.databaseSaved) {
       res.status(200).json({
         status: true,
@@ -132,35 +122,28 @@ exports.sendTestNotification = async (req, res, next) => {
 };
 
 // Function to send missed notifications to volunteers
-async function sendMissedNotifications(user) {
+export async function sendMissedNotifications(user) {
   try {
-    const QuestionModel = require("../models/Questions");
-    const AnswerModel = require("../models/Answers");
-
     // Get volunteer's last answer time
-    const lastAnswer = await AnswerModel.findOne({
+    const lastAnswer = await AnswersModel.findOne({
       answeredBy: user.userId,
     })
       .sort({ createdAt: -1 })
       .lean();
-
     // Check for questions from the last 7 days
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
     // If volunteer answered recently, no need for missed notifications
     if (lastAnswer && lastAnswer.createdAt > oneWeekAgo) {
       return;
     }
-
     // Find questions that were asked while volunteer was inactive
-    const missedQuestions = await QuestionModel.find({
+    const missedQuestions = await QuestionsModel.find({
       createdAt: { $gte: oneWeekAgo },
     })
       .sort({ createdAt: -1 })
       .limit(5)
       .lean();
-
     if (missedQuestions.length > 0) {
       // Send individual notifications for each missed question using the service
       for (const question of missedQuestions) {
@@ -178,7 +161,6 @@ async function sendMissedNotifications(user) {
           saveToDatabase: true,
         });
       }
-
       // Send summary notification
       const summaryResult = await sendNotification({
         userId: user.userId,
@@ -191,7 +173,6 @@ async function sendMissedNotifications(user) {
         },
         saveToDatabase: true,
       });
-
       console.log(
         "Missed questions notifications sent to volunteer:",
         summaryResult
@@ -201,6 +182,3 @@ async function sendMissedNotifications(user) {
     console.log("Failed to send missed notifications:", error);
   }
 }
-
-// Export the sendMissedNotifications function for use in other controllers
-exports.sendMissedNotifications = sendMissedNotifications;

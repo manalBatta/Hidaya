@@ -1,6 +1,7 @@
-const StoryModel = require("../models/Stories");
-const UserModel = require("../models/User");
-const mongoose = require("mongoose");
+import StoryModel from "../models/Stories.js";
+import UserModel from "../models/User.js";
+import mongoose from "mongoose";
+
 class StoryServices {
   // Get all stories
   static async GetAllStories(page = 1, limit = 10) {
@@ -147,4 +148,4 @@ class StoryServices {
     }
   }
 }
-module.exports = StoryServices;
+export default StoryServices;

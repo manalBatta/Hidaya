@@ -1,13 +1,11 @@
-const UserServices = require("../services/questionsservices");
-const QuestionModel = require("../models/Questions");
-const AnswerModel = require("../models/Answers");
-const UserModel = require("../models/User");
-const admin = require("firebase-admin");
-const {
-  sendNotificationToMultiple,
-} = require("../services/notificationService.js");
+import UserServices from "../services/questionsservices.js";
+import QuestionModel from "../models/Questions.js";
+import AnswerModel from "../models/Answers.js";
+import UserModel from "../models/User.js";
+import admin from "firebase-admin";
+import { sendNotificationToMultiple } from "../services/notificationService.js";
 
-exports.submitquestion = async (req, res, next) => {
+export async function submitquestion(req, res, next) {
   const userId = req.userId; // coming from token middleware
 
   try {
@@ -103,7 +101,7 @@ exports.submitquestion = async (req, res, next) => {
     next(err);
   }
 };
-exports.getpublicquestions = async (req, res, next) => {
+export async function getpublicquestions(req, res, next) {
     const {page,limit} = req.query;
     const { questions, totalCount } = await UserServices.GetPublicQuestions(page, limit);
   res.status(200).json({
@@ -115,7 +113,7 @@ exports.getpublicquestions = async (req, res, next) => {
     totalPages: Math.ceil(totalCount / limit),
   });
 };
-exports.getquestionandanswers = async (req, res, next) => {
+export async function getquestionandanswers(req, res, next) {
   const { id } = req.params;
 
   try {
@@ -202,7 +200,7 @@ exports.getquestionandanswers = async (req, res, next) => {
   }
 };
 
-exports.getquestionsofaspecificuser = async (req, res, next) => {
+export async function getquestionsofaspecificuser(req, res, next) {
   try {
     const userId = req.userId;
     if (!userId) {
@@ -224,7 +222,7 @@ exports.getquestionsofaspecificuser = async (req, res, next) => {
   }
 };
 
-exports.savequestion = async (req, res, next) => {
+export async function savequestion(req, res, next) {
   const userId = req.userId;
   const { questionId } = req.body;
   if (!questionId) {
@@ -252,7 +250,7 @@ exports.savequestion = async (req, res, next) => {
   }
 };
 
-exports.deletequestion = async (req, res, next) => {
+export async function deletequestion(req, res, next) {
   const userId = req.userId;
   const { id } = req.params;
   if (!id){
@@ -273,7 +271,7 @@ exports.deletequestion = async (req, res, next) => {
   }
 };
 
-exports.updatequestion = async (req, res, next) => {
+export async function updatequestion(req, res, next) {
   const userId = req.userId;
   const questionId = req.params.id;
   const { text, category, isPublic, aiAnswer } = req.body;
@@ -306,7 +304,7 @@ exports.updatequestion = async (req, res, next) => {
 };
 
 // PATCH /questions/:id/ai-answer
-exports.updateAIAnswer = async (req, res, next) => {
+export async function updateAIAnswer(req, res, next) {
   const questionId = req.params.id;
   const { aiAnswer } = req.body;
   if (!aiAnswer) {

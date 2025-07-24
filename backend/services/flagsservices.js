@@ -1,7 +1,8 @@
-const FlagModel = require("../models/Flags");
-const QuestionModel = require("../models/Questions");
-const AnswerModel = require("../models/Answers");
-const { v4: uuidv4 } = require("uuid");
+import FlagModel from "../models/Flags.js";
+import AnswerModel from "../models/Answers.js";
+import QuestionModel from "../models/Questions.js";
+import { v4 as uuidv4 } from "uuid";
+
 class FlagServices {
   static async SubmitFlag(data) {
     try {
@@ -62,7 +63,7 @@ class FlagServices {
   }
 }
 
-module.exports = FlagServices;
+export default FlagServices;
 /*
      flagId: require('uuid').v4(),
       itemType,
