@@ -102,7 +102,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeChatSession();
+    // _initializeChatSession();
     _inputController.addListener(() {
       setState(() {}); // Rebuilds the widget when the input changes
     });

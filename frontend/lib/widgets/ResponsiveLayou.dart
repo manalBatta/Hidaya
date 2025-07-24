@@ -8,7 +8,7 @@ import 'ProfilePage.dart';
 import 'package:provider/provider.dart';
 import '../providers/NavigationProvider.dart';
 import 'package:frontend/constants/colors.dart';
-import 'package:frontend/widgets/Stories/IslamicStoriesPage.dart';
+import 'package:frontend/widgets/Stories/Story.dart';
 
 class ResponsiveLayout extends StatefulWidget {
   final String userRole;
@@ -45,7 +45,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       label: 'Hidaya Stories',
       icon: Icons.book_outlined,
       activeIcon: Icons.book,
-      page: IslamicStoriesPage(),
+      page: StoriesPage(),
     ),
     NavigationItem(
       id: 'lessons',

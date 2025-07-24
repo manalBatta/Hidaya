@@ -11,40 +11,45 @@ class FlagServices {
         itemId: data.itemId,
         reportedBy: data.reportedBy,
         reason: data.description,
-        status: 'pending',
-        createdAt: new Date()
+        status: "pending",
+        createdAt: new Date(),
       });
-  
+
       await newFlag.save();
-  
-      if (data.itemType.toLowerCase() === 'question') {
-        await QuestionModel.findOneAndUpdate({ questionId: data.itemId }, { isFlagged: true });
+
+      if (data.itemType.toLowerCase() === "question") {
+        await QuestionModel.findOneAndUpdate(
+          { questionId: data.itemId },
+          { isFlagged: true }
+        );
       }
-  
-      if (data.itemType.toLowerCase() === 'answer') {
+
+      if (data.itemType.toLowerCase() === "answer") {
         const answer = await AnswerModel.findOneAndUpdate(
           { answerId: data.itemId },
           { isFlagged: true },
           { new: true }
         );
-  
+
         if (answer && answer.questionId) {
           await this.recalculateTopAnswer(answer.questionId);
         } else {
           console.warn("Answer not found or missing questionId");
         }
       }
-  
+
       return { newFlag };
     } catch (err) {
       throw err;
     }
   }
-  
- 
+
   static async recalculateTopAnswer(questionId) {
     console.log("🔍 Recalculating top answer for question:", questionId);
-    const answers = await AnswerModel.find({ questionId: questionId, isFlagged: { $ne: true } }).sort({ upvotesCount: -1 });
+    const answers = await AnswerModel.find({
+      questionId: questionId,
+      isFlagged: { $ne: true },
+    }).sort({ upvotesCount: -1 });
     const question = await QuestionModel.findOne({ questionId: questionId });
 
     if (answers.length > 0) {
@@ -55,13 +60,6 @@ class FlagServices {
 
     await question.save();
   }
-
-
-
-
-
-
- 
 }
 
 module.exports = FlagServices;

@@ -10,7 +10,7 @@ final questions = url + "questions"; //to get all questions
 final publicQuestions = url + "public-questions"; //to get public questions
 final saveQuestionUrl = url + "saveQuestion";
 final submitAnswerUrl = url + "answers"; //to submit a new answer
-final myquestions = url + "myquestion";
+final myquestions = url + "my-questions";
 final vote = url + 'answers/vote';
 final upvotedAnswerUrl = url + 'upvotedAnswer';
 final myAnswersUrl = url + "myAnwers";
@@ -23,4 +23,6 @@ final forgotPassword = url + "forgot-password"; //to forgot password
  
 final deleteAns = url + "answers/delete/";
 final deletAccounturl = url + "delete-account";
-
+final storyUrl = url + "story";
+final saveStoryUrl = url + "story/savestory";
+final likeStoryUrl = url + "story/likestory";

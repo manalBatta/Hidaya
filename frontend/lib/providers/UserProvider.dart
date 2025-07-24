@@ -19,6 +19,13 @@ class UserProvider with ChangeNotifier {
   }
 
   Map<String, dynamic>? get user => _user;
+  void addSavedStory(String storyId) {
+    if (_user != null) {
+      _user!["savedStories"].add(storyId);
+    }
+    notifyListeners();
+  }
+
   String? get sessionId => _sessionId;
 
   String get userId => _user?['id']?.toString() ?? '';
@@ -104,6 +111,18 @@ class UserProvider with ChangeNotifier {
     return List<String>.from(_user!["savedQuestions"] ?? []);
   }
 
+
+  // Getter for savedQuestions
+  List<String> get savedStories {
+    if (_user == null) return [];
+    return List<String>.from(_user!["savedStories"] ?? []);
+  }
+
+ // Getter for savedQuestions
+  List<String> get likedStories {
+    if (_user == null) return [];
+    return List<String>.from(_user!["likedStories"] ?? []);
+  }
   // Save user data to local storage
   Future<void> _saveUserToPrefs(Map<String, dynamic> userData) async {
     final prefs = await SharedPreferences.getInstance();
