@@ -12,4 +12,7 @@ const initialize = async () => {
     return { db };
 };
 export default initialize;
+<<<<<<< HEAD
 //# sourceMappingURL=index.js.map
+=======
+>>>>>>> e220066e3fe0067d22590e4e5fe2e047ebafcd11
