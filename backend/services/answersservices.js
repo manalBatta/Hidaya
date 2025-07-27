@@ -1,10 +1,9 @@
-const AnswerModel = require("../models/Answers");
-const VoteModel = require("../models/Votes");
-const QuestionModel = require("../models/Questions");
-const UserModel = require("../models/User");
-const { sendNotification } = require("../services/notificationService.js");
-
-const { v4: uuidv4 } = require("uuid");
+import AnswerModel from "../models/Answers.js";
+import VoteModel from "../models/Votes.js";
+import QuestionModel from "../models/Questions.js";
+import UserModel from "../models/User.js";
+import { sendNotification } from "../services/notificationService.js";
+import { v4 as uuidv4 } from "uuid";
 
 class AnswerServices {
   static async UpVoteOnAnswer(answerId, userId) {
@@ -343,4 +342,4 @@ class AnswerServices {
   }
 }
 
-module.exports = AnswerServices;
+export default AnswerServices;

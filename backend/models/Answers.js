@@ -1,5 +1,4 @@
-
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 const answerSchema = new Schema({
@@ -10,8 +9,7 @@ const answerSchema = new Schema({
   createdAt: { type: Date, required: true },
   language: { type: String, required: true },
   upvotesCount: { type: Number, default: 0 },
-  isFlagged: { type: Boolean, default: false }
-
+  isFlagged: { type: Boolean, default: false },
 });
 
-module.exports = mongoose.model('Answer', answerSchema, 'Answers');
+export default mongoose.model("Answer", answerSchema, "Answers");

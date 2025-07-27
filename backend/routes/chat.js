@@ -1,15 +1,15 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const User = require("../models/User");
-const { askGeminiWithLangchain } = require("../services/langchainGemini.js");
+import User from "../models/User.js";
+import { askGeminiWithLangchain } from "../services/langchainGemini.js";
 
-const {
+import {
   getLastSession,
   createNewSupabaseSession,
   saveChatMessage,
   fetchRecentMessages,
   detectLanguage,
-} = require("../services/aiservices.js");
+} from "../services/aiservices.js";
 
 router.post("/start", async (req, res) => {
   const { userId } = req.body;
@@ -97,4 +97,4 @@ router.post("/send", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

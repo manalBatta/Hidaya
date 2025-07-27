@@ -1,5 +1,5 @@
-const mongoose = require("../config/db");
-const bcrypt = require("bcrypt");
+import mongoose from "../config/db.js";
+import bcrypt from "bcrypt";
 
 const { Schema } = mongoose;
 
@@ -56,8 +56,8 @@ const userSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
   volunteerProfile: volunteerProfileSchema,
   isEmailVerified: { type: Boolean, default: false },
-  verificationToken: {type: String },
-  verificationTokenExpires: {type: Date },
+  verificationToken: { type: String },
+  verificationTokenExpires: { type: Date },
 });
 
 userSchema.pre("save", async function () {
@@ -85,4 +85,4 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   }
 };
 
-module.exports = mongoose.model("User", userSchema, "Users");
+export default mongoose.model("User", userSchema, "Users");

@@ -1,25 +1,29 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const UserRoute = require("./routes/userroutelogandregisteration");
-const ChatRoute = require("./routes/chat");
+import express from "express";
+import bodyParser from "body-parser";
+import UserRoute from "./routes/userroutelogandregisteration.js";
+import ChatRoute from "./routes/chat.js";
 const app = express();
-const cors = require("cors");
-const db = require("./config/db");
-const admin = require("firebase-admin");
-const cronService = require("./services/cronService");
-// Firebase Admin SDK initialization
-const serviceAccount = require("./serviceAccountKey.json");
+import cors from "cors";
+import admin from "firebase-admin";
+import CronService from "./services/cronService.js";
+import fs from "fs";
+import dotenv from "dotenv";
+dotenv.config();
 
+// Firebase Admin SDK initialization
+const serviceAccount = JSON.parse(
+  fs.readFileSync(new URL("./serviceAccountKey.json", import.meta.url), "utf-8")
+);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
 // Initialize simple cron service
-new cronService();
+new CronService();
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/", UserRoute);
 app.use("/chat", ChatRoute);
 
-module.exports = app;
+export default app;

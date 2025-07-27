@@ -1,11 +1,11 @@
-const AnswerServices = require("../services/answersservices");
-const AnswerModel = require("../models/Answers");
-const QuestionModel = require("../models/Questions");
-const UserModel = require("../models/User");
-const admin = require("firebase-admin");
-const { sendNotification } = require("../services/notificationService.js");
+import AnswerServices from "../services/answersservices.js";
+import AnswerModel from "../models/Answers.js";
+import QuestionModel from "../models/Questions.js";
+import UserModel from "../models/User.js";
+import admin from "firebase-admin";
+import { sendNotification } from "../services/notificationService.js";
 
-exports.voteonanswer = async (req, res, next) => {
+export async function voteonanswer(req, res, next) {
   const { answerId } = req.body;
   const userId = req.userId;
 
@@ -89,8 +89,6 @@ exports.voteonanswer = async (req, res, next) => {
       }
     }
 
-    
-
     res.json({
       message: "Upvote successful",
       updatedAnswer: fullUpdatedAnswer,
@@ -101,9 +99,9 @@ exports.voteonanswer = async (req, res, next) => {
     console.error("voteonanswer error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-};
+}
 
-exports.submitanswerbyvolunteer = async (req, res, next) => {
+export async function submitanswerbyvolunteer(req, res, next) {
   try {
     const { questionId, text, language } = req.body;
     const answeredBy = req.userId; //from token
@@ -167,9 +165,9 @@ exports.submitanswerbyvolunteer = async (req, res, next) => {
     console.log("---> err -->", err);
     next(err);
   }
-};
+}
 
-exports.getanswersofvolunteer = async (req, res, next) => {
+export async function getanswersofvolunteer(req, res, next) {
   try {
     const userId = req.userId;
     if (!userId) {
@@ -191,9 +189,9 @@ exports.getanswersofvolunteer = async (req, res, next) => {
     console.error("Error fetching user answers:", err);
     next(err);
   }
-};
+}
 
-exports.getanswerupvotedbyvolunteer = async (req, res, next) => {
+export async function getanswerupvotedbyvolunteer(req, res, next) {
   try {
     //editd by manal
     //use query parameter the Get request does not have body parameter
@@ -223,9 +221,9 @@ exports.getanswerupvotedbyvolunteer = async (req, res, next) => {
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
-};
+}
 
-exports.deleteAnswer = async (req, res) => {
+export async function deleteAnswer(req, res) {
   try {
     const { answerId } = req.params;
     const result = await AnswerServices.DeleteAnswer(answerId);
@@ -236,4 +234,4 @@ exports.deleteAnswer = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
-};
+}
