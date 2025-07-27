@@ -1,0 +1,891 @@
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+
+// Add these dependencies to pubspec.yaml:
+// dependencies:
+//   fl_chart: ^0.68.0
+//   intl: ^0.19.0
+
+// Islamic Theme Colors
+class IslamicColors {
+  static const Color green50 = Color(0xFFF0FDF4);
+  static const Color green100 = Color(0xFFDCFCE7);
+  static const Color green200 = Color(0xFFBBF7D0);
+  static const Color green300 = Color(0xFF86EFAC);
+  static const Color green400 = Color(0xFF4ADE80);
+  static const Color green500 = Color(0xFF059669);
+  static const Color green600 = Color(0xFF047857);
+  static const Color green700 = Color(0xFF065F46);
+  static const Color green800 = Color(0xFF064E3B);
+  static const Color green900 = Color(0xFF022C22);
+
+  static const Color gold50 = Color(0xFFFFFBEB);
+  static const Color gold100 = Color(0xFFFEF3C7);
+  static const Color gold200 = Color(0xFFFDE68A);
+  static const Color gold300 = Color(0xFFFCD34D);
+  static const Color gold400 = Color(0xFFFBBF24);
+  static const Color gold500 = Color(0xFFF59E0B);
+
+  static const Color cream = Color(0xFFFAF9F6);
+  static const Color white = Color(0xFFFFFFFF);
+}
+
+class AdminDashboard extends StatelessWidget {
+  const AdminDashboard({Key? key}) : super(key: key);
+
+  // Mock data matching React implementation
+  final List<Map<String, dynamic>> userGrowthData = const [
+    {"month": "Jan", "users": 8500},
+    {"month": "Feb", "users": 9200},
+    {"month": "Mar", "users": 9800},
+    {"month": "Apr", "users": 10500},
+    {"month": "May", "users": 11200},
+    {"month": "Jun", "users": 12547},
+  ];
+
+  final List<Map<String, dynamic>> genderData = const [
+    {"name": "Female", "value": 60, "color": 0xFF059669},
+    {"name": "Male", "value": 35, "color": 0xFF0891b2},
+    {"name": "Other", "value": 5, "color": 0xFF7c3aed},
+  ];
+
+  final List<Map<String, dynamic>> questionCategoriesData = const [
+    {"category": "Prayer", "count": 2345},
+    {"category": "Fasting", "count": 1876},
+    {"category": "Charity", "count": 1234},
+    {"category": "Pilgrimage", "count": 987},
+    {"category": "Daily Life", "count": 1567},
+    {"category": "Family", "count": 925},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: IslamicColors.green50,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              IslamicColors.green50,
+              IslamicColors.cream,
+              IslamicColors.gold50,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 32),
+              _buildMainStatsGrid(context),
+              const SizedBox(height: 32),
+              _buildSecondaryStatsGrid(context),
+              const SizedBox(height: 32),
+              _buildChartsSection(context),
+              const SizedBox(height: 32),
+              _buildQuestionCategoriesChart(context),
+              const SizedBox(height: 32),
+              _buildTodayHighlightsSection(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dashboard',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: IslamicColors.green800,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Welcome back! Here\'s what\'s happening with your platform.',
+              style: TextStyle(fontSize: 16, color: IslamicColors.green600),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: IslamicColors.green300),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
+            style: const TextStyle(
+              color: IslamicColors.green700,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainStatsGrid(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount =
+        screenWidth > 1200
+            ? 4
+            : screenWidth > 800
+            ? 2
+            : 1;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: 1.6,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      children: [
+        _buildStatCard(
+          'Total Users',
+          '12,547',
+          Icons.people,
+          '+12% from last month',
+          IslamicColors.green600,
+          true,
+        ),
+        _buildStatCard(
+          'Certified Volunteers',
+          '127',
+          Icons.verified_user,
+          '+3 this week',
+          IslamicColors.green600,
+          true,
+        ),
+        _buildStatCard(
+          'Pending Applications',
+          '23',
+          Icons.person_add,
+          '+5 new today',
+          Colors.orange.shade600,
+          true,
+        ),
+        _buildStatCard(
+          'Total Questions',
+          '8,934',
+          Icons.help_outline,
+          '+32 today',
+          IslamicColors.green600,
+          true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecondaryStatsGrid(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount =
+        screenWidth > 1200
+            ? 5
+            : screenWidth > 800
+            ? 3
+            : 2;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: 1.8,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      children: [
+        _buildStatCard(
+          'Answered Questions',
+          '7,821',
+          Icons.check_circle,
+          null,
+          Colors.green.shade600,
+          false,
+        ),
+        _buildStatCard(
+          'Unanswered',
+          '1,113',
+          Icons.cancel,
+          null,
+          Colors.red.shade600,
+          false,
+        ),
+        _buildStatCard(
+          'Flagged Content',
+          '45',
+          Icons.flag,
+          null,
+          Colors.red.shade600,
+          false,
+        ),
+        _buildStatCard(
+          'Stories',
+          '234',
+          Icons.bookmark,
+          null,
+          IslamicColors.green600,
+          false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    String? change,
+    Color iconColor,
+    bool showChange,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: IslamicColors.green100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(icon, color: iconColor, size: 20),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: IslamicColors.green800,
+              height: 1.2,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (showChange && change != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.trending_up, size: 12, color: Colors.green.shade600),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    change,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartsSection(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 1024;
+
+    return Column(
+      children: [
+        if (isMobile) ...[
+          _buildUserGrowthChart(),
+          const SizedBox(height: 24),
+          _buildGenderChart(),
+        ] else ...[
+          Row(
+            children: [
+              Expanded(child: _buildUserGrowthChart()),
+              const SizedBox(width: 24),
+              Expanded(child: _buildGenderChart()),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildUserGrowthChart() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: IslamicColors.green100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'User Growth',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: IslamicColors.green800,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 300,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  drawHorizontalLine: true,
+                  horizontalInterval: 1000,
+                  verticalInterval: 1,
+                  getDrawingHorizontalLine:
+                      (value) => FlLine(
+                        color: Colors.grey.shade300,
+                        strokeWidth: 1,
+                        dashArray: [3, 3],
+                      ),
+                  getDrawingVerticalLine:
+                      (value) => FlLine(
+                        color: Colors.grey.shade300,
+                        strokeWidth: 1,
+                        dashArray: [3, 3],
+                      ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (value, meta) {
+                        const months = [
+                          'Jan',
+                          'Feb',
+                          'Mar',
+                          'Apr',
+                          'May',
+                          'Jun',
+                        ];
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < months.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              months[value.toInt()],
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          '${(value.toInt() / 1000).toStringAsFixed(0)}k',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: 5,
+                minY: 8000,
+                maxY: 13000,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots:
+                        userGrowthData.asMap().entries.map((entry) {
+                          return FlSpot(
+                            entry.key.toDouble(),
+                            entry.value['users'].toDouble(),
+                          );
+                        }).toList(),
+                    isCurved: true,
+                    color: IslamicColors.green600,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: IslamicColors.green600,
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: IslamicColors.green600.withOpacity(0.1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenderChart() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: IslamicColors.green100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Gender Distribution',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: IslamicColors.green800,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 300,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 60,
+                      sections:
+                          genderData.map((data) {
+                            return PieChartSectionData(
+                              color: Color(data['color']),
+                              value: data['value'].toDouble(),
+                              title: '${data['value']}%',
+                              radius: 80,
+                              titleStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        genderData.map((data) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Color(data['color']),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    data['name'],
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionCategoriesChart(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: IslamicColors.green100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Question Categories',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: IslamicColors.green800,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 400,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: 2500,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 500,
+                  getDrawingHorizontalLine:
+                      (value) => FlLine(
+                        color: Colors.grey.shade300,
+                        strokeWidth: 1,
+                        dashArray: [3, 3],
+                      ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < questionCategoriesData.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              questionCategoriesData[value.toInt()]['category'],
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          '${(value.toInt() / 1000).toStringAsFixed(1)}k',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups:
+                    questionCategoriesData.asMap().entries.map((entry) {
+                      return BarChartGroupData(
+                        x: entry.key,
+                        barRods: [
+                          BarChartRodData(
+                            toY: entry.value['count'].toDouble(),
+                            color: IslamicColors.green600,
+                            width: 40,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(4),
+                              topRight: Radius.circular(4),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodayHighlightsSection(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    return Column(
+      children: [
+        if (isMobile) ...[
+          _buildTodayActivityCard(),
+          const SizedBox(height: 16),
+          _buildTopContentCard(),
+        ] else ...[
+          Row(
+            children: [
+              Expanded(child: _buildTodayActivityCard()),
+              const SizedBox(width: 16),
+              Expanded(child: _buildTopContentCard()),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTodayActivityCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: IslamicColors.green100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                color: IslamicColors.green600,
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Today\'s Activity',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: IslamicColors.green800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildActivityItem('New Users', '18', false),
+          _buildActivityItem('New Questions', '32', false),
+          _buildActivityItem('Content Flagged', '3', true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(String label, String value, bool isWarning) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isWarning ? Colors.red.shade100 : IslamicColors.green100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isWarning ? Colors.red.shade800 : IslamicColors.green800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopContentCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: IslamicColors.green100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.star, color: IslamicColors.green600, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Top Content',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: IslamicColors.green800,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Top Rated Story',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 6),
+              Text(
+                'Story from dark to light',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: IslamicColors.green700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Most Saved Question',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 6),
+              Text(
+                'How to perform Wudu correctly?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: IslamicColors.green700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

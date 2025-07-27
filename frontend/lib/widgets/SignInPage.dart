@@ -58,7 +58,12 @@ class _SignInPageState extends State<SignInPage> {
     final requestbody = {
       'email': _emailController.text,
       'password': _passwordController.text,
-      'role': _accountType == 'volunteer' ? 'volunteer_pending' : 'user',
+      'role':
+          _accountType == 'admin'
+              ? 'admin'
+              : _accountType == 'volunteer'
+              ? 'volunteer_pending'
+              : 'user',
     };
     var response = await http.post(
       Uri.parse(login),
@@ -71,7 +76,7 @@ class _SignInPageState extends State<SignInPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please verify your email')),
         );
-        
+
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
