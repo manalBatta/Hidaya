@@ -36,11 +36,18 @@ const start = async () => {
         Resource: AdminJSMongoose.Resource,
         Database: AdminJSMongoose.Database,
     });
+<<<<<<< HEAD
     await mongoose.connect(process.env.MONGO_URI);
+=======
+    await mongoose.connect(process.env.DATABASE_URL);
+>>>>>>> e220066e3fe0067d22590e4e5fe2e047ebafcd11
     app.use(admin.options.rootPath, router);
     app.listen(port, () => {
         console.log(`AdminJS available at http://localhost:${port}${admin.options.rootPath}`);
     });
 };
 start();
+<<<<<<< HEAD
 //# sourceMappingURL=app.js.map
+=======
+>>>>>>> e220066e3fe0067d22590e4e5fe2e047ebafcd11

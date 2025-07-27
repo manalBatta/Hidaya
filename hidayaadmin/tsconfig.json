@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+<<<<<<< HEAD
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ES2021",
@@ -15,4 +16,30 @@
     }
   },
   "include": ["src/**/*"]
+=======
+    "jsx": "react",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "ES2021",
+    "declaration": false,
+    "removeComments": true,
+    "emitDecoratorMetadata": false,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "sourceMap": false,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "**/src/**/*"
+  ]
+>>>>>>> e220066e3fe0067d22590e4e5fe2e047ebafcd11
 }
