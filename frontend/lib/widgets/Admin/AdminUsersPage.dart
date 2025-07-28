@@ -233,26 +233,22 @@ class _AdminUsersPageState extends State<AdminUsersPage>
             ],
           ),
         ),
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildNavigationTabs(),
-                    const SizedBox(height: 24),
-                    _buildStatsCards(),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 24),
+                _buildNavigationTabs(),
+                const SizedBox(height: 24),
+                _buildStatsCards(),
+                const SizedBox(height: 24),
+                _buildContentArea(),
+              ],
             ),
-            Expanded(flex: 2, child: _buildContentArea()),
-          ],
+          ),
         ),
       ),
     );
@@ -461,25 +457,24 @@ class _AdminUsersPageState extends State<AdminUsersPage>
               ],
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  _buildSearchAndFilters(),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildUsersTable(),
-                        _buildVolunteersTable(),
-                        _buildApplicationsTable(),
-                      ],
-                    ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                _buildSearchAndFilters(),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 500, // Set a fixed height for TabBarView
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildUsersTable(),
+                      _buildVolunteersTable(),
+                      _buildApplicationsTable(),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -611,59 +606,61 @@ class _AdminUsersPageState extends State<AdminUsersPage>
     final filteredUsers = _getFilteredUsers();
 
     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: IslamicColors.green100),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(IslamicColors.green50),
-          columns: const [
-            DataColumn(
-              label: Text(
-                'User',
-                style: TextStyle(fontWeight: FontWeight.w600),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: IslamicColors.green100),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(IslamicColors.green50),
+            columns: const [
+              DataColumn(
+                label: Text(
+                  'User',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Role',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Role',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Country',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Country',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Language',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Language',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Joined',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Joined',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Activity',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Activity',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Actions',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Actions',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
-          rows: filteredUsers.map((user) => _buildUserRow(user)).toList(),
+            ],
+            rows: filteredUsers.map((user) => _buildUserRow(user)).toList(),
+          ),
         ),
       ),
     );
@@ -674,53 +671,55 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         users.where((u) => u.role == "certified_volunteer").toList();
 
     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: IslamicColors.green100),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(IslamicColors.green50),
-          columns: const [
-            DataColumn(
-              label: Text(
-                'Volunteer',
-                style: TextStyle(fontWeight: FontWeight.w600),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: IslamicColors.green100),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(IslamicColors.green50),
+            columns: const [
+              DataColumn(
+                label: Text(
+                  'Volunteer',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Country',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Country',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Language',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Language',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Rating',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Rating',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Answers',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Answers',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Actions',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Actions',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
-          rows: volunteers.map((user) => _buildVolunteerRow(user)).toList(),
+            ],
+            rows: volunteers.map((user) => _buildVolunteerRow(user)).toList(),
+          ),
         ),
       ),
     );
@@ -728,53 +727,55 @@ class _AdminUsersPageState extends State<AdminUsersPage>
 
   Widget _buildApplicationsTable() {
     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: IslamicColors.green100),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(IslamicColors.green50),
-          columns: const [
-            DataColumn(
-              label: Text(
-                'Applicant',
-                style: TextStyle(fontWeight: FontWeight.w600),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: IslamicColors.green100),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(IslamicColors.green50),
+            columns: const [
+              DataColumn(
+                label: Text(
+                  'Applicant',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Country',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Country',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Languages',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Languages',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Status',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Status',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Applied',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Applied',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            DataColumn(
-              label: Text(
-                'Actions',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              DataColumn(
+                label: Text(
+                  'Actions',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
-          rows: applications.map((app) => _buildApplicationRow(app)).toList(),
+            ],
+            rows: applications.map((app) => _buildApplicationRow(app)).toList(),
+          ),
         ),
       ),
     );

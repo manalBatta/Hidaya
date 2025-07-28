@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:frontend/config.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // Add these dependencies to pubspec.yaml:
 // dependencies:
@@ -31,33 +34,262 @@ class IslamicColors {
   static const Color white = Color(0xFFFFFFFF);
 }
 
-class AdminDashboard extends StatelessWidget {
+class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
 
-  // Mock data matching React implementation
-  final List<Map<String, dynamic>> userGrowthData = const [
-    {"month": "Jan", "users": 8500},
-    {"month": "Feb", "users": 9200},
-    {"month": "Mar", "users": 9800},
-    {"month": "Apr", "users": 10500},
-    {"month": "May", "users": 11200},
-    {"month": "Jun", "users": 12547},
-  ];
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
 
-  final List<Map<String, dynamic>> genderData = const [
-    {"name": "Female", "value": 60, "color": 0xFF059669},
-    {"name": "Male", "value": 35, "color": 0xFF0891b2},
-    {"name": "Other", "value": 5, "color": 0xFF7c3aed},
-  ];
+class _AdminDashboardState extends State<AdminDashboard> {
+  List<Map<String, dynamic>> userGrowthData = [];
+  bool isLoadingUserGrowth = true;
+  String? userGrowthError;
 
-  final List<Map<String, dynamic>> questionCategoriesData = const [
-    {"category": "Prayer", "count": 2345},
-    {"category": "Fasting", "count": 1876},
-    {"category": "Charity", "count": 1234},
-    {"category": "Pilgrimage", "count": 987},
-    {"category": "Daily Life", "count": 1567},
-    {"category": "Family", "count": 925},
-  ];
+  List<Map<String, dynamic>> genderData = [];
+  bool isLoadingGenderData = true;
+  String? genderDataError;
+
+  Map<String, dynamic> dashboardStats = {};
+  bool isLoadingDashboardStats = true;
+  String? dashboardStatsError;
+
+  List<Map<String, dynamic>> questionCategoriesData = [];
+  bool isLoadingQuestionCategories = true;
+  String? questionCategoriesError;
+
+  Map<String, dynamic> todayActivity = {};
+  bool isLoadingTodayActivity = true;
+  String? todayActivityError;
+
+  Map<String, dynamic> topContent = {};
+  bool isLoadingTopContent = true;
+  String? topContentError;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserGrowthData();
+    fetchGenderData();
+    fetchDashboardStats();
+    fetchQuestionCategories();
+    fetchTodayActivity();
+    fetchTopContent();
+  }
+
+  Future<void> fetchUserGrowthData() async {
+    try {
+      final uri = Uri.parse(userGrowth);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            userGrowthData =
+                data
+                    .map<Map<String, dynamic>>(
+                      (e) => {'month': e['month'], 'users': e['users']},
+                    )
+                    .toList();
+            isLoadingUserGrowth = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            userGrowthError = 'Failed to load data: ${response.statusCode}';
+            isLoadingUserGrowth = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          userGrowthError = e.toString();
+          isLoadingUserGrowth = false;
+        });
+      }
+    }
+  }
+
+  Future<void> fetchGenderData() async {
+    try {
+      final uri = Uri.parse(gender);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            int female = data['female'] ?? 0;
+            int male = data['male'] ?? 0;
+            int other = data['other'] ?? 0;
+            int total = female + male + other;
+            int femalePercent =
+                total > 0 ? ((female / total) * 100).round() : 0;
+
+            genderData = [
+              {"name": "Female", "value": femalePercent, "color": 0xFF059669},
+              {
+                "name": "Male",
+                "value": total > 0 ? ((male / total) * 100).round() : 0,
+                "color": 0xFF0891b2,
+              },
+              {
+                "name": "Other",
+                "value": total > 0 ? ((other / total) * 100).round() : 0,
+                "color": 0xFF7c3aed,
+              },
+            ];
+            isLoadingGenderData = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            genderDataError =
+                'Failed to load gender data: ${response.statusCode}';
+            isLoadingGenderData = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          genderDataError = e.toString();
+          isLoadingGenderData = false;
+        });
+      }
+    }
+  }
+
+  Future<void> fetchQuestionCategories() async {
+    try {
+      final uri = Uri.parse(questionCategories);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            questionCategoriesData =
+                data
+                    .map<Map<String, dynamic>>(
+                      (e) => {'category': e['category'], 'count': e['count']},
+                    )
+                    .toList();
+            isLoadingQuestionCategories = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            questionCategoriesError =
+                'Failed to load question categories: ${response.statusCode}';
+            isLoadingQuestionCategories = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          questionCategoriesError = e.toString();
+          isLoadingQuestionCategories = false;
+        });
+      }
+    }
+  }
+
+  Future<void> fetchDashboardStats() async {
+    try {
+      final uri = Uri.parse(dashboardStatsUrl);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            dashboardStats = data;
+            isLoadingDashboardStats = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            dashboardStatsError =
+                'Failed to load dashboard stats: ${response.statusCode}';
+            isLoadingDashboardStats = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          dashboardStatsError = e.toString();
+          isLoadingDashboardStats = false;
+        });
+      }
+    }
+  }
+
+  Future<void> fetchTodayActivity() async {
+    try {
+      final uri = Uri.parse(todayActivityUrl);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            todayActivity = data;
+            isLoadingTodayActivity = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            todayActivityError =
+                'Failed to load today activity: ${response.statusCode}';
+            isLoadingTodayActivity = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          todayActivityError = e.toString();
+          isLoadingTodayActivity = false;
+        });
+      }
+    }
+  }
+
+  Future<void> fetchTopContent() async {
+    try {
+      final uri = Uri.parse(topContentUrl);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            topContent = data;
+            isLoadingTopContent = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            topContentError =
+                'Failed to load top content: ${response.statusCode}';
+            isLoadingTopContent = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          topContentError = e.toString();
+          isLoadingTopContent = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,35 +390,51 @@ class AdminDashboard extends StatelessWidget {
       children: [
         _buildStatCard(
           'Total Users',
-          '12,547',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalusers'] ?? 0}',
           Icons.people,
-          '+12% from last month',
+          dashboardStats['monthlyincreaseinusers'] != null
+              ? '+${dashboardStats['monthlyincreaseinusers']} this month'
+              : null,
           IslamicColors.green600,
-          true,
+          dashboardStats['monthlyincreaseinusers'] != null,
         ),
         _buildStatCard(
           'Certified Volunteers',
-          '127',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalcertifiedvolunteers'] ?? 0}',
           Icons.verified_user,
-          '+3 this week',
+          dashboardStats['weeklyincreaseincertifiedvolunteers'] != null
+              ? '+${dashboardStats['weeklyincreaseincertifiedvolunteers']} this week'
+              : null,
           IslamicColors.green600,
-          true,
+          dashboardStats['weeklyincreaseincertifiedvolunteers'] != null,
         ),
         _buildStatCard(
           'Pending Applications',
-          '23',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalpendingvolunteers'] ?? 0}',
           Icons.person_add,
-          '+5 new today',
+          dashboardStats['dailyincreaseinpendingvolunteers'] != null
+              ? '+${dashboardStats['dailyincreaseinpendingvolunteers']} new today'
+              : null,
           Colors.orange.shade600,
-          true,
+          dashboardStats['dailyincreaseinpendingvolunteers'] != null,
         ),
         _buildStatCard(
           'Total Questions',
-          '8,934',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalquestions'] ?? 0}',
           Icons.help_outline,
-          '+32 today',
+          dashboardStats['dailyincreaseinquestions'] != null
+              ? '+${dashboardStats['dailyincreaseinquestions']} today'
+              : null,
           IslamicColors.green600,
-          true,
+          dashboardStats['dailyincreaseinquestions'] != null,
         ),
       ],
     );
@@ -211,7 +459,9 @@ class AdminDashboard extends StatelessWidget {
       children: [
         _buildStatCard(
           'Answered Questions',
-          '7,821',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalansweredquestions'] ?? 0}',
           Icons.check_circle,
           null,
           Colors.green.shade600,
@@ -219,7 +469,9 @@ class AdminDashboard extends StatelessWidget {
         ),
         _buildStatCard(
           'Unanswered',
-          '1,113',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalunansweredquestions'] ?? 0}',
           Icons.cancel,
           null,
           Colors.red.shade600,
@@ -227,7 +479,9 @@ class AdminDashboard extends StatelessWidget {
         ),
         _buildStatCard(
           'Flagged Content',
-          '45',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalflags'] ?? 0}',
           Icons.flag,
           null,
           Colors.red.shade600,
@@ -235,7 +489,9 @@ class AdminDashboard extends StatelessWidget {
         ),
         _buildStatCard(
           'Stories',
-          '234',
+          isLoadingDashboardStats
+              ? '...'
+              : '${dashboardStats['totalstories'] ?? 0}',
           Icons.bookmark,
           null,
           IslamicColors.green600,
@@ -346,6 +602,12 @@ class AdminDashboard extends StatelessWidget {
   }
 
   Widget _buildUserGrowthChart() {
+    if (isLoadingUserGrowth) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (userGrowthError != null) {
+      return Center(child: Text('Error: ' + userGrowthError!));
+    }
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -376,11 +638,28 @@ class AdminDashboard extends StatelessWidget {
             height: 300,
             child: LineChart(
               LineChartData(
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpots) => IslamicColors.green600,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        return LineTooltipItem(
+                          '${spot.y.toInt()}',
+                          const TextStyle(
+                            color: Colors.white, // Change text color to white
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
                   drawHorizontalLine: true,
-                  horizontalInterval: 1000,
+                  horizontalInterval: 5,
                   verticalInterval: 1,
                   getDrawingHorizontalLine:
                       (value) => FlLine(
@@ -408,20 +687,12 @@ class AdminDashboard extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 30,
                       getTitlesWidget: (value, meta) {
-                        const months = [
-                          'Jan',
-                          'Feb',
-                          'Mar',
-                          'Apr',
-                          'May',
-                          'Jun',
-                        ];
                         if (value.toInt() >= 0 &&
-                            value.toInt() < months.length) {
+                            value.toInt() < userGrowthData.length) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
-                              months[value.toInt()],
+                              userGrowthData[value.toInt()]['month'],
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w500,
@@ -440,7 +711,7 @@ class AdminDashboard extends StatelessWidget {
                       reservedSize: 50,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          '${(value.toInt() / 1000).toStringAsFixed(0)}k',
+                          value.toInt().toString(),
                           style: const TextStyle(
                             color: Colors.grey,
                             fontWeight: FontWeight.w500,
@@ -453,16 +724,28 @@ class AdminDashboard extends StatelessWidget {
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: 5,
-                minY: 8000,
-                maxY: 13000,
+                maxX: (userGrowthData.length - 1).toDouble(),
+                minY:
+                    userGrowthData.isNotEmpty
+                        ? userGrowthData
+                            .map((e) => e['users'] as int)
+                            .reduce((a, b) => a < b ? a : b)
+                            .toDouble()
+                        : 0,
+                maxY:
+                    userGrowthData.isNotEmpty
+                        ? userGrowthData
+                            .map((e) => e['users'] as int)
+                            .reduce((a, b) => a > b ? a : b)
+                            .toDouble()
+                        : 10,
                 lineBarsData: [
                   LineChartBarData(
                     spots:
                         userGrowthData.asMap().entries.map((entry) {
                           return FlSpot(
                             entry.key.toDouble(),
-                            entry.value['users'].toDouble(),
+                            (entry.value['users'] as int).toDouble(),
                           );
                         }).toList(),
                     isCurved: true,
@@ -495,6 +778,12 @@ class AdminDashboard extends StatelessWidget {
   }
 
   Widget _buildGenderChart() {
+    if (isLoadingGenderData) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (genderDataError != null) {
+      return Center(child: Text('Error: ' + genderDataError!));
+    }
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -592,6 +881,12 @@ class AdminDashboard extends StatelessWidget {
   }
 
   Widget _buildQuestionCategoriesChart(BuildContext context) {
+    if (isLoadingQuestionCategories) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (questionCategoriesError != null) {
+      return Center(child: Text('Error: ' + questionCategoriesError!));
+    }
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -623,7 +918,13 @@ class AdminDashboard extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: 2500,
+                maxY:
+                    questionCategoriesData.isNotEmpty
+                        ? questionCategoriesData
+                            .map((e) => e['count'] as int)
+                            .reduce((a, b) => a > b ? a : b)
+                            .toDouble()
+                        : 100,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
@@ -672,7 +973,7 @@ class AdminDashboard extends StatelessWidget {
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          '${(value.toInt() / 1000).toStringAsFixed(1)}k',
+                          value.toInt().toString(),
                           style: const TextStyle(
                             color: Colors.grey,
                             fontWeight: FontWeight.w500,
@@ -712,26 +1013,35 @@ class AdminDashboard extends StatelessWidget {
   Widget _buildTodayHighlightsSection(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
 
-    return Column(
-      children: [
-        if (isMobile) ...[
+    if (isMobile) {
+      return Column(
+        children: [
           _buildTodayActivityCard(),
           const SizedBox(height: 16),
           _buildTopContentCard(),
-        ] else ...[
-          Row(
-            children: [
-              Expanded(child: _buildTodayActivityCard()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildTopContentCard()),
-            ],
-          ),
         ],
-      ],
-    );
+      );
+    } else {
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _buildTodayActivityCard()),
+            const SizedBox(width: 16),
+            Expanded(child: _buildTopContentCard()),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildTodayActivityCard() {
+    if (isLoadingTodayActivity) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (todayActivityError != null) {
+      return Center(child: Text('Error: $todayActivityError'));
+    }
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -768,9 +1078,21 @@ class AdminDashboard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildActivityItem('New Users', '18', false),
-          _buildActivityItem('New Questions', '32', false),
-          _buildActivityItem('Content Flagged', '3', true),
+          _buildActivityItem(
+            'New Users',
+            '${todayActivity['newusers'] ?? 0}',
+            false,
+          ),
+          _buildActivityItem(
+            'New Questions',
+            '${todayActivity['newquestions'] ?? 0}',
+            false,
+          ),
+          _buildActivityItem(
+            'Content Flagged',
+            '${todayActivity['newflags'] ?? 0}',
+            true,
+          ),
         ],
       ),
     );
@@ -807,6 +1129,12 @@ class AdminDashboard extends StatelessWidget {
   }
 
   Widget _buildTopContentCard() {
+    if (isLoadingTopContent) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (topContentError != null) {
+      return Center(child: Text('Error: $topContentError'));
+    }
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -821,10 +1149,10 @@ class AdminDashboard extends StatelessWidget {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.star, color: IslamicColors.green600, size: 20),
               SizedBox(width: 8),
@@ -838,22 +1166,22 @@ class AdminDashboard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Top Rated Story',
+              const Text(
+                'Top Liked Story',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
-                'Story from dark to light',
-                style: TextStyle(
+                topContent['toplikedstories']?['title'] ?? 'N/A',
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: IslamicColors.green700,
@@ -861,11 +1189,34 @@ class AdminDashboard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                'Top Saved Story',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 6),
               Text(
+                topContent['topsavedstories']?['title'] ?? 'N/A',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: IslamicColors.green700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
                 'Most Saved Question',
                 style: TextStyle(
                   fontSize: 12,
@@ -873,10 +1224,10 @@ class AdminDashboard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
-                'How to perform Wudu correctly?',
-                style: TextStyle(
+                topContent['mostsavedquestion']?['text'] ?? 'N/A',
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: IslamicColors.green700,
