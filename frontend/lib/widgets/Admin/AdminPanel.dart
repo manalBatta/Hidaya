@@ -68,26 +68,7 @@ class _AdminPanelState extends State<AdminPanel> {
       id: 'users',
       label: 'Users',
       icon: Icons.people_outline,
-      subItems: [
-        NavigationItem(
-          id: 'all-users',
-          label: 'All Users',
-          icon: Icons.people,
-          route: '/admin/users',
-        ),
-        NavigationItem(
-          id: 'volunteers',
-          label: 'Certified Volunteers',
-          icon: Icons.verified_user,
-          route: '/admin/users/volunteers',
-        ),
-        NavigationItem(
-          id: 'applications',
-          label: 'Pending Applications',
-          icon: Icons.person_add,
-          route: '/admin/users/applications',
-        ),
-      ],
+      route: '/admin/users',
     ),
     NavigationItem(
       id: 'questions',
