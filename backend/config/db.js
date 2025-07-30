@@ -1,15 +1,16 @@
-const mongoose = require('mongoose');
-require('dotenv').config();
-
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+dotenv.config();
+ 
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log('✅ MongoDB Atlas Connected'))
+  .then(() => console.log("✅ MongoDB Atlas Connected"))
   .catch((err) => {
-    console.error('❌ MongoDB Connection Error:', err);
+    console.error("❌ MongoDB Connection Error:", err);
     process.exit(1);
   });
 
-module.exports = mongoose;
+export default mongoose;

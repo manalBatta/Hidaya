@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/providers/UserProvider.dart';
@@ -8,6 +10,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/main.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:frontend/utils/auth_utils.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -22,15 +29,36 @@ class _SignInPageState extends State<SignInPage> {
   String _accountType = 'user';
   bool _obscurePassword = true;
 
-  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  Future<void> _updateOneSignalId(String onesignalId) async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+
+      final response = await http.put(
+        Uri.parse('${url}onesignal-id'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({'onesignalId': onesignalId}),
+      );
+
+      if (response.statusCode == 200) {
+        print('OneSignal ID updated successfully');
+      }
+    } catch (e) {
+      print('Failed to update OneSignal ID: $e');
+    }
+  }
 
   Future<void> signIn() async {
     final requestbody = {
       'email': _emailController.text,
       'password': _passwordController.text,
-      'role': _accountType,
+      'role': _accountType == 'volunteer' ? 'volunteer_pending' : 'user',
     };
     var response = await http.post(
       Uri.parse(login),
@@ -39,6 +67,13 @@ class _SignInPageState extends State<SignInPage> {
     );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 && data['status'] == true) {
+      if (data['user']['isEmailVerified'] == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please verify your email')),
+        );
+        
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login successful'),
@@ -47,8 +82,36 @@ class _SignInPageState extends State<SignInPage> {
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
+
       print("sign in returned data: $data");
-      Provider.of<UserProvider>(context, listen: false).setUser(data);
+      print("About to set user in provider...");
+      await Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).setUser(data['user']);
+      print("User set in provider successfully!");
+      // Navigate to root so MaterialApp rebuilds and shows ResponsiveLayout
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => HidayaApp()));
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        // After login:
+        final userId = Provider.of<UserProvider>(context, listen: false).userId;
+        await OneSignal.login(userId);
+        print('OneSignal External ID set to: $userId');
+      }
+      // Get OneSignal ID and send to backend
+      try {
+        String? onesignalId;
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+          onesignalId = await OneSignal.User.pushSubscription.id;
+        }
+        if (onesignalId != null) {
+          await _updateOneSignalId(onesignalId);
+        }
+      } catch (e) {
+        print('Failed to get OneSignal ID: $e');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Login failed')),
