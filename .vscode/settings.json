@@ -33,5 +33,6 @@
   "[json]": {
     "editor.foldingStrategy": "indentation",
     "editor.showFoldingControls": "always"
-  }
+  },
+  "git.ignoreLimitWarning": true
 }

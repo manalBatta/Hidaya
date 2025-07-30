@@ -40,10 +40,9 @@ import {
   likestory,
   getstorybyid,
 } from "../controller/StoryController.js";
-<<<<<<< HEAD
-import { getusersgrowth ,getquestioncategories,getgenderdistribution,getdashboardstats,gettodayactivity,gettopcontent} from "../controller/AdminController.js";
-=======
->>>>>>> e220066e3fe0067d22590e4e5fe2e047ebafcd11
+
+import { getusersgrowth ,getquestioncategories,getgenderdistribution,getdashboardstats,gettodayactivity,gettopcontent,getusersdata,approvevoulnteer} from "../controller/AdminController.js";
+
 
 router.post("/register", register);
 router.post("/login", login);
@@ -91,5 +90,8 @@ router.get("/admin/gender-distribution", getgenderdistribution);
 router.get("/admin/dashboard-stats", getdashboardstats);
 router.get("/admin/today-activity", gettodayactivity);
 router.get("/admin/top-content",gettopcontent);
+//admin/usersdata
+router.get("/admin/users",getusersdata);
+router.post("/admin/approve-voulnteer",approvevoulnteer);
 
 export default router;
