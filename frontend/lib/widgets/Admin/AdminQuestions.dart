@@ -509,7 +509,6 @@ class _AdminQuestionsState extends State<AdminQuestions>
                     children: [
                       _buildTabButton('All Questions', 0),
                       _buildTabButton('Answers', 1),
-                      _buildTabButton('Flagged (${_flaggedContent.length})', 2),
                     ],
                   ),
                 ),

@@ -47,6 +47,8 @@ class User {
   final List<String> likedStories;
   final List<String> savedStories;
   final Map<String, dynamic>? volunteerProfile;
+  final int questionsAsked;
+  final int questionsAnswered;
 
   User({
     required this.id,
@@ -66,19 +68,48 @@ class User {
     required this.likedStories,
     required this.savedStories,
     this.volunteerProfile,
+    required this.questionsAsked,
+    required this.questionsAnswered,
   });
 
   // Helper getter for joinedAt (alias for createdAt)
   DateTime get joinedAt => createdAt;
 
-  // Helper getter for questions asked (from savedQuestions length)
-  int get questionsAsked => savedQuestions.length;
-
-  // Helper getter for questions answered (for volunteers) - removed since not in DB schema
-  int? get questionsAnswered => null;
-
   // Helper getter for isActive (always true for existing users)
   bool get isActive => true;
+
+  // Factory constructor to create User from JSON
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['_id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      displayName: json['displayName']?.toString() ?? '',
+      gender: json['gender']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      role: json['role']?.toString() ?? '',
+      country: json['country']?.toString() ?? '',
+      language: json['language']?.toString() ?? '',
+      savedQuestions: List<String>.from(json['savedQuestions'] ?? []),
+      savedLessons: List<String>.from(json['savedLessons'] ?? []),
+      createdAt:
+          json['createdAt'] != null
+              ? DateTime.parse(json['createdAt'].toString())
+              : DateTime.now(),
+      notifications: List<Map<String, dynamic>>.from(
+        json['notifications'] ?? [],
+      ),
+      aiSessionId: json['ai_session_id']?.toString() ?? '',
+      isEmailVerified: json['isEmailVerified'] ?? false,
+      likedStories: List<String>.from(json['likedStories'] ?? []),
+      savedStories: List<String>.from(json['savedStories'] ?? []),
+      volunteerProfile:
+          json['volunteerProfile'] != null
+              ? Map<String, dynamic>.from(json['volunteerProfile'])
+              : null,
+      questionsAsked: json['questionsAsked'] ?? 0,
+      questionsAnswered: json['questionsAnswered'] ?? 0,
+    );
+  }
 }
 
 // Volunteer Application Model
@@ -153,6 +184,9 @@ class _AdminUsersPageState extends State<AdminUsersPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Initialize users with mock data
+    _initializeUsers();
+    fetchAllUsers();
   }
 
   @override
@@ -167,6 +201,378 @@ class _AdminUsersPageState extends State<AdminUsersPage>
     _certInstitutionController.dispose();
     _spokenLanguagesController.dispose();
     super.dispose();
+  }
+
+  // Initialize users with mock data
+  void _initializeUsers() {
+    setState(() {
+      users = [
+        User(
+          id: "1",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142da5",
+          displayName: "Ahmad Hassan",
+          gender: "Male",
+          email: "ahmad.hassan@email.com",
+          role: "certified_volunteer",
+          country: "Saudi Arabia",
+          language: "Arabic",
+          savedQuestions: [
+            "9a2d4518-74da-4c51-ab5c-bc6c402bd11d",
+            "7eb947f0-7b59-43f7-8676-3e1714f99921",
+          ],
+          savedLessons: ["lesson1", "lesson2"],
+          createdAt: DateTime(2024, 1, 15),
+          notifications: [
+            {
+              "id": "7db9985f-2e43-4590-8f71-0d9733c047fd",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Ahmad! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "af7763a2-affc-4a94-aa3c-61142462712f",
+          isEmailVerified: true,
+          likedStories: ["story1", "story2"],
+          savedStories: ["story3"],
+          volunteerProfile: {
+            'bio': 'Islamic studies graduate with 5 years teaching experience.',
+            'languages': ['Arabic', 'English'],
+            'certificate': {
+              'title': 'Quran Recitation Level 1',
+              'institution': 'Sheikh Ahmad Al-Mansour',
+              'url':
+                  'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/Screenshot%202025-07-21%20225732.png',
+              'uploadedAt': DateTime.now().toIso8601String(),
+              '_id': 'cert1_id',
+            },
+            '_id': 'volunteer1_profile_id',
+          },
+          questionsAsked: 2,
+          questionsAnswered: 5,
+        ),
+        User(
+          id: "2",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142da6",
+          displayName: "Fatima Al-Zahra",
+          gender: "Female",
+          email: "fatima.zahra@email.com",
+          role: "user",
+          country: "Lebanon",
+          language: "Arabic",
+          savedQuestions: [
+            "8b3e5629-85eb-5d62-bc7d-cd7d513ce022",
+            "9f4c6730-96fc-6e73-cd8e-de8e624df133",
+          ],
+          savedLessons: ["lesson3"],
+          createdAt: DateTime(2024, 2, 20),
+          notifications: [
+            {
+              "id": "8ecaa96g-3f54-4601-9f82-1e0844d158ge",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Fatima! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "bf8874b3-bggd-5b05-bb4d-72253573823g",
+          isEmailVerified: false,
+          likedStories: ["story4"],
+          savedStories: [],
+          volunteerProfile: null,
+          questionsAsked: 2,
+          questionsAnswered: 0,
+        ),
+        User(
+          id: "3",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142da7",
+          displayName: "Muhammad Khan",
+          gender: "Male",
+          email: "muhammad.khan@email.com",
+          role: "certified_volunteer",
+          country: "Pakistan",
+          language: "Urdu",
+          savedQuestions: [
+            "7c2d4518-74da-4c51-ab5c-bc6c402bd11e",
+            "8d3e5629-85eb-5d62-bc7d-cd7d513ce023",
+          ],
+          savedLessons: ["lesson4", "lesson5", "lesson6"],
+          createdAt: DateTime(2024, 1, 10),
+          notifications: [
+            {
+              "id": "9fdbb07h-4g65-5712-0g93-2f1955e269hf",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Muhammad! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "cg9985c4-chhe-6c16-cc5e-83364684934h",
+          isEmailVerified: true,
+          likedStories: ["story5", "story6", "story7"],
+          savedStories: ["story8"],
+          volunteerProfile: {
+            'bio': 'Community imam with expertise in Islamic jurisprudence.',
+            'languages': ['English', 'Hausa'],
+            'certificate': {
+              'title': 'Islamic Studies Diploma',
+              'institution': 'Al-Azhar University',
+              'url': 'https://example.com/cert2',
+              'uploadedAt': DateTime.now().toIso8601String(),
+              '_id': 'cert2_id',
+            },
+            '_id': 'volunteer2_profile_id',
+          },
+          questionsAsked: 2,
+          questionsAnswered: 8,
+        ),
+        User(
+          id: "4",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142da8",
+          displayName: "Sarah Johnson",
+          gender: "Female",
+          email: "sarah.johnson@email.com",
+          role: "user",
+          country: "United States",
+          language: "English",
+          savedQuestions: [
+            "6b1c3407-63c9-3b40-9a4b-ab4b301ac00c",
+            "7c2d4518-74da-4c51-ab5c-bc6c402bd11d",
+            "8d3e5629-85eb-5d62-bc7d-cd7d513ce022",
+          ],
+          savedLessons: ["lesson7", "lesson8"],
+          createdAt: DateTime(2024, 3, 5),
+          notifications: [
+            {
+              "id": "0gecc18i-5h76-6823-1h04-3g2066f370ig",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Sarah! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "dh1106d5-diif-7d27-dd6f-94475795045i",
+          isEmailVerified: true,
+          likedStories: ["story9"],
+          savedStories: ["story10", "story11"],
+          volunteerProfile: null,
+          questionsAsked: 3,
+          questionsAnswered: 0,
+        ),
+        User(
+          id: "5",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142da9",
+          displayName: "Ali Rahman",
+          gender: "Male",
+          email: "ali.rahman@email.com",
+          role: "admin",
+          country: "Malaysia",
+          language: "English",
+          savedQuestions: ["5a0b2306-52b8-2a2f-893a-9a2a2009bffb"],
+          savedLessons: ["lesson9"],
+          createdAt: DateTime(2023, 12, 1),
+          notifications: [
+            {
+              "id": "1hfdd29j-6i87-7934-2i15-4h3177g481jh",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Ali! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "ei2217e6-ejjg-8e38-ee7g-05586806156j",
+          isEmailVerified: true,
+          likedStories: ["story12"],
+          savedStories: [],
+          volunteerProfile: null,
+          questionsAsked: 1,
+          questionsAnswered: 0,
+        ),
+        User(
+          id: "6",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142daa",
+          displayName: "Omar Ibrahim",
+          gender: "Male",
+          email: "omar.ibrahim@email.com",
+          role: "user",
+          country: "Egypt",
+          language: "Arabic",
+          savedQuestions: [
+            "4z9a1205-41a7-191e-7829-8919190f8eea",
+            "5a0b2306-52b8-2a2f-893a-9a2a2009bffb",
+            "6b1c3407-63c9-3b40-9a4b-ab4b301ac00c",
+          ],
+          savedLessons: ["lesson10"],
+          createdAt: DateTime(2024, 4, 12),
+          notifications: [
+            {
+              "id": "2igee30k-7j98-8045-3j26-5i4288h592ik",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Omar! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "fj3328f7-fkkh-9f49-ff8h-16697917267k",
+          isEmailVerified: false,
+          likedStories: ["story13", "story14"],
+          savedStories: ["story15"],
+          volunteerProfile: null,
+          questionsAsked: 3,
+          questionsAnswered: 0,
+        ),
+        User(
+          id: "7",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142dab",
+          displayName: "Zainab Ahmed",
+          gender: "Female",
+          email: "zainab.ahmed@email.com",
+          role: "certified_volunteer",
+          country: "Morocco",
+          language: "Arabic",
+          savedQuestions: ["3y8z0104-30z6-080d-6718-7808080e7dd9"],
+          savedLessons: ["lesson11", "lesson12"],
+          createdAt: DateTime(2024, 2, 28),
+          notifications: [
+            {
+              "id": "3jhff41l-8k09-9156-4k37-6j5399i703jl",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Zainab! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "gk4439g8-glli-0g50-gg9i-27708028378l",
+          isEmailVerified: true,
+          likedStories: ["story16"],
+          savedStories: ["story17", "story18"],
+          volunteerProfile: {
+            'bio': 'Islamic studies graduate with 5 years teaching experience.',
+            'languages': ['Arabic', 'English'],
+            'certificate': {
+              'title': 'Quran Recitation Level 1',
+              'institution': 'Sheikh Ahmad Al-Mansour',
+              'url': 'https://example.com/cert3',
+              'uploadedAt': DateTime.now().toIso8601String(),
+              '_id': 'cert3_id',
+            },
+            '_id': 'volunteer3_profile_id',
+          },
+          questionsAsked: 1,
+          questionsAnswered: 12,
+        ),
+        User(
+          id: "8",
+          userId: "da2fc1c0-6b06-4961-a6c4-92336d142dac",
+          displayName: "Abdullah Malik",
+          gender: "Male",
+          email: "abdullah.malik@email.com",
+          role: "user",
+          country: "Turkey",
+          language: "Turkish",
+          savedQuestions: ["2x7y9f03-2fy5-f7c-5607-67f7f7f6cc8"],
+          savedLessons: [],
+          createdAt: DateTime(2024, 5, 15),
+          notifications: [
+            {
+              "id": "4kigg52m-9l10-0267-5l48-7k6400j814km",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello Abdullah! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "hl5540h9-hmmj-1h61-hh0j-38819139489m",
+          isEmailVerified: false,
+          likedStories: [],
+          savedStories: [],
+          volunteerProfile: null,
+          questionsAsked: 1,
+          questionsAnswered: 0,
+        ),
+        User(
+          id: "5",
+          userId: "91a80781-3817-48b0-8db9-c9011737bf06",
+          displayName: "volunteer1",
+          gender: "Female",
+          email: "Volunteer1@gmail.com",
+          role: "certified_volunteer",
+          country: "British Indian Ocean Territory",
+          language: "Chinese",
+          savedQuestions: ["abc123", "c48337dd-eb10-4c3d-b6d3-5c246b40bd62"],
+          savedLessons: [],
+          createdAt: DateTime(2025, 7, 20),
+          notifications: [
+            {
+              "id": "test_notification_id",
+              "type": "welcome",
+              "title": "Welcome to Hidaya! 🎉",
+              "message": "Hello volunteer1! Welcome to Hidaya!",
+              "read": false,
+              "createdAt": DateTime.now().toIso8601String(),
+            },
+          ],
+          aiSessionId: "63ae7fae-afe0-4357-8011-08a584b13b3c",
+          isEmailVerified: true,
+          likedStories: [],
+          savedStories: [],
+          volunteerProfile: {
+            'certificate': {
+              'title': 'Updated Certificate Test2',
+              'institution': 'Updated Institution Test2',
+              'url':
+                  'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/1.Introduction%20to%20Management%20Process.pdf',
+              'uploadedAt': DateTime(2025, 7, 10).toIso8601String(),
+              '_id': '686f3475ee269d62fe941e1c',
+            },
+            'languages': ['Afrikaans', 'Bihari', 'Azerbaijani', 'Abkhaz'],
+            'bio': 'This is the volunteer bio uptodate',
+            '_id': '686f3475ee269d62fe941e1b',
+          },
+          questionsAsked: 2,
+          questionsAnswered: 1,
+        ),
+      ];
+    });
+  }
+
+  Future<void> fetchAllUsers() async {
+    try {
+      final uri = Uri.parse(allUsersUrl);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        // Check if the response has the expected structure
+        if (responseData.containsKey('usersdata') &&
+            responseData['usersdata'] is List) {
+          final List<dynamic> usersData = responseData['usersdata'];
+          if (mounted) {
+            setState(() {
+              users =
+                  usersData.map((userData) => User.fromJson(userData)).toList();
+            });
+          }
+          print("users fetched successfully ${users.length} users");
+        } else {
+          print("Invalid response structure: ${response.body}");
+        }
+      } else {
+        print(
+          "error in fetching all users here ${response.statusCode}: ${response.body}",
+        );
+      }
+    } catch (e) {
+      print("error in fetching all users $e");
+    }
   }
 
   // Search functions for countries and languages
@@ -465,6 +871,8 @@ class _AdminUsersPageState extends State<AdminUsersPage>
             savedStories:
                 users[index].savedStories, // Keep original saved stories
             volunteerProfile: transformedUser['volunteerProfile'],
+            questionsAsked: users[index].questionsAsked,
+            questionsAnswered: users[index].questionsAnswered,
           );
 
           // Replace the user in the list
@@ -493,58 +901,6 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         );
       }
     }
-  }
-
-  // Helper methods for volunteer fields
-  String _getVolunteerField(Map<String, dynamic> userObj, String fieldPath) {
-    if (userObj['volunteerProfile'] == null) {
-      return '';
-    }
-
-    final volunteerProfile =
-        userObj['volunteerProfile'] as Map<String, dynamic>;
-
-    if (fieldPath.contains('.')) {
-      final parts = fieldPath.split('.');
-      final mainField = parts[0];
-      final subField = parts[1];
-
-      if (volunteerProfile[mainField] != null) {
-        final subObject = volunteerProfile[mainField] as Map<String, dynamic>?;
-        return subObject?[subField]?.toString() ?? '';
-      }
-    } else {
-      return volunteerProfile[fieldPath]?.toString() ?? '';
-    }
-
-    return '';
-  }
-
-  List<String> _getVolunteerLanguages(Map<String, dynamic> userObj) {
-    if (userObj['volunteerProfile'] == null) {
-      return [];
-    }
-
-    final volunteerProfile =
-        userObj['volunteerProfile'] as Map<String, dynamic>;
-    final languages = volunteerProfile['languages'] as List<dynamic>?;
-
-    if (languages != null) {
-      return languages.map((lang) => lang.toString()).toList();
-    }
-
-    return [];
-  }
-
-  String _getBioValue(Map<String, dynamic> userObj) {
-    // For volunteers, bio is in volunteerProfile
-    if (userObj['volunteerProfile'] != null) {
-      final volunteerProfile =
-          userObj['volunteerProfile'] as Map<String, dynamic>;
-      return volunteerProfile['bio']?.toString() ?? '';
-    }
-    // For regular users, bio is directly in userObj
-    return userObj['bio']?.toString() ?? '';
   }
 
   // Helper method to get bio value from User object
@@ -698,324 +1054,8 @@ class _AdminUsersPageState extends State<AdminUsersPage>
     }
   }
 
-  // Mock Data
-  final List<User> users = [
-    User(
-      id: "1",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142da5",
-      displayName: "Ahmad Hassan",
-      gender: "Male",
-      email: "ahmad.hassan@email.com",
-      role: "certified_volunteer",
-      country: "Saudi Arabia",
-      language: "Arabic",
-      savedQuestions: [
-        "9a2d4518-74da-4c51-ab5c-bc6c402bd11d",
-        "7eb947f0-7b59-43f7-8676-3e1714f99921",
-      ],
-      savedLessons: ["lesson1", "lesson2"],
-      createdAt: DateTime(2024, 1, 15),
-      notifications: [
-        {
-          "id": "7db9985f-2e43-4590-8f71-0d9733c047fd",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Ahmad! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "af7763a2-affc-4a94-aa3c-61142462712f",
-      isEmailVerified: true,
-      likedStories: ["story1", "story2"],
-      savedStories: ["story3"],
-      volunteerProfile: {
-        'bio': 'Islamic studies graduate with 5 years teaching experience.',
-        'languages': ['Arabic', 'English'],
-        'certificate': {
-          'title': 'Quran Recitation Level 1',
-          'institution': 'Sheikh Ahmad Al-Mansour',
-          'url': //'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/1.Introduction%20to%20Management%20Process.pdf',
-              'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/Screenshot%202025-07-21%20225732.png',
-          'uploadedAt': DateTime.now().toIso8601String(),
-          '_id': 'cert1_id',
-        },
-        '_id': 'volunteer1_profile_id',
-      },
-    ),
-    User(
-      id: "2",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142da6",
-      displayName: "Fatima Al-Zahra",
-      gender: "Female",
-      email: "fatima.zahra@email.com",
-      role: "user",
-      country: "Lebanon",
-      language: "Arabic",
-      savedQuestions: [
-        "8b3e5629-85eb-5d62-bc7d-cd7d513ce022",
-        "9f4c6730-96fc-6e73-cd8e-de8e624df133",
-      ],
-      savedLessons: ["lesson3"],
-      createdAt: DateTime(2024, 2, 20),
-      notifications: [
-        {
-          "id": "8ecaa96g-3f54-4601-9f82-1e0844d158ge",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Fatima! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "bf8874b3-bggd-5b05-bb4d-72253573823g",
-      isEmailVerified: false,
-      likedStories: ["story4"],
-      savedStories: [],
-      volunteerProfile: null,
-    ),
-    User(
-      id: "3",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142da7",
-      displayName: "Muhammad Khan",
-      gender: "Male",
-      email: "muhammad.khan@email.com",
-      role: "certified_volunteer",
-      country: "Pakistan",
-      language: "Urdu",
-      savedQuestions: [
-        "7c2d4518-74da-4c51-ab5c-bc6c402bd11e",
-        "8d3e5629-85eb-5d62-bc7d-cd7d513ce023",
-      ],
-      savedLessons: ["lesson4", "lesson5", "lesson6"],
-      createdAt: DateTime(2024, 1, 10),
-      notifications: [
-        {
-          "id": "9fdbb07h-4g65-5712-0g93-2f1955e269hf",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Muhammad! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "cg9985c4-chhe-6c16-cc5e-83364684934h",
-      isEmailVerified: true,
-      likedStories: ["story5", "story6", "story7"],
-      savedStories: ["story8"],
-      volunteerProfile: {
-        'bio': 'Community imam with expertise in Islamic jurisprudence.',
-        'languages': ['English', 'Hausa'],
-        'certificate': {
-          'title': 'Islamic Studies Diploma',
-          'institution': 'Al-Azhar University',
-          'url': 'https://example.com/cert2',
-          'uploadedAt': DateTime.now().toIso8601String(),
-          '_id': 'cert2_id',
-        },
-        '_id': 'volunteer2_profile_id',
-      },
-    ),
-    User(
-      id: "4",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142da8",
-      displayName: "Sarah Johnson",
-      gender: "Female",
-      email: "sarah.johnson@email.com",
-      role: "user",
-      country: "United States",
-      language: "English",
-      savedQuestions: [
-        "6b1c3407-63c9-3b40-9a4b-ab4b301ac00c",
-        "7c2d4518-74da-4c51-ab5c-bc6c402bd11d",
-        "8d3e5629-85eb-5d62-bc7d-cd7d513ce022",
-      ],
-      savedLessons: ["lesson7", "lesson8"],
-      createdAt: DateTime(2024, 3, 5),
-      notifications: [
-        {
-          "id": "0gecc18i-5h76-6823-1h04-3g2066f370ig",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Sarah! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "dh1106d5-diif-7d27-dd6f-94475795045i",
-      isEmailVerified: true,
-      likedStories: ["story9"],
-      savedStories: ["story10", "story11"],
-      volunteerProfile: null,
-    ),
-    User(
-      id: "5",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142da9",
-      displayName: "Ali Rahman",
-      gender: "Male",
-      email: "ali.rahman@email.com",
-      role: "admin",
-      country: "Malaysia",
-      language: "English",
-      savedQuestions: ["5a0b2306-52b8-2a2f-893a-9a2a2009bffb"],
-      savedLessons: ["lesson9"],
-      createdAt: DateTime(2023, 12, 1),
-      notifications: [
-        {
-          "id": "1hfdd29j-6i87-7934-2i15-4h3177g481jh",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Ali! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "ei2217e6-ejjg-8e38-ee7g-05586806156j",
-      isEmailVerified: true,
-      likedStories: ["story12"],
-      savedStories: [],
-      volunteerProfile: null,
-    ),
-    User(
-      id: "6",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142daa",
-      displayName: "Omar Ibrahim",
-      gender: "Male",
-      email: "omar.ibrahim@email.com",
-      role: "user",
-      country: "Egypt",
-      language: "Arabic",
-      savedQuestions: [
-        "4z9a1205-41a7-191e-7829-8919190f8eea",
-        "5a0b2306-52b8-2a2f-893a-9a2a2009bffb",
-        "6b1c3407-63c9-3b40-9a4b-ab4b301ac00c",
-      ],
-      savedLessons: ["lesson10"],
-      createdAt: DateTime(2024, 4, 12),
-      notifications: [
-        {
-          "id": "2igee30k-7j98-8045-3j26-5i4288h592ik",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Omar! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "fj3328f7-fkkh-9f49-ff8h-16697917267k",
-      isEmailVerified: false,
-      likedStories: ["story13", "story14"],
-      savedStories: ["story15"],
-      volunteerProfile: null,
-    ),
-    User(
-      id: "7",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142dab",
-      displayName: "Zainab Ahmed",
-      gender: "Female",
-      email: "zainab.ahmed@email.com",
-      role: "certified_volunteer",
-      country: "Morocco",
-      language: "Arabic",
-      savedQuestions: ["3y8z0104-30z6-080d-6718-7808080e7dd9"],
-      savedLessons: ["lesson11", "lesson12"],
-      createdAt: DateTime(2024, 2, 28),
-      notifications: [
-        {
-          "id": "3jhff41l-8k09-9156-4k37-6j5399i703jl",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Zainab! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "gk4439g8-glli-0g50-gg9i-27708028378l",
-      isEmailVerified: true,
-      likedStories: ["story16"],
-      savedStories: ["story17", "story18"],
-      volunteerProfile: {
-        'bio': 'Islamic studies graduate with 5 years teaching experience.',
-        'languages': ['Arabic', 'English'],
-        'certificate': {
-          'title': 'Quran Recitation Level 1',
-          'institution': 'Sheikh Ahmad Al-Mansour',
-          'url': 'https://example.com/cert3',
-          'uploadedAt': DateTime.now().toIso8601String(),
-          '_id': 'cert3_id',
-        },
-        '_id': 'volunteer3_profile_id',
-      },
-    ),
-    User(
-      id: "8",
-      userId: "da2fc1c0-6b06-4961-a6c4-92336d142dac",
-      displayName: "Abdullah Malik",
-      gender: "Male",
-      email: "abdullah.malik@email.com",
-      role: "user",
-      country: "Turkey",
-      language: "Turkish",
-      savedQuestions: ["2x7y9f03-2fy5-f7c-5607-67f7f7f6cc8"],
-      savedLessons: [],
-      createdAt: DateTime(2024, 5, 15),
-      notifications: [
-        {
-          "id": "4kigg52m-9l10-0267-5l48-7k6400j814km",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello Abdullah! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "hl5540h9-hmmj-1h61-hh0j-38819139489m",
-      isEmailVerified: false,
-      likedStories: [],
-      savedStories: [],
-      volunteerProfile: null,
-    ),
-    User(
-      id: "5",
-      userId: "91a80781-3817-48b0-8db9-c9011737bf06",
-      displayName: "volunteer1",
-      gender: "Female",
-      email: "Volunteer1@gmail.com",
-      role: "certified_volunteer",
-      country: "British Indian Ocean Territory",
-      language: "Chinese",
-      savedQuestions: ["abc123", "c48337dd-eb10-4c3d-b6d3-5c246b40bd62"],
-      savedLessons: [],
-      createdAt: DateTime(2025, 7, 20),
-      notifications: [
-        {
-          "id": "test_notification_id",
-          "type": "welcome",
-          "title": "Welcome to Hidaya! 🎉",
-          "message": "Hello volunteer1! Welcome to Hidaya!",
-          "read": false,
-          "createdAt": DateTime.now().toIso8601String(),
-        },
-      ],
-      aiSessionId: "63ae7fae-afe0-4357-8011-08a584b13b3c",
-      isEmailVerified: true,
-      likedStories: [],
-      savedStories: [],
-      volunteerProfile: {
-        'certificate': {
-          'title': 'Updated Certificate Test2',
-          'institution': 'Updated Institution Test2',
-          'url':
-              'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/1.Introduction%20to%20Management%20Process.pdf',
-          'uploadedAt': DateTime(2025, 7, 10).toIso8601String(),
-          '_id': '686f3475ee269d62fe941e1c',
-        },
-        'languages': ['Afrikaans', 'Bihari', 'Azerbaijani', 'Abkhaz'],
-        'bio': 'This is the volunteer bio uptodate',
-        '_id': '686f3475ee269d62fe941e1b',
-      },
-    ),
-  ];
+  // State variable for users
+  List<User> users = [];
 
   final List<VolunteerApplication> applications = [
     VolunteerApplication(
@@ -1646,7 +1686,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         DataCell(Text(user.language)),
         DataCell(Text(_formatDate(user.joinedAt))),
         DataCell(
-          user.questionsAnswered == null
+          user.role == "user"
               ? Text(
                 'Questions: ${user.questionsAsked}',
                 style: const TextStyle(fontSize: 12),
@@ -1847,7 +1887,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         label = 'Admin';
         break;
       default:
-        backgroundColor = Colors.grey[100]!;
+        backgroundColor = const Color.fromARGB(255, 220, 220, 220);
         textColor = Colors.grey[800]!;
         label = role;
     }

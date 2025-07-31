@@ -17,10 +17,14 @@ final myAnswersUrl = url + "myAnwers";
 final startChat = url + 'chat/start';
 final sendChat = url + 'chat/send';
 
-final deleteQuestionUrl = url + "deletequestions/"; // usage: deleteQuestionUrl + questionId to delete a question
-final updateQuestionUrl = url + "updatequestions/";// usage: updateQuestionUrl + questionId to update a question
+final deleteQuestionUrl =
+    url +
+    "deletequestions/"; // usage: deleteQuestionUrl + questionId to delete a question
+final updateQuestionUrl =
+    url +
+    "updatequestions/"; // usage: updateQuestionUrl + questionId to update a question
 final forgotPassword = url + "forgot-password"; //to forgot password
- 
+
 final deleteAns = url + "answers/delete/";
 final deletAccounturl = url + "delete-account";
 final storyUrl = url + "story";
@@ -32,3 +36,4 @@ final questionCategories = url + "admin/question-categories";
 final dashboardStatsUrl = url + "admin/dashboard-stats";
 final todayActivityUrl = url + "admin/today-activity";
 final topContentUrl = url + "admin/top-content";
+final allUsersUrl = url + "admin/users";
