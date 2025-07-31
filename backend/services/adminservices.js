@@ -1,9 +1,10 @@
-import moment from "moment-timezone";
-import User from "../models/User.js";
-import Question from "../models/Questions.js";
-import Story from "../models/Stories.js";
-import Flag from "../models/Flags.js";
-const timezone = "Asia/Palestine";
+import moment from 'moment-timezone';
+import User from '../models/User.js';
+import Question from '../models/Questions.js';
+import Story from '../models/Stories.js';
+ import Flag from '../models/Flags.js';
+ import Answer from '../models/Answers.js';
+const timezone = 'Asia/Palestine';
 
 const categories = [
   "Worship",
@@ -291,9 +292,49 @@ class AdminServices {
     }
     topcontent.mostsavedquestion = mostSavedQuestion || null;
 
-    console.log(topcontent);
-    return topcontent;
-  }
-}
+        console.log(topcontent);
+          return topcontent;
+
+    }
+    static async getUsersData(){
+        const usersdata = await User.find({});//i want to get all the information of the users
+        const questions = await Question.find({});
+        const answers = await Answer.find({});
+
+        //i want to to get the number of the questions that asked by the user and the question that answered by the volunteer (not only the top answer)
+       const userStats=usersdata.map(user => {
+        const userId = user.userId;
+
+        const questionsAsked = questions.filter(q => q.askedBy === userId).length;
+        const questionsAnswered = answers.filter(a => a.answeredBy === userId).length;
+
+        return {
+            ...user.toObject(),
+            questionsAsked,
+            questionsAnswered,
+        };
+    });
+    console.log(userStats);
+        return userStats;
+    }
+
+    static async approveVoulnteer(volunteerId){
+        console.log(volunteerId);
+        const user = await User.findOneAndUpdate(
+            { userId: volunteerId },
+            { role: 'certified_volunteer' },
+            { new: true });//i want to update the role of the user to certified_volunteer
+        console.log(user);
+        return user;
+    }
+
+}   
+
+
+
+
+
+
+
 
 export default AdminServices;

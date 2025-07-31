@@ -41,7 +41,10 @@ import {
   getstorybyid,
 } from "../controller/StoryController.js";
 
-import { getusersgrowth ,getquestioncategories,getgenderdistribution,getdashboardstats,gettodayactivity,gettopcontent} from "../controller/AdminController.js";
+
+import { getusersgrowth ,getquestioncategories,getgenderdistribution,getdashboardstats,gettodayactivity,gettopcontent,getusersdata,approvevoulnteer} from "../controller/AdminController.js";
+
+
 
 router.post("/register", register);
 router.post("/login", login);
@@ -89,5 +92,8 @@ router.get("/admin/gender-distribution", getgenderdistribution);
 router.get("/admin/dashboard-stats", getdashboardstats);
 router.get("/admin/today-activity", gettodayactivity);
 router.get("/admin/top-content",gettopcontent);
+//admin/usersdata
+router.get("/admin/users",getusersdata);
+router.post("/admin/approve-voulnteer",approvevoulnteer);
 
 export default router;

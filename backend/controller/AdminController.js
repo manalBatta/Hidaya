@@ -89,5 +89,29 @@ import Question from "../models/Questions.js";
     } catch (error) {
       res.status(500).json({ message: error.message });}
   };
-  
+
+  export const getusersdata = async (req, res) => {
+    try {
+      const usersdata = await AdminServices.getUsersData();
+      res.status(200).json({success:true,usersdata});
+    } catch (error) {
+      res.status(500).json({ success:false,message: error.message });}
+  };
    
+export const approvevoulnteer = async (req, res) => {  //to convert this volunteer from pending to certified
+  try {
+    console.log("approvevoulnteer");
+    console.log("req.body:", req.body);
+    const { volunteerId } = req.body;
+    if (!volunteerId) {
+      return res.status(400).json({ success: false, message: "volunteerId is required" });
+    }
+    const usersdata = await AdminServices.approveVoulnteer(volunteerId);
+    console.log("usersdata:", usersdata);
+    if (!usersdata) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({success:true,message:"Volunteer approved successfully"});
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Volunteer approval failed" });}
+};
