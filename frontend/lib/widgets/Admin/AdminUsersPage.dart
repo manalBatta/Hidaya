@@ -91,6 +91,7 @@ class VolunteerApplication {
   final String bio;
   final String status;
   final DateTime appliedAt;
+  final Map<String, dynamic>? certificate; // Add certificate field
 
   VolunteerApplication({
     required this.id,
@@ -101,6 +102,7 @@ class VolunteerApplication {
     required this.bio,
     required this.status,
     required this.appliedAt,
+    this.certificate, // Add certificate parameter
   });
 }
 
@@ -733,8 +735,8 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         'certificate': {
           'title': 'Quran Recitation Level 1',
           'institution': 'Sheikh Ahmad Al-Mansour',
-          'url':
-              'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/1.Introduction%20to%20Management%20Process.pdf',
+          'url': //'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/1.Introduction%20to%20Management%20Process.pdf',
+              'https://mdkcqahrvtfgdhpvblfk.supabase.co/storage/v1/object/public/certifications/Screenshot%202025-07-21%20225732.png',
           'uploadedAt': DateTime.now().toIso8601String(),
           '_id': 'cert1_id',
         },
@@ -1025,6 +1027,11 @@ class _AdminUsersPageState extends State<AdminUsersPage>
       bio: "Islamic studies graduate with 5 years teaching experience.",
       status: "pending",
       appliedAt: DateTime(2024, 6, 20),
+      certificate: {
+        'title': 'Islamic Studies Certificate',
+        'institution': 'University of Jordan',
+        'url': 'https://example.com/certificates/yasmin-certificate.pdf',
+      },
     ),
     VolunteerApplication(
       id: "app2",
@@ -1035,6 +1042,11 @@ class _AdminUsersPageState extends State<AdminUsersPage>
       bio: "Community imam with expertise in Islamic jurisprudence.",
       status: "pending",
       appliedAt: DateTime(2024, 6, 18),
+      certificate: {
+        'title': 'Islamic Jurisprudence Certificate',
+        'institution': 'Islamic University of Nigeria',
+        'url': 'https://example.com/certificates/ibrahim-certificate.pdf',
+      },
     ),
   ];
 
@@ -1094,29 +1106,6 @@ class _AdminUsersPageState extends State<AdminUsersPage>
             Text(
               'Manage all users, volunteers, and administrators',
               style: TextStyle(fontSize: 16, color: IslamicColors.green600),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.download, size: 16),
-              label: const Text('Export Users'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: IslamicColors.green700,
-                side: const BorderSide(color: IslamicColors.green300),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.person_add, size: 16),
-              label: const Text('Add User'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: IslamicColors.green600,
-                foregroundColor: Colors.white,
-              ),
             ),
           ],
         ),
@@ -2847,17 +2836,70 @@ class _AdminUsersPageState extends State<AdminUsersPage>
       builder:
           (context) => AlertDialog(
             title: const Text('Review Application'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Name: ${app.name}'),
-                Text('Email: ${app.email}'),
-                Text('Country: ${app.country}'),
-                Text('Languages: ${app.languages.join(', ')}'),
-                const SizedBox(height: 8),
-                Text('Bio: ${app.bio}'),
-              ],
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Name: ${app.name}'),
+                  Text('Email: ${app.email}'),
+                  Text('Country: ${app.country}'),
+                  Text('Languages: ${app.languages.join(', ')}'),
+                  const SizedBox(height: 8),
+                  Text('Bio: ${app.bio}'),
+                  const SizedBox(height: 16),
+                  // Certificate section
+                  if (app.certificate != null) ...[
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Certificate Information:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: IslamicColors.green800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Title: ${app.certificate!['title']}'),
+                    Text('Institution: ${app.certificate!['institution']}'),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => CertificationViewer(
+                                    fileUrl: app.certificate!['url'],
+                                  ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.visibility),
+                        label: const Text('View Certificate'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: IslamicColors.green600,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No certificate provided',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             actions: [
               TextButton(

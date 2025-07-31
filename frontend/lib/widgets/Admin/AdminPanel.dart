@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/widgets/Admin/AdminDashboard.dart';
+import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
 
 // Islamic Theme Colors
@@ -74,28 +75,9 @@ class _AdminPanelState extends State<AdminPanel> {
       id: 'questions',
       label: 'Questions & Answers',
       icon: Icons.help_outline,
-      subItems: [
-        NavigationItem(
-          id: 'public-questions',
-          label: 'Public Questions',
-          icon: Icons.help,
-          route: '/admin/questions',
-        ),
-        NavigationItem(
-          id: 'flagged-questions',
-          label: 'Flagged Questions',
-          icon: Icons.flag,
-          route: '/admin/questions/flagged',
-        ),
-        NavigationItem(
-          id: 'answers',
-          label: 'Answers',
-          icon: Icons.question_answer,
-          route: '/admin/answers',
-        ),
-      ],
+      route: '/admin/questions',
     ),
-    NavigationItem(
+    /*  NavigationItem(
       id: 'lessons',
       label: 'Lessons',
       icon: Icons.menu_book_outlined,
@@ -113,7 +95,7 @@ class _AdminPanelState extends State<AdminPanel> {
           route: '/admin/lessons/add',
         ),
       ],
-    ),
+    ), */
     NavigationItem(
       id: 'stories',
       label: 'Revert Stories',
@@ -133,25 +115,25 @@ class _AdminPanelState extends State<AdminPanel> {
         ),
       ],
     ),
-    NavigationItem(
+    /* NavigationItem(
       id: 'mosques',
       label: 'Mosques',
       icon: Icons.location_city,
       route: '/admin/mosques',
-    ),
+    ), */
     NavigationItem(
       id: 'flags',
       label: 'Flags / Reports',
       icon: Icons.flag_outlined,
       route: '/admin/flags',
     ),
-    NavigationItem(
+    /*  NavigationItem(
       id: 'notifications',
       label: 'Notifications',
       icon: Icons.notifications_outlined,
       route: '/admin/notifications',
-    ),
-    NavigationItem(
+    ), */
+    /*  NavigationItem(
       id: 'ai-insights',
       label: 'AI Insights',
       icon: Icons.psychology_outlined,
@@ -175,8 +157,8 @@ class _AdminPanelState extends State<AdminPanel> {
           route: '/admin/ai-insights/matching',
         ),
       ],
-    ),
-    NavigationItem(
+    ), */
+    /* NavigationItem(
       id: 'analytics',
       label: 'Analytics',
       icon: Icons.analytics_outlined,
@@ -212,7 +194,7 @@ class _AdminPanelState extends State<AdminPanel> {
       label: 'Settings',
       icon: Icons.settings_outlined,
       route: '/admin/settings',
-    ),
+    ), */
   ];
 
   @override
@@ -661,7 +643,7 @@ class _AdminPanelState extends State<AdminPanel> {
       case '/admin/users':
         return AdminUsersPage();
       case '/admin/questions':
-        return _buildQuestionsPage();
+        return AdminQuestions();
       case '/admin/lessons':
         return _buildLessonsPage();
       case '/admin/stories':
@@ -1013,10 +995,6 @@ class _AdminPanelState extends State<AdminPanel> {
         ],
       ),
     );
-  }
-
-  Widget _buildUsersPage() {
-    return _buildPlaceholderPage('/admin/users');
   }
 
   Widget _buildQuestionsPage() {
