@@ -155,17 +155,17 @@ class _AdminUsersPageState extends State<AdminUsersPage>
 
   // Edit user form controllers
   final _editFormKey = GlobalKey<FormState>();
-  late TextEditingController _usernameController;
-  late TextEditingController _emailController;
+  TextEditingController? _usernameController;
+  TextEditingController? _emailController;
   String? _gender;
-  late TextEditingController _countryController;
-  late TextEditingController _languageController;
+  TextEditingController? _countryController;
+  TextEditingController? _languageController;
   TextEditingController? _bioController;
 
   // Volunteer-specific controllers
-  late TextEditingController _certTitleController;
-  late TextEditingController _certInstitutionController;
-  late TextEditingController _spokenLanguagesController;
+  TextEditingController? _certTitleController;
+  TextEditingController? _certInstitutionController;
+  TextEditingController? _spokenLanguagesController;
 
   // File handling
   PlatformFile? _selectedFile;
@@ -192,14 +192,15 @@ class _AdminUsersPageState extends State<AdminUsersPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _usernameController.dispose();
-    _emailController.dispose();
-    _countryController.dispose();
-    _languageController.dispose();
+    // Dispose controllers if they are initialized
+    _usernameController?.dispose();
+    _emailController?.dispose();
+    _countryController?.dispose();
+    _languageController?.dispose();
     _bioController?.dispose();
-    _certTitleController.dispose();
-    _certInstitutionController.dispose();
-    _spokenLanguagesController.dispose();
+    _certTitleController?.dispose();
+    _certInstitutionController?.dispose();
+    _spokenLanguagesController?.dispose();
     super.dispose();
   }
 
@@ -752,151 +753,180 @@ class _AdminUsersPageState extends State<AdminUsersPage>
   }
 
   Future<void> updateProfile(Map<String, dynamic> updatedData) async {
-    final token = await AuthUtils.getValidToken(context);
-    if (token == null) {
-      // User was logged out due to expired token
-      return;
-    }
-
-    var headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-    var request = http.Request('PUT', Uri.parse(profile));
-
-    // Build request body based on user role
-    Map<String, dynamic> requestBody = {
-      "displayName": updatedData['displayName'],
-      "gender": updatedData['gender'],
-      "email": updatedData['email'],
-      "country": updatedData['country'],
-      "language": updatedData['language'],
-      "role": updatedData['role'],
-    };
-
-    // Add role-specific fields
-    String role = updatedData['role'] as String? ?? '';
-    if (role == 'certified_volunteer' ||
-        role == 'volunteer_pending' ||
-        role == 'volunteer') {
-      // Volunteer-specific fields - handle both old and new structure
-      if (updatedData['volunteerProfile'] != null) {
-        // New structure with volunteerProfile
-        final volunteerProfile =
-            updatedData['volunteerProfile'] as Map<String, dynamic>;
-        requestBody["bio"] = volunteerProfile['bio'] ?? '';
-        requestBody["spoken_languages"] = volunteerProfile['languages'] ?? [];
-
-        final certificate =
-            volunteerProfile['certificate'] as Map<String, dynamic>?;
-        requestBody["certification_title"] = certificate?['title'] ?? '';
-        requestBody["certification_institution"] =
-            certificate?['institution'] ?? '';
-        requestBody["certification_url"] = certificate?['url'] ?? '';
-      } else {
-        // Fallback to old structure
-        requestBody["bio"] = updatedData['bio'] ?? '';
-        requestBody["spoken_languages"] = updatedData['languagesSpoken'] ?? [];
-
-        final certificate = updatedData['certificate'] as Map<String, dynamic>?;
-        requestBody["certification_title"] = certificate?['title'] ?? '';
-        requestBody["certification_institution"] =
-            certificate?['institution'] ?? '';
-        requestBody["certification_url"] = certificate?['url'] ?? '';
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        // User was logged out due to expired token
+        return;
       }
-    }
-    // For user and admin roles, only basic fields are sent (no bio, languages, or certificate)
 
-    request.body = json.encode(requestBody);
-    request.headers.addAll(headers);
-
-    http.StreamedResponse response = await request.send();
-
-    if (response.statusCode == 200) {
-      final responseBody = await response.stream.bytesToString();
-      print(responseBody);
-
-      // Success: update userObj with returned user info
-      final responseData = jsonDecode(responseBody);
-      final updatedUser = responseData['user']; // Extract user from response
-
-      // Transform the API response to match frontend structure
-      final transformedUser = {
-        'id': updatedUser['userId'] ?? updatedUser['_id'],
-        'displayName': updatedUser['displayName'],
-        'email': updatedUser['email'],
-        'role': updatedUser['role'],
-        'gender': updatedUser['gender'],
-        'country': updatedUser['country'],
-        'language': updatedUser['language'],
-        'volunteerProfile': updatedUser['volunteerProfile'],
-        'savedQuestions': updatedUser['savedQuestions'] ?? [],
-        'savedLessons': updatedUser['savedLessons'] ?? [],
+      var headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
       };
 
-      // Only add bio field for non-volunteer users
-      if (updatedUser['role'] == 'user' || updatedUser['role'] == 'admin') {
-        transformedUser['bio'] = updatedUser['bio'] ?? '';
+      // Use the new admin edit user endpoint
+      final userId = updatedData['id'] ?? updatedData['userId'] ?? '';
+
+      if (userId.isEmpty) {
+        print("Error: No user ID found in updatedData");
+        return;
       }
 
-      // Update the users list with the transformed data
-      setState(() {
-        final index = users.indexWhere(
-          (u) => u.userId == transformedUser['id'],
-        );
-        if (index != -1) {
-          // Create a new User object with updated data
-          final updatedUserObj = User(
-            id: users[index].id,
-            userId: transformedUser['id'],
-            displayName: transformedUser['displayName'],
-            gender: transformedUser['gender'],
-            email: transformedUser['email'],
-            role: transformedUser['role'],
-            country: transformedUser['country'],
-            language: transformedUser['language'],
-            savedQuestions: List<String>.from(
-              transformedUser['savedQuestions'],
-            ),
-            savedLessons: List<String>.from(transformedUser['savedLessons']),
-            createdAt: users[index].createdAt, // Keep original creation date
-            notifications:
-                users[index].notifications, // Keep original notifications
-            aiSessionId:
-                users[index].aiSessionId, // Keep original AI session ID
-            isEmailVerified:
-                updatedUser['isEmailVerified'] ?? users[index].isEmailVerified,
-            likedStories:
-                users[index].likedStories, // Keep original liked stories
-            savedStories:
-                users[index].savedStories, // Keep original saved stories
-            volunteerProfile: transformedUser['volunteerProfile'],
-            questionsAsked: users[index].questionsAsked,
-            questionsAnswered: users[index].questionsAnswered,
-          );
+      var request = http.Request('PUT', Uri.parse(adminEditUserUrl));
 
-          // Replace the user in the list
-          users[index] = updatedUserObj;
+      // Build request body based on user role
+      Map<String, dynamic> requestBody = {
+        "userId": userId,
+        "displayName": updatedData['displayName'],
+        "gender": updatedData['gender'],
+        "email": updatedData['email'],
+        "country": updatedData['country'],
+        "language": updatedData['language'],
+        "role": updatedData['role'],
+      };
+
+      // Add role-specific fields
+      String role = updatedData['role'] as String? ?? '';
+      if (role == 'certified_volunteer' ||
+          role == 'volunteer_pending' ||
+          role == 'volunteer') {
+        // Volunteer-specific fields - handle both old and new structure
+        if (updatedData['volunteerProfile'] != null) {
+          // New structure with volunteerProfile
+          final volunteerProfile =
+              updatedData['volunteerProfile'] as Map<String, dynamic>;
+          requestBody["bio"] = volunteerProfile['bio'] ?? '';
+          requestBody["spoken_languages"] = volunteerProfile['languages'] ?? [];
+
+          final certificate =
+              volunteerProfile['certificate'] as Map<String, dynamic>?;
+          requestBody["certification_title"] = certificate?['title'] ?? '';
+          requestBody["certification_institution"] =
+              certificate?['institution'] ?? '';
+          requestBody["certification_url"] = certificate?['url'] ?? '';
+        } else {
+          // Fallback to old structure
+          requestBody["bio"] = updatedData['bio'] ?? '';
+          requestBody["spoken_languages"] =
+              updatedData['languagesSpoken'] ?? [];
+
+          final certificate =
+              updatedData['certificate'] as Map<String, dynamic>?;
+          requestBody["certification_title"] = certificate?['title'] ?? '';
+          requestBody["certification_institution"] =
+              certificate?['institution'] ?? '';
+          requestBody["certification_url"] = certificate?['url'] ?? '';
         }
-      });
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('User profile updated successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
       }
-    } else {
-      print(response.reasonPhrase);
-      // Handle error: show an error message
+
+      request.body = json.encode(requestBody);
+      request.headers.addAll(headers);
+
+      print("=== FRONTEND ADMIN EDIT DEBUG ===");
+      print("Request URL: $adminEditUserUrl");
+      print("Request body: $requestBody");
+      print("User ID being updated: $userId");
+
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        print(responseBody);
+
+        // Success: update userObj with returned user info
+        final responseData = jsonDecode(responseBody);
+        final updatedUser = responseData['user']; // Extract user from response
+
+        // Transform the API response to match frontend structure
+        final transformedUser = {
+          'id': updatedUser['userId'] ?? updatedUser['_id'],
+          'displayName': updatedUser['displayName'],
+          'email': updatedUser['email'],
+          'role': updatedUser['role'],
+          'gender': updatedUser['gender'],
+          'country': updatedUser['country'],
+          'language': updatedUser['language'],
+          'volunteerProfile': updatedUser['volunteerProfile'],
+          'savedQuestions': updatedUser['savedQuestions'] ?? [],
+          'savedLessons': updatedUser['savedLessons'] ?? [],
+        };
+
+        // Only add bio field for non-volunteer users
+        if (updatedUser['role'] == 'user' || updatedUser['role'] == 'admin') {
+          transformedUser['bio'] = updatedUser['bio'] ?? '';
+        }
+
+        // Update the users list with the transformed data
+        setState(() {
+          final index = users.indexWhere(
+            (u) => u.userId == transformedUser['id'],
+          );
+          if (index != -1) {
+            // Create a new User object with updated data
+            final updatedUserObj = User(
+              id: users[index].id,
+              userId: transformedUser['id'],
+              displayName: transformedUser['displayName'],
+              gender: transformedUser['gender'],
+              email: transformedUser['email'],
+              role: transformedUser['role'],
+              country: transformedUser['country'],
+              language: transformedUser['language'],
+              savedQuestions: List<String>.from(
+                transformedUser['savedQuestions'],
+              ),
+              savedLessons: List<String>.from(transformedUser['savedLessons']),
+              createdAt: users[index].createdAt, // Keep original creation date
+              notifications:
+                  users[index].notifications, // Keep original notifications
+              aiSessionId:
+                  users[index].aiSessionId, // Keep original AI session ID
+              isEmailVerified:
+                  updatedUser['isEmailVerified'] ??
+                  users[index].isEmailVerified,
+              likedStories:
+                  users[index].likedStories, // Keep original liked stories
+              savedStories:
+                  users[index].savedStories, // Keep original saved stories
+              volunteerProfile: transformedUser['volunteerProfile'],
+              questionsAsked: users[index].questionsAsked,
+              questionsAnswered: users[index].questionsAnswered,
+            );
+
+            // Replace the user in the list
+            users[index] = updatedUserObj;
+          }
+        });
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('User profile updated successfully by admin!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        print(response.reasonPhrase);
+        // Handle error: show an error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update profile. Please try again.'),
+              backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Exception in updateProfile: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update profile. Please try again.'),
-            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+            content: Text('An error occurred while updating the profile.'),
+            backgroundColor: Colors.red[600],
           ),
         );
       }
@@ -1057,38 +1087,9 @@ class _AdminUsersPageState extends State<AdminUsersPage>
   // State variable for users
   List<User> users = [];
 
-  final List<VolunteerApplication> applications = [
-    VolunteerApplication(
-      id: "app1",
-      name: "Yasmin Al-Rashid",
-      email: "yasmin.rashid@email.com",
-      country: "Jordan",
-      languages: ["Arabic", "English"],
-      bio: "Islamic studies graduate with 5 years teaching experience.",
-      status: "pending",
-      appliedAt: DateTime(2024, 6, 20),
-      certificate: {
-        'title': 'Islamic Studies Certificate',
-        'institution': 'University of Jordan',
-        'url': 'https://example.com/certificates/yasmin-certificate.pdf',
-      },
-    ),
-    VolunteerApplication(
-      id: "app2",
-      name: "Ibrahim Yusuf",
-      email: "ibrahim.yusuf@email.com",
-      country: "Nigeria",
-      languages: ["English", "Hausa"],
-      bio: "Community imam with expertise in Islamic jurisprudence.",
-      status: "pending",
-      appliedAt: DateTime(2024, 6, 18),
-      certificate: {
-        'title': 'Islamic Jurisprudence Certificate',
-        'institution': 'Islamic University of Nigeria',
-        'url': 'https://example.com/certificates/ibrahim-certificate.pdf',
-      },
-    ),
-  ];
+  // Getter to filter pending volunteers from users
+  List<User> get pendingVolunteers =>
+      users.where((user) => user.role == "volunteer_pending").toList();
 
   @override
   Widget build(BuildContext context) {
@@ -1175,10 +1176,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         tabs: [
           const Tab(text: 'All Users'),
           const Tab(text: 'Volunteers'),
-          Tab(
-            text:
-                'Applications (${applications.where((app) => app.status == "pending").length})',
-          ),
+          Tab(text: 'Applications (${pendingVolunteers.length})'),
         ],
       ),
     );
@@ -1213,7 +1211,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         ),
         _buildStatCard(
           'Pending Applications',
-          '${applications.where((app) => app.status == "pending").length}', //edit this to find by pending volunteers
+          '${pendingVolunteers.length}',
           Icons.people,
           Colors.blue[600]!,
         ),
@@ -1517,7 +1515,11 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                 ),
               ),
             ],
-            rows: filteredUsers.map((user) => _buildUserRow(user)).toList(),
+            rows:
+                filteredUsers
+                    .map((user) => _buildUserRow(user))
+                    .whereType<DataRow>()
+                    .toList(),
           ),
         ),
       ),
@@ -1558,9 +1560,15 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                 ),
               ),
               DataColumn(
-                label: Text(
-                  'Bio',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                label: SizedBox(
+                  width: 120,
+                  child: Text(
+                    'Bio',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
+                  ),
                 ),
               ),
               DataColumn(
@@ -1615,16 +1623,11 @@ class _AdminUsersPageState extends State<AdminUsersPage>
               ),
               DataColumn(
                 label: Text(
-                  'Languages',
+                  'Language',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              DataColumn(
-                label: Text(
-                  'Status',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
+
               DataColumn(
                 label: Text(
                   'Applied',
@@ -1633,19 +1636,25 @@ class _AdminUsersPageState extends State<AdminUsersPage>
               ),
               DataColumn(
                 label: Text(
-                  'Actions',
+                  'Review Application',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
-            rows: applications.map((app) => _buildApplicationRow(app)).toList(),
+            rows:
+                pendingVolunteers
+                    .map((user) => _buildPendingVolunteerRow(user))
+                    .toList(),
           ),
         ),
       ),
     );
   }
 
-  DataRow _buildUserRow(User user) {
+  DataRow? _buildUserRow(User user) {
+    if (user.role == 'volunteer_pending') {
+      return null;
+    }
     return DataRow(
       cells: [
         DataCell(
@@ -1653,11 +1662,11 @@ class _AdminUsersPageState extends State<AdminUsersPage>
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: IslamicColors.green100,
+                backgroundColor: const Color(0xFFE3F2FD),
                 child: Text(
                   user.displayName.split(' ').map((n) => n[0]).join(''),
-                  style: const TextStyle(
-                    color: IslamicColors.green700,
+                  style: TextStyle(
+                    color: const Color(0xFF1565C0),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1770,7 +1779,17 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         ),
         DataCell(Text(user.country)),
         DataCell(Text(user.language)),
-        DataCell(Text(_getBioValueFromUser(user))),
+        DataCell(
+          SizedBox(
+            width: 120,
+            child: Text(
+              _getBioValueFromUser(user),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+            ),
+          ),
+        ),
         DataCell(Text(_getVolunteerFieldFromUser(user, 'certificate.title'))),
         DataCell(
           _getVolunteerFieldFromUser(user, 'certificate.url').isNotEmpty
@@ -1827,38 +1846,61 @@ class _AdminUsersPageState extends State<AdminUsersPage>
     );
   }
 
-  DataRow _buildApplicationRow(VolunteerApplication app) {
+  DataRow _buildPendingVolunteerRow(User user) {
     return DataRow(
       cells: [
         DataCell(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+          Row(
             children: [
-              Text(
-                app.name,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.blue[100],
+                child: Text(
+                  user.displayName.split(' ').map((n) => n[0]).join(''),
+                  style: TextStyle(
+                    color: Colors.blue[800],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-              Text(
-                app.email,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    user.displayName,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    user.email,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        DataCell(Text(app.country)),
-        DataCell(Text(app.languages.join(', '))),
-        DataCell(_buildStatusBadge(app.status)),
-        DataCell(Text(_formatDate(app.appliedAt))),
+        DataCell(Text(user.country)),
+        DataCell(Text(user.language)),
+        DataCell(Text(_formatDate(user.joinedAt))),
+
         DataCell(
           ElevatedButton(
-            onPressed: () => _reviewApplication(app),
+            onPressed: () => _reviewApplication(user),
             style: ElevatedButton.styleFrom(
               backgroundColor: IslamicColors.green600,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: const Text('Review', style: TextStyle(fontSize: 12)),
+            child: const Text(
+              'Review Application',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
           ),
         ),
       ],
@@ -1909,45 +1951,6 @@ class _AdminUsersPageState extends State<AdminUsersPage>
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color backgroundColor;
-    Color textColor;
-
-    switch (status) {
-      case 'pending':
-        backgroundColor = Colors.yellow[100]!;
-        textColor = Colors.yellow[800]!;
-        break;
-      case 'approved':
-        backgroundColor = Colors.green[100]!;
-        textColor = Colors.green[800]!;
-        break;
-      case 'rejected':
-        backgroundColor = Colors.red[100]!;
-        textColor = Colors.red[800]!;
-        break;
-      default:
-        backgroundColor = Colors.grey[100]!;
-        textColor = Colors.grey[800]!;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.capitalize(),
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
   List<User> _getFilteredUsers() {
     return users.where((user) {
       final matchesSearch =
@@ -1975,9 +1978,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
       case 'edit':
         _editUser(user);
         break;
-      case 'upgrade':
-        _upgradeUser(user);
-        break;
+
       case 'delete':
         _deleteUser(user);
         break;
@@ -2000,7 +2001,12 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                 Text('Country: ${user.country}'),
                 Text('Language: ${user.language}'),
                 Text('Joined: ${_formatDate(user.joinedAt)}'),
-                Text('Questions Asked: ${user.questionsAsked}'),
+                if (user.role == 'user')
+                  Text('Questions Asked: ${user.questionsAsked}'),
+                if (user.role == 'certified_volunteer')
+                  Text('Answers Given: ${user.questionsAnswered}'),
+                if (user.role == 'certified_volunteer')
+                  Text('Bio: ${_getBioValueFromUser(user)}', softWrap: true),
               ],
             ),
             actions: [
@@ -2016,7 +2022,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
   void _editUser(User user) {
     // Convert User model to Map for the form
     Map<String, dynamic> userObj = {
-      'id': user.id,
+      'id': user.userId,
       'displayName': user.displayName,
       'email': user.email,
       'role': user.role,
@@ -2305,7 +2311,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                                     ),
                                     onTap: () {
                                       setState(() {
-                                        _countryController.text = country;
+                                        _countryController?.text = country;
                                         _searchedCountries = [];
                                       });
                                     },
@@ -2385,7 +2391,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                                   ),
                                   onTap: () {
                                     setState(() {
-                                      _languageController.text = language;
+                                      _languageController?.text = language;
                                       _searchedLanguages = [];
                                     });
                                   },
@@ -2538,7 +2544,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                                             language,
                                           );
                                         }
-                                        _spokenLanguagesController.clear();
+                                        _spokenLanguagesController?.clear();
                                         _searchedSpokenLanguages = [];
                                       });
                                     },
@@ -2726,11 +2732,13 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                       }
 
                       setState(() {
-                        userObj['displayName'] = _usernameController.text;
-                        userObj['email'] = _emailController.text;
+                        userObj['userId'] = userObj['userId'];
+                        userObj['displayName'] =
+                            _usernameController?.text ?? '';
+                        userObj['email'] = _emailController?.text ?? '';
                         userObj['gender'] = _gender ?? '';
-                        userObj['country'] = _countryController.text;
-                        userObj['language'] = _languageController.text;
+                        userObj['country'] = _countryController?.text ?? '';
+                        userObj['language'] = _languageController?.text ?? '';
 
                         // Set volunteer-specific fields
                         if (userObj['role'] != 'user') {
@@ -2870,116 +2878,378 @@ class _AdminUsersPageState extends State<AdminUsersPage>
     );
   }
 
-  void _reviewApplication(VolunteerApplication app) {
+  void _reviewApplication(User user) {
+    final certificate =
+        user.volunteerProfile != null
+            ? user.volunteerProfile!['certificate'] as Map<String, dynamic>?
+            : null;
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Review Application'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Name: ${app.name}'),
-                  Text('Email: ${app.email}'),
-                  Text('Country: ${app.country}'),
-                  Text('Languages: ${app.languages.join(', ')}'),
-                  const SizedBox(height: 8),
-                  Text('Bio: ${app.bio}'),
-                  const SizedBox(height: 16),
-                  // Certificate section
-                  if (app.certificate != null) ...[
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Certificate Information:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: IslamicColors.green800,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: IslamicColors.green50,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: IslamicColors.green100,
+                        width: 1,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text('Title: ${app.certificate!['title']}'),
-                    Text('Institution: ${app.certificate!['institution']}'),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => CertificationViewer(
-                                    fileUrl: app.certificate!['url'],
-                                  ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.assignment_ind,
+                        color: IslamicColors.green600,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Review Volunteer Application',
+                              style: TextStyle(
+                                color: IslamicColors.green800,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 20,
+                              ),
                             ),
-                          );
+                            const SizedBox(height: 4),
+                            Text(
+                              'Review and approve or reject this volunteer application',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color: Colors.grey[600],
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Applicant Information Section
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: IslamicColors.green50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: IslamicColors.green100),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.person,
+                                    color: IslamicColors.green600,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Applicant Information',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: IslamicColors.green800,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              _buildFullInfoRow('Full Name', user.displayName),
+                              _buildFullInfoRow('Email Address', user.email),
+                              _buildFullInfoRow('Country', user.country),
+                              _buildFullInfoRow('Language', user.language),
+                              _buildFullInfoRow(
+                                'Bio',
+                                _getBioValueFromUser(user),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Certificate Section
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: IslamicColors.green50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: IslamicColors.green100),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.school,
+                                    color: IslamicColors.green600,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Certificate Details',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: IslamicColors.green800,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              if (certificate != null) ...[
+                                _buildFullInfoRow(
+                                  'Certificate Title',
+                                  certificate['title'] ?? 'N/A',
+                                ),
+                                _buildFullInfoRow(
+                                  'Institution',
+                                  certificate['institution'] ?? 'N/A',
+                                ),
+                                if ((certificate['url'] ?? '')
+                                    .toString()
+                                    .isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        // Navigator.of(context).pop();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) =>
+                                                    CertificationViewer(
+                                                      fileUrl:
+                                                          certificate['url'],
+                                                    ),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.visibility,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'View Certificate File',
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: IslamicColors.green600,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                          horizontal: 20,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ] else ...[
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.warning_amber,
+                                        color: Colors.orange[600],
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'No certificate provided by the applicant',
+                                          style: TextStyle(
+                                            color: Colors.grey[700],
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Footer with Action Buttons
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                    border: Border(
+                      top: BorderSide(color: Colors.grey[200]!, width: 1),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
                         },
-                        icon: const Icon(Icons.visibility),
-                        label: const Text('View Certificate'),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await _rejectVolunteer(user);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Reject Application',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await _approveVolunteer(user);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: IslamicColors.green600,
                           foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Approve Application',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                  ] else ...[
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No certificate provided',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper method for full-width info rows
+  Widget _buildFullInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Text(
+              value.isEmpty ? 'Not provided' : value,
+              style: TextStyle(
+                fontSize: 14,
+                color: value.isEmpty ? Colors.grey[500] : Colors.black87,
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Rejected ${app.name}\'s application'),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text(
-                  'Reject',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Approved ${app.name}\'s application'),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: IslamicColors.green600,
-                ),
-                child: const Text(
-                  'Approve',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
           ),
+        ],
+      ),
     );
   }
 
@@ -3047,6 +3317,118 @@ class _AdminUsersPageState extends State<AdminUsersPage>
           SnackBar(
             content: Text('Error deleting user: $e'),
             backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to approve volunteer
+  Future<void> _approveVolunteer(User user) async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) {
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse(approveVolunteerUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({'volunteerId': user.userId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          // Update user role locally
+          setState(() {
+            final userIndex = users.indexWhere((u) => u.userId == user.userId);
+            if (userIndex != -1) {
+              users[userIndex] = User(
+                id: users[userIndex].id,
+                userId: users[userIndex].userId,
+                displayName: users[userIndex].displayName,
+                gender: users[userIndex].gender,
+                email: users[userIndex].email,
+                role: 'certified_volunteer', // Update role
+                country: users[userIndex].country,
+                language: users[userIndex].language,
+                savedQuestions: users[userIndex].savedQuestions,
+                savedLessons: users[userIndex].savedLessons,
+                createdAt: users[userIndex].createdAt,
+                notifications: users[userIndex].notifications,
+                aiSessionId: users[userIndex].aiSessionId,
+                isEmailVerified: users[userIndex].isEmailVerified,
+                likedStories: users[userIndex].likedStories,
+                savedStories: users[userIndex].savedStories,
+                volunteerProfile: users[userIndex].volunteerProfile,
+                questionsAsked: users[userIndex].questionsAsked,
+                questionsAnswered: users[userIndex].questionsAnswered,
+              );
+            }
+          });
+
+          Navigator.of(context).pop();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Approved ${user.displayName}\'s application'),
+                backgroundColor: IslamicColors.green600,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Failed to approve application: ${data['message'] ?? 'Unknown error'}',
+                ),
+                backgroundColor: Colors.red[600],
+              ),
+            );
+          }
+        }
+      } else {
+        print("Approve failed: ${response.statusCode} ${response.body}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to approve application. Please try again.'),
+              backgroundColor: Colors.red[600],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print("Error approving volunteer: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error approving volunteer: $e'),
+            backgroundColor: Colors.red[600],
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to reject volunteer
+  Future<void> _rejectVolunteer(User user) async {
+    try {
+      Navigator.of(context).pop();
+      // Call the delete user method to remove the rejected volunteer
+      await deleteUser(user);
+    } catch (e) {
+      print("Error rejecting volunteer: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error rejecting volunteer: $e'),
+            backgroundColor: Colors.red[600],
           ),
         );
       }

@@ -37,3 +37,5 @@ final dashboardStatsUrl = url + "admin/dashboard-stats";
 final todayActivityUrl = url + "admin/today-activity";
 final topContentUrl = url + "admin/top-content";
 final allUsersUrl = url + "admin/users";
+final approveVolunteerUrl = url + "admin/approve-voulnteer";
+final adminEditUserUrl = url + "admin/edit-user"; // usage: adminEditUserUrl
