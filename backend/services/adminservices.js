@@ -4,6 +4,7 @@ import Question from '../models/Questions.js';
 import Story from '../models/Stories.js';
  import Flag from '../models/Flags.js';
  import Answer from '../models/Answers.js';
+ import { v4 as uuidv4 } from 'uuid';
 const timezone = 'Asia/Palestine';
 
 const categories = [
@@ -327,6 +328,70 @@ class AdminServices {
         console.log(user);
         return user;
     }
+
+    static async getFlags(){
+        const flags = await Flag.find({});
+        console.log(flags);
+        return flags;
+    }
+
+    static async getallstories(){
+        const stories = await Story.find({});
+        console.log(stories);
+        return stories;
+    }
+    static async AddNewStory(storyData){
+        if(!storyData.title || !storyData.description || !storyData.journeyToIslam ||!storyData.background ||!storyData.afterIslam || !storyData.type || !storyData.mediaUrl || !storyData.name || !storyData.country || !storyData.tags || !storyData.quote){
+            throw new Error("Missing required fields");
+        }
+        const newstory = {
+            title: storyData.title,
+            description: storyData.description,
+            background: storyData.background,
+            journeyToIslam: storyData.journeyToIslam,
+            afterIslam: storyData.afterIslam,
+            type: storyData.type,
+            mediaUrl: storyData.mediaUrl,
+            name: storyData.name,
+            country: storyData.country,
+            tags: storyData.tags,
+            quote: storyData.quote,
+            SaveCount: 0,
+            likeCount: 0,
+            views: 0,
+          };
+          const story = await Story.create(newstory);
+          if(!story){
+            throw new Error("Failed to add story");
+          }else{
+            console.log(story);
+            return {success:true,message:"Story added successfully",story:story};
+          }
+
+
+        
+    }
+    static async updateStory(storyId,storyData){
+        console.log(storyId,storyData);
+        const story = await Story.findOneAndUpdate({_id:storyId},storyData,{new:true});
+        console.log(story);
+        if(!story){
+            throw new Error("Failed to update story");
+        }else{
+            console.log(story);
+            return story;
+        }
+
+
+    }
+
+
+    static async deleteStory(storyId){
+        const story = await Story.findOneAndDelete({_id:storyId});
+        console.log(story);
+        return story;
+    }
+
 
 }   
 

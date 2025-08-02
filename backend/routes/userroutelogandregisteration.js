@@ -51,7 +51,14 @@ import {
   getusersdata,
   approvevoulnteer,
   adminEditUser,
+  getflags,
+  getallstoriesforadmin,
+  addstory,
+  updateStory,
+  deleteStory,
 } from "../controller/AdminController.js";
+
+
 
 router.post("/register", register);
 router.post("/login", login);
@@ -100,8 +107,17 @@ router.get("/admin/dashboard-stats", getdashboardstats);
 router.get("/admin/today-activity", gettodayactivity);
 router.get("/admin/top-content", gettopcontent);
 //admin/usersdata
-router.get("/admin/users", getusersdata);
-router.post("/admin/approve-voulnteer", approvevoulnteer);
+
 router.put("/admin/edit-user", authMiddleware, adminEditUser);
 
+router.get("/admin/users", getusersdata);
+router.post("/admin/approve-voulnteer", approvevoulnteer);
+router.get("/admin/flags", getflags);
+//get all the stories
+router.get("/admin/getallstories", getallstoriesforadmin);
+//Add new story
+router.post("/admin/addstory", addstory);
+router.patch("/admin/updatestory/:id", updateStory);
+//delete story
+router.delete("/admin/deletestory/:id", deleteStory);
 export default router;

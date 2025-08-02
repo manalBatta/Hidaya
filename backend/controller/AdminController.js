@@ -249,3 +249,52 @@ export const adminEditUser = async (req, res) => {
     });
   }
 };
+
+
+export const getflags = async (req, res) => {
+  try {
+    const flags = await AdminServices.getFlags();
+    res.status(200).json(flags);
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Flags retrieval failed" });}
+};
+
+export const getallstoriesforadmin = async (req, res) => {
+  try {
+    const stories = await AdminServices.getallstories();
+    res.status(200).json(stories);
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Stories retrieval failed" });}
+};
+export const addstory = async (req, res) => {
+  try {
+    const story = await AdminServices.AddNewStory(req.body);
+    res.status(200).json(story);
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Story addition failed" });}
+};
+
+export const updateStory = async (req, res) => {
+  try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ success: false, message: "No data provided for update" });
+    }
+    const story = await AdminServices.updateStory(req.params.id,req.body);
+    if (!story) {
+      return res.status(404).json({ success: false, message: "Story not found" });
+    } 
+    res.status(200).json({success:true,message:"Story updated successfully",story:story});
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Story update failed" });}
+};
+
+export const deleteStory = async (req, res) => {
+  try {
+    const story = await AdminServices.deleteStory(req.params.id);
+    if (!story) {
+      return res.status(404).json({ success: false, message: "Story not found" });
+    }
+    res.status(200).json({success:true,message:"Story deleted successfully",story:story});
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Story deletion failed" });}
+};
