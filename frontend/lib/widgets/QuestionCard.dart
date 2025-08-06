@@ -260,11 +260,17 @@ class _QuestionCardState extends State<QuestionCard> {
 
       final questionId = widget.question['questionId'];
       final apiUrl = Uri.parse('$questions/$questionId');
+      
+      print('🍯🍯🍯 Making API call to: $apiUrl');
 
       final response = await http.get(
         apiUrl,
         headers: {'Authorization': 'Bearer $token'},
       );
+      
+      print('🍯🍯🍯 Response status: ${response.statusCode}');
+      print('🍯🍯🍯 Response body: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -282,9 +288,9 @@ class _QuestionCardState extends State<QuestionCard> {
           });
 
           //allAnswers = answers;
-          // ✅ Remove flagged answers
-  allAnswers = answers.where((a) => a['isFlagged'] != true).toList();
-
+          // ✅ Remove flagged answers and hidden answers
+  allAnswers = answers.where((a) => a['isFlagged'] != true && a['isHidden'] != true).toList();
+  print('allAnswers: $allAnswers');
           isLoadingAnswers = false;
         });
         // Fetch the upvoted answer ID for this question
@@ -296,6 +302,7 @@ class _QuestionCardState extends State<QuestionCard> {
         });
       }
     } catch (e) {
+      print('🍯🍯🍯 Error fetching answers: $e');
       setState(() {
         allAnswers = [];
         isLoadingAnswers = false;
@@ -1235,7 +1242,7 @@ class _QuestionCardState extends State<QuestionCard> {
                   else
                     Column(
                       children: allAnswers
-                          .where((answer) => answer['isFlagged'] != true)
+                          .where((answer) => answer['isFlagged'] != true && answer['isHidden'] != true)
                           .toList() // ← حولها لـ List
                           .asMap()
                           .entries
@@ -1373,7 +1380,8 @@ class _QuestionCardState extends State<QuestionCard> {
           if (question['responseType'] == 'human' &&
               question['topAnswer'] != null &&
               !showAllAnswers &&
-              question['topAnswer']['isFlagged'] != true)
+              question['topAnswer']['isFlagged'] != true &&
+              question['topAnswer']['isHidden'] != true)
             _buildTopAnswerCard(question['topAnswer']),
         ],
       ),
@@ -1528,8 +1536,10 @@ class _QuestionCardState extends State<QuestionCard> {
 
   // Widget to display top answer
 Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+  print('topAnswer🍭🍭🍭: $topAnswer');
   final isFlagged = topAnswer['isFlagged'];
-  if (isFlagged == true) return SizedBox.shrink();
+  final isHidden = topAnswer['isHidden'];
+  if (isFlagged == true || isHidden == true) return SizedBox.shrink();
   final answeredBy = topAnswer['answeredBy'];
   final answerText = topAnswer['text']?.toString() ?? '';
   final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
@@ -1539,6 +1549,7 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
   final scaffoldContext = context;
 
   debugPrint("🔍 isFlagged: $isFlagged");
+  debugPrint("🔍 isHidden: $isHidden");
 
   return Container(
     margin: EdgeInsets.only(top: 8),
@@ -1697,8 +1708,8 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
     final isOwner =
         (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
     final scaffoldContext = context;
-    if (answer['isFlagged'] == true)
-      return SizedBox.shrink(); // Hide flagged answers
+    if (answer['isFlagged'] == true || answer['isHidden'] == true)
+      return SizedBox.shrink(); // Hide flagged and hidden answers
 
     return Stack(
       children: [

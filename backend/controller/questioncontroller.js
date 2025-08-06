@@ -114,6 +114,7 @@ export async function getpublicquestions(req, res, next) {
   });
 };
 export async function getquestionandanswers(req, res, next) {
+  console.log("🍯🍯🍯 getquestionandanswers function called with id:", req.params.id);
   const { id } = req.params;
 
   try {
@@ -169,16 +170,20 @@ export async function getquestionandanswers(req, res, next) {
     });
 
     // Build the answers array with full answeredBy info
-    const answers = rawAnswers.map((ans) => ({
-      answerId: ans.answerId,
-      questionId: ans.questionId,
-      text: ans.text,
-      createdAt: ans.createdAt,
-      language: ans.language,
-      upvotesCount: ans.upvotesCount,
-      answeredBy: userMap[ans.answeredBy] || null,
-      isFlagged: ans.isFlagged || false
-    }));
+    const answers = rawAnswers.map((ans) => {
+      console.log(`🔍 🍯🍯Answer ${ans.answerId}: isFlagged=${ans.isFlagged}, isHidden=${ans.isHidden}`);
+      return {
+        answerId: ans.answerId,
+        questionId: ans.questionId,
+        text: ans.text,
+        createdAt: ans.createdAt,
+        language: ans.language,
+        upvotesCount: ans.upvotesCount,
+        answeredBy: userMap[ans.answeredBy] || null,
+        isFlagged: ans.isFlagged || false,
+        isHidden: ans.isHidden || false,
+      };
+    });
 
     // Build the topAnswer if available
     let topAnswer = null;
@@ -253,6 +258,8 @@ export async function savequestion(req, res, next) {
 export async function deletequestion(req, res, next) {
   const userId = req.userId;
   const { id } = req.params;
+  console.log('🍓🫕🍫 Deleting question with ID:', id);
+  console.log('🍓🫕🍫 User ID:', userId);
   if (!id){
     return res.status(400).json({ success: false, message: 'questionId is required to delete a question'})
   }

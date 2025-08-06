@@ -1202,7 +1202,7 @@ Question: "$questionText"
             final question = ans['question'];
             final questionId = question?['questionId'];
             if (questionId == null) continue;
-              if (ans['isFlagged'] == true) continue;
+              if (ans['isFlagged'] == true || ans['isHidden'] == true) continue;
             // If you want the latest answer, compare createdAt
             if (!latestAnswersByQuestion.containsKey(questionId) ||
                 DateTime.parse(ans['createdAt']).isAfter(
@@ -2193,6 +2193,7 @@ if (originalIndex != -1) {
   if (originalIndex != -1) {
     setState(() {
       _communityQuestions[originalIndex]['topAnswer']['isFlagged'] = true;
+      
     });
   }
 

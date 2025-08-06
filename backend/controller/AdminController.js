@@ -3,6 +3,7 @@ import moment from "moment";
 import AdminServices from "../services/adminservices.js";
 import Question from "../models/Questions.js";
 import UserServices from "../services/userserviceslog&registeration.js";
+import e from "express";
 
 /*const fakeusers=[
     { "createdAt": "2024-12-28T14:03:00Z" },
@@ -297,4 +298,108 @@ export const deleteStory = async (req, res) => {
     res.status(200).json({success:true,message:"Story deleted successfully",story:story});
   } catch (error) {
     res.status(500).json({ success:false,message: "Story deletion failed" });}
+};
+ 
+
+ export const getAllQuestions = async (req, res) => {
+  try {
+    const questions = await AdminServices.getAllQuestionsForAdmin();
+    res.status(200).json(questions);
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Questions retrieval failed" });}
+};
+
+export const getAllAnswers = async (req, res) => {
+  try {
+    const answers = await AdminServices.getAllAnswersForAdmin();
+    res.status(200).json(answers);
+  } catch (error) {
+    res.status(500).json({ success:false,message: "Answers retrieval failed" });}
+};
+export const updatequestionbyadmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, category } = req.body;
+
+    if (!id || !text || !category) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const updatedQuestion = await AdminServices.updateQuestionByAdmin(id, text, category);
+    
+    if (!updatedQuestion) {
+      return res.status(404).json({ success: false, message: "Question not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Question updated successfully", question: updatedQuestion });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Question update failed" });
+  }
+};
+
+ export const flagQuestion = async (req, res) => {    
+  try {
+    //extract question id from the parameters
+    const questionId = req.params.id;
+        const { isFlagged } = req.body;
+
+    if (!questionId ) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const flag = await AdminServices.FlagQuestion(questionId, isFlagged);
+
+    if (!flag) {
+      return res.status(404).json({ success: false, message: "Question not found or already flagged" });
+    }
+
+    res.status(200).json({ success: true, message: "Question flagged successfully", flag });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Flagging question failed" });
+  }
+ };
+
+ export const adminUpdateAnswer = async (req, res) => {
+  try {
+    console.log("🧨 Admin Update Answer Called");
+    const { id } = req.params;
+    const { text } = req.body;
+    console.log("🍳🍳Admin update answer called with id:", id, "and text:", text);
+    if (!id || !text) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const updatedAnswer = await AdminServices.updateAnswerByAdmin(id, text);
+    
+    if (!updatedAnswer) {
+      return res.status(404).json({ success: false, message: "Answer not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Answer updated successfully", answer: updatedAnswer });
+  } catch (error) {
+    console.error("Update Answer Error:", error);
+    res.status(500).json({ success: false, message: "Answer update failed" });
+  }
+};
+
+export const hideanswer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    //extract the body of the request
+    const { isHidden } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const hiddenAnswer = await AdminServices.HideAnswer(id, isHidden);
+
+    if (!hiddenAnswer) {
+      return res.status(404).json({ success: false, message: "Answer not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Answer hidden successfully", answer: hiddenAnswer });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Hiding answer failed" });
+  }
 };

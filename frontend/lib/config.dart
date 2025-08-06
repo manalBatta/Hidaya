@@ -39,3 +39,11 @@ final topContentUrl = url + "admin/top-content";
 final allUsersUrl = url + "admin/users";
 final approveVolunteerUrl = url + "admin/approve-voulnteer";
 final adminEditUserUrl = url + "admin/edit-user"; // usage: adminEditUserUrl
+
+// Admin endpoints for questions and answers
+final adminAllQuestionsUrl = url + "admin/questions";
+final adminAllAnswersUrl = url + "admin/answers";
+final adminUpdateQuestionUrl = url + "admin/update-question"; // usage: adminUpdateQuestionUrl + questionId
+final flagQuestionUrl = url + "admin/flag-question/"; // usage: flagQuestionUrl + questionId
+final adminUpdateAnswerUrl = url + "admin/update-answer"; // usage: adminUpdateAnswerUrl + answerId
+final adminHideAnswerUrl = url + "admin/hide-answer"; // usage: adminHideAnswerUrl + answerId

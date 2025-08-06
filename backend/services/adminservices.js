@@ -5,6 +5,8 @@ import Story from '../models/Stories.js';
  import Flag from '../models/Flags.js';
  import Answer from '../models/Answers.js';
  import { v4 as uuidv4 } from 'uuid';
+import FlagServices from './flagsservices.js';
+import { sendNotificationToMultiple } from './notificationService.js';
 const timezone = 'Asia/Palestine';
 
 const categories = [
@@ -392,6 +394,253 @@ class AdminServices {
         return story;
     }
 
+    static async getAllQuestionsForAdmin(){
+        const questions = await Question.find({});
+        //Get all questions id
+        const questionsId = questions.map(question => question.questionId);
+        
+        // Get all unique user IDs from questions and answers
+        const questionUserIds = questions.map(q => q.askedBy).filter(Boolean);
+        const answers = await Answer.find({questionId:{$in:questionsId}});
+        const answerUserIds = answers.map(a => a.answeredBy).filter(Boolean);
+        const allUserIds = [...new Set([...questionUserIds, ...answerUserIds])];
+        
+        // Fetch all users in one query
+        const users = await User.find({userId:{$in:allUserIds}});
+        const userMap = {};
+        users.forEach(user => {
+            userMap[user.userId] = user;
+        });
+        
+        // Group answers by questionId for faster lookup
+        const answersMap = {};
+        answers.forEach(answer => {
+          if (!answersMap[answer.questionId]) {
+              answersMap[answer.questionId] = [];
+          }
+          
+          // Get the display name for the answer author
+          const answerUser = userMap[answer.answeredBy];
+          const answerAuthorName = answerUser ? answerUser.displayName || answerUser.email : 'Unknown User';
+          
+          answersMap[answer.questionId].push({
+              id: answer.answerId || answer._id.toString(),
+              text: answer.text,
+              shortText: answer.text.length > 100 ? answer.text.substring(0, 100) + '...' : answer.text,
+              volunteer: {
+                  name: answerAuthorName,
+                  rating: 0 // Placeholder, adjust if you have ratings
+              },
+              questionText: '', // Will set this later
+              createdAt: answer.createdAt,
+              upvotes: answer.upvotesCount || 0,
+              language: answer.language || 'Unknown',
+              isFlagged: answer.isFlagged || false,
+              isHidden: answer.isHidden || false,
+              isTopAnswer: false // We can mark the topAnswer separately
+          });
+      });
+        // Transform the questions to match the frontend expected structure
+        const transformedQuestions = questions.map(question => {
+            const allAnswers = answersMap[question.questionId] || [];
+            
+            // Get the display name for the question author
+            const questionUser = userMap[question.askedBy];
+            const questionAuthorName = questionUser ? questionUser.displayName || questionUser.email : 'Anonymous User';
+            
+            if(question.aiAnswer){
+              allAnswers.unshift({
+                id: 'ai-answer',
+                text: question.aiAnswer,
+                shortText: question.aiAnswer.length > 100 ? question.aiAnswer.substring(0, 100) + '...' : question.aiAnswer,
+                volunteer: {
+                    name: 'AI Assistant',
+                    rating: 4.5
+                },
+                questionText: question.text,
+                createdAt: question.createdAt,
+                upvotes: 0,
+                language: 'English',
+                isFlagged: false,
+                isHidden: false,
+                isTopAnswer: true
+            });
+            }
+            allAnswers.forEach(ans => ans.questionText = question.text);
+            return {
+                id: question.questionId,
+                text: question.text,
+                shortText: question.text.length > 100 ? question.text.substring(0, 100) + '...' : question.text,
+                user: {
+                    name: questionAuthorName,
+                    avatar: null
+                },
+                createdAt: question.createdAt,
+                isPublic: question.isPublic,
+                isFlagged: question.isFlagged,
+                isAnswered: question.topAnswerId ? true : false, // Check if there's an AI answer
+                category: question.category || 'General',
+                language: 'English',
+                likes: 0,
+                shares: 0,
+                views: 0,
+                answers: allAnswers
+            };
+        });
+        return transformedQuestions;
+    }
+   
+    static async getAllAnswersForAdmin() {
+      try {
+          const answers = await Answer.find({});
+          console.log("Answers found:", answers);
+  
+          const transformedAnswers = await Promise.all(answers.map(async (answer) => {
+              const question = await Question.findOne({ questionId: answer.questionId });
+  
+              let volunteerName = 'Anonymous Volunteer';
+              if (answer.answeredBy) {
+                  try {
+                    const user = await User.findOne({ userId: answer.answeredBy });
+                    if (user && user.displayName) {
+                          volunteerName = user.displayName;
+                      }
+                  } catch (innerErr) {
+                      console.error(`Failed to fetch user for answeredBy=${answer.answeredBy}:`, innerErr);
+                  }
+              }
+  
+              return {
+                  id: answer.answerId,
+                  text: answer.text,
+                  shortText: answer.text.length > 100 ? answer.text.substring(0, 100) + '...' : answer.text,
+                  volunteer: {
+                      name: volunteerName,
+                      rating: 4.0
+                  },
+                  questionText: question ? question.text : 'Question not available',
+                  createdAt: answer.createdAt,
+                  upvotes: answer.upvotesCount || 0,
+                  language: answer.language || 'English',
+                  isFlagged: answer.isFlagged || false,
+                  isHidden: answer.isHidden || false,
+                  isTopAnswer: false
+              };
+          }));
+  
+          return transformedAnswers;
+  
+      } catch (err) {
+          console.error("Failed to retrieve answers:", err);
+          throw new Error("Answers retrieval failed");
+      }
+  }
+   static async updateQuestionByAdmin(questionId, text, category) {
+    console.log("Updating question:", questionId, text, category);
+    if (!questionId || !text || !category) {
+      throw new Error("Missing required fields");
+    }
+    const updatedQuestion = await Question.findOneAndUpdate(
+      { questionId: questionId },
+      { text: text, category: category },
+      { new: true }
+    );
+    if (!updatedQuestion) {
+      throw new Error("Failed to update question");
+    } else {
+      console.log("Updated question:", updatedQuestion);
+      //send notification to the  all volunteers who answered the question
+      const answers = await Answer.find({ questionId: questionId });
+      if (answers.length > 0) {
+        const volunteerIds = [...new Set(answers.map(a => a.answeredBy))];
+        const notification = {
+          type: "question_updated",
+          title: "Question Updated",
+          message: `Question has been updated: "${updatedQuestion.text} ,you can check it and update your answer if needed to appear it for the users"`,
+          data: { questionId: updatedQuestion.questionId },
+          saveToDatabase: true
+        };
+        try {
+          const results = await sendNotificationToMultiple(volunteerIds, notification);
+          console.log("Notification results:", results);
+          //hide all the answers of the updated question 
+          await Answer.updateMany({ questionId: questionId }, { isHidden: true });
+        } catch (err) {
+          console.error("Failed to send notifications:", err);
+        }
+      } 
+      
+      else {
+        console.log("No volunteers found who answered this question.");
+      }
+
+      console.log("Updated question:", updatedQuestion);
+      return updatedQuestion;
+    }
+  }
+
+  static async FlagQuestion(questionId, isFlagged) {
+    try {
+      const updatedQuestion = await Question.findOneAndUpdate(
+        { questionId: questionId },
+        { isFlagged: isFlagged },
+        { new: true }
+      );
+      if (!updatedQuestion) {
+        throw new Error("Failed to flag question");
+      }
+      return updatedQuestion;
+    } catch (error) {
+      console.error("Error flagging question:", error);
+      throw new Error("Flagging question failed");
+    }
+  }
+   
+  static async updateAnswerByAdmin(answerId, text) {
+    console.log("Updating answer:", answerId, text);
+    if (!answerId || !text) {
+      throw new Error("Missing required fields");
+    }
+    const updatedAnswer = await Answer.findOneAndUpdate(
+      { answerId: answerId },
+      { text: text , upvotesCount: 0 },
+      { new: true }
+    );
+    if (!updatedAnswer) {
+      throw new Error("Failed to update answer");
+    } else {
+      // Recalculate top answer for the question
+      const question = await Question.findOne({ questionId: updatedAnswer.questionId });
+      if (question && question.topAnswerId === answerId) {
+        console.log("🎻🎻🎻Recalculating top answer for question:", question.questionId);
+        await FlagServices.recalculateTopAnswer(question.questionId);
+      }
+      console.log("Updated answer:", updatedAnswer);
+      return updatedAnswer;
+    }
+  }
+
+   static async HideAnswer(answerId, isHidden) {
+    console.log("Hiding answer:", answerId);
+    if (!answerId) {
+      throw new Error("Missing required fields");
+    }
+    const updatedAnswer = await Answer.findOneAndUpdate(
+      { answerId: answerId },
+      { isHidden: isHidden },
+      { new: true }
+    );
+    if (!updatedAnswer) {
+      throw new Error("Failed to hide answer");
+    } else {
+      // Recalculate top answer for the question
+      if (updatedAnswer.questionId) {
+        await FlagServices.recalculateTopAnswer(updatedAnswer.questionId);
+      }
+      console.log("Updated answer:", updatedAnswer);
+      return updatedAnswer;
+    }
+  }
 
 }   
 

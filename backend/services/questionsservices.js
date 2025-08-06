@@ -60,6 +60,7 @@ class QuestionServices {
           language: 1,
           upvotesCount: 1,
           isFlagged: 1,
+          isHidden: 1,
         }
       );
       console.log("🔍 Top Answers with isFlagged:", topAnswers);
@@ -98,6 +99,8 @@ class QuestionServices {
           createdAt: ans.createdAt,
           language: ans.language,
           upvotesCount: ans.upvotesCount,
+          isFlagged: ans.isFlagged || false,
+          isHidden: ans.isHidden || false,
           answeredBy: ansUser
             ? {
                 id: ansUser.userId,
@@ -289,10 +292,17 @@ class QuestionServices {
 
   static async DeleteQuestion(userId, questionId) {
     const question = await QuestionModel.findOne({ questionId }); //find the question by the questionId
+    console.log("Deleting question@@@@:", question);
     if (!question) {
       return null;
     }
-    if (question.askedBy !== userId) {
+    // Check if the user is the one who asked the question or an admin
+    const user = await UserModel.findOne({ userId });
+     if (!user) {
+    return null;
+  }
+    if (question.askedBy !== userId && user.role !== "admin") {
+      console.log("User is not authorized to delete this question");
       return null;
     }
     await QuestionModel.deleteOne({ questionId }); //delete the question from the question table
