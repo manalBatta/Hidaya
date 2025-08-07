@@ -51,7 +51,20 @@ import {
   getusersdata,
   approvevoulnteer,
   adminEditUser,
+  getflags,
+  getallstoriesforadmin,
+  addstory,
+  updateStory,
+  deleteStory,
+  getAllQuestions,
+  getAllAnswers,
+  updatequestionbyadmin,
+  flagQuestion,
+  adminUpdateAnswer,
+  hideanswer,
 } from "../controller/AdminController.js";
+
+
 
 router.post("/register", register);
 router.post("/login", login);
@@ -91,6 +104,10 @@ router.post("/story/savestory", authMiddleware, savestory);
 router.post("/story/likestory", authMiddleware, likestory);
 //get story by id
 router.get("/getstorybyid", authMiddleware, getstorybyid);
+
+// Admin routes for questions and answers
+router.get("/admin/questions", getAllQuestions);
+router.get("/admin/answers", getAllAnswers);
 //admin routes
 //admin/usersgrowth
 router.get("/admin/user-growth", getusersgrowth);
@@ -100,8 +117,26 @@ router.get("/admin/dashboard-stats", getdashboardstats);
 router.get("/admin/today-activity", gettodayactivity);
 router.get("/admin/top-content", gettopcontent);
 //admin/usersdata
-router.get("/admin/users", getusersdata);
-router.post("/admin/approve-voulnteer", approvevoulnteer);
+
 router.put("/admin/edit-user", authMiddleware, adminEditUser);
 
+router.get("/admin/users", getusersdata);
+router.post("/admin/approve-voulnteer", approvevoulnteer);
+router.get("/admin/flags", getflags);
+//get all the stories
+router.get("/admin/getallstories", getallstoriesforadmin);
+//Add new story
+router.post("/admin/addstory", addstory);
+router.patch("/admin/updatestory/:id", updateStory);
+//delete story
+router.delete("/admin/deletestory/:id", deleteStory);
+ router.get("/admin/questions", getAllQuestions);
+ router.get("/admin/answers", getAllAnswers);
+ router.put("/admin/update-question/:id", updatequestionbyadmin);  
+// Flag a question
+router.post("/admin/flag-question/:id", flagQuestion);
+// Update an answer by admin
+router.put("/admin/update-answer/:id", adminUpdateAnswer);
+//hide answer by the admin
+router.put("/admin/hide-answer/:id", hideanswer);
 export default router;

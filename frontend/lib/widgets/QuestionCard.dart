@@ -260,10 +260,16 @@ class _QuestionCardState extends State<QuestionCard> {
       final questionId = widget.question['questionId'];
       final apiUrl = Uri.parse('$questions/$questionId');
 
+      print('🍯🍯🍯 Making API call to: $apiUrl');
+
       final response = await http.get(
         apiUrl,
         headers: {'Authorization': 'Bearer $token'},
       );
+
+      print('🍯🍯🍯 Response status: ${response.statusCode}');
+      print('🍯🍯🍯 Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -281,9 +287,12 @@ class _QuestionCardState extends State<QuestionCard> {
           });
 
           //allAnswers = answers;
-          // ✅ Remove flagged answers
-          allAnswers = answers.where((a) => a['isFlagged'] != true).toList();
-
+          // ✅ Remove flagged answers and hidden answers
+          allAnswers =
+              answers
+                  .where((a) => a['isFlagged'] != true && a['isHidden'] != true)
+                  .toList();
+          print('allAnswers: $allAnswers');
           isLoadingAnswers = false;
         });
         // Fetch the upvoted answer ID for this question
@@ -295,6 +304,7 @@ class _QuestionCardState extends State<QuestionCard> {
         });
       }
     } catch (e) {
+      print('🍯🍯🍯 Error fetching answers: $e');
       setState(() {
         allAnswers = [];
         isLoadingAnswers = false;
@@ -606,8 +616,9 @@ class _QuestionCardState extends State<QuestionCard> {
     final canEdit =
         isOwner &&
         aiAnswer != null &&
-        aiAnswer.isNotEmpty &&
-        (topAnswerId == null || topAnswerId.isEmpty);
+        aiAnswer
+            .isNotEmpty /*&&
+        (topAnswerId == null || topAnswerId.isEmpty)*/;
 
     // In the build method, get the scaffold context
     final scaffoldContext = context;
@@ -1239,7 +1250,11 @@ class _QuestionCardState extends State<QuestionCard> {
                     Column(
                       children:
                           allAnswers
-                              .where((answer) => answer['isFlagged'] != true)
+                              .where(
+                                (answer) =>
+                                    answer['isFlagged'] != true &&
+                                    answer['isHidden'] != true,
+                              )
                               .toList() // ← حولها لـ List
                               .asMap()
                               .entries
@@ -1380,7 +1395,8 @@ class _QuestionCardState extends State<QuestionCard> {
           if (question['responseType'] == 'human' &&
               question['topAnswer'] != null &&
               !showAllAnswers &&
-              question['topAnswer']['isFlagged'] != true)
+              question['topAnswer']['isFlagged'] != true &&
+              question['topAnswer']['isHidden'] != true)
             _buildTopAnswerCard(question['topAnswer']),
         ],
       ),
@@ -1535,8 +1551,10 @@ class _QuestionCardState extends State<QuestionCard> {
 
   // Widget to display top answer
   Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+    print('topAnswer🍭🍭🍭: $topAnswer');
     final isFlagged = topAnswer['isFlagged'];
-    if (isFlagged == true) return SizedBox.shrink();
+    final isHidden = topAnswer['isHidden'];
+    if (isFlagged == true || isHidden == true) return SizedBox.shrink();
     final answeredBy = topAnswer['answeredBy'];
     final answerText = topAnswer['text']?.toString() ?? '';
     final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
@@ -1544,8 +1562,11 @@ class _QuestionCardState extends State<QuestionCard> {
     final createdAt = topAnswer['createdAt']?.toString() ?? '';
     final answerId = topAnswer['answerId']?.toString() ?? '';
     final scaffoldContext = context;
-
+    final isOwner =
+        answeredBy['id'] ==
+        Provider.of<UserProvider>(context, listen: false).userId;
     debugPrint("🔍 isFlagged: $isFlagged");
+    debugPrint("🔍 isHidden: $isHidden");
 
     return Container(
       margin: EdgeInsets.only(top: 8),
@@ -1613,10 +1634,110 @@ class _QuestionCardState extends State<QuestionCard> {
                   ),
                 ),
                 SizedBox(width: 4),
+                Icon(Icons.verified),
+                SizedBox(width: 4),
                 Icon(
                   Icons.verified,
                   size: _getResponsiveIconSize(12),
                   color: AppColors.islamicGreen500,
+                ),
+                // Edit button for owner
+                if (isOwner)
+                  IconButton(
+                    icon: Icon(Icons.edit, color: Colors.blue),
+                    tooltip: 'Edit Answer',
+                    onPressed: () async {
+                      TextEditingController _editAnswerController =
+                          TextEditingController(text: answerText);
+                      bool isEditing = false;
+                      await showDialog(
+                        context: context,
+                        builder: (context) {
+                          String errorText = '';
+                          return StatefulBuilder(
+                            builder: (context, setState) {
+                              return AlertDialog(
+                                title: Text('Edit Answer'),
+                                content: TextField(
+                                  controller: _editAnswerController,
+                                  maxLines: 5,
+                                  decoration: InputDecoration(
+                                    hintText: 'Edit your answer...',
+                                    errorText:
+                                        errorText.isNotEmpty ? errorText : null,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      final newAnswerText =
+                                          _editAnswerController.text.trim();
+                                      if (newAnswerText.length < 10) {
+                                        setState(() {
+                                          errorText =
+                                              'Answer must be at least 10 characters.';
+                                        });
+                                        return;
+                                      }
+                                      if (newAnswerText.isEmpty) {
+                                        setState(() {
+                                          errorText = 'Answer cannot be empty';
+                                        });
+                                        return;
+                                      }
+                                      // Call API to update answer
+
+                                      isEditing = true;
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text('Save'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+
+                // Report icon
+                IconButton(
+                  icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+                  tooltip: 'Report',
+                  onPressed: () async {
+                    await showDialog(
+                      context: context,
+                      builder:
+                          (context) => ReportModal(
+                            questionId: answerId,
+                            questionText: answerText,
+                            itemType: 'answer',
+                            scaffoldContext: scaffoldContext,
+                            onReportSuccess:
+                                () => _handleReportSuccess(answerId),
+                          ),
+                    );
+                  },
+                ),
+                SizedBox(width: 4),
+                // Upvote section
+                Tooltip(
+                  message:
+                      _isCertifiedVolunteer()
+                          ? "Expand to upvote this answer"
+                          : "$upvotesCount Muslims approved this",
+                  child: Icon(
+                    Icons.thumb_up,
+                    size: _getResponsiveIconSize(12),
+                    color: AppColors.islamicGreen500,
+                  ),
                 ),
                 // Report icon
                 IconButton(
@@ -1703,11 +1824,94 @@ class _QuestionCardState extends State<QuestionCard> {
     final userRole = userProvider.user?['role'] ?? 'user';
     final userId = userProvider.user?['id'];
     final isFlagged = answer['isFlagged'] ?? false;
-    final isOwner =
-        (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
+    final isHidden = answer['isHidden'] ?? false;
+    final isOwner = answer['answeredBy']?['id'] == userId;
     final scaffoldContext = context;
-    if (answer['isFlagged'] == true)
-      return SizedBox.shrink(); // Hide flagged answers
+    if (isFlagged == true || isHidden == true)
+      return SizedBox.shrink(); // Hide flagged and hidden answers
+
+    // Edit answer state
+    TextEditingController _editAnswerController = TextEditingController(
+      text: answerText,
+    );
+    bool isEditing = false;
+
+    void _showEditDialog() async {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          String errorText = '';
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text('Edit Your Answer'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _editAnswerController,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        labelText: 'Answer',
+                        errorText: errorText.isNotEmpty ? errorText : null,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final newText = _editAnswerController.text.trim();
+                      if (newText.isEmpty || newText.length < 10) {
+                        setState(() {
+                          errorText = 'Answer must be at least 10 characters.';
+                        });
+                        return;
+                      }
+                      // Call API to update answer
+                      try {
+                        final token = await AuthUtils.getValidToken(context);
+                        final url = Uri.parse('adminUpdateAnswerUrl/$answerId');
+                        final response = await http.put(
+                          url,
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({'text': newText}),
+                        );
+                        if (response.statusCode == 200 ||
+                            response.statusCode == 204) {
+                          setState(() {
+                            answer['text'] = newText;
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Answer updated successfully!'),
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            errorText = 'Failed to update answer.';
+                          });
+                        }
+                      } catch (e) {
+                        setState(() {
+                          errorText = 'Error: $e';
+                        });
+                      }
+                    },
+                    child: Text('Save'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
 
     return Stack(
       children: [
@@ -1844,11 +2048,17 @@ class _QuestionCardState extends State<QuestionCard> {
                         },
                       ),
                     ),
+                  if (isOwner) // <-- Add edit button for owner
+                    IconButton(
+                      icon: Icon(Icons.edit, color: Colors.blue),
+                      tooltip: 'Edit Answer',
+                      onPressed: _showEditDialog,
+                    ),
                 ],
               ),
               SizedBox(height: 8),
               Text(
-                answerText,
+                answer['text']?.toString() ?? '',
                 style: TextStyle(
                   fontSize: _getResponsiveFontSize(14),
                   color: AppColors.askPageTitle,
@@ -1858,7 +2068,7 @@ class _QuestionCardState extends State<QuestionCard> {
               SizedBox(height: 8),
               if (createdAt.isNotEmpty)
                 Text(
-                  'Answered on ${_formatDate(createdAt)}',
+                  'Answered on  ${_formatDate(createdAt)}',
                   style: TextStyle(
                     fontSize: _getResponsiveFontSize(11),
                     color: AppColors.askPageSubtitle,

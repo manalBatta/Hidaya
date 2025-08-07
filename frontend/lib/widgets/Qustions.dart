@@ -1209,7 +1209,7 @@ Question: "$questionText"
             final question = ans['question'];
             final questionId = question?['questionId'];
             if (questionId == null) continue;
-            if (ans['isFlagged'] == true) continue;
+            if (ans['isFlagged'] == true || ans['isHidden'] == true) continue;
             // If you want the latest answer, compare createdAt
             if (!latestAnswersByQuestion.containsKey(questionId) ||
                 DateTime.parse(ans['createdAt']).isAfter(
@@ -2276,6 +2276,18 @@ Question: "$questionText"
                         _myAnswers.removeAt(index);
                       });
                     },
+                    onEdit: (text) {
+                      // Handle edit action
+                      //edit the answer after edit it in the data base
+                      setState(() {
+                        print('New text: $text');
+                        _myAnswers[index]['volunteerAnswer']['text'] = text;
+                        _myAnswers[index]['topAnswer']['text'] = text;
+                        //make sure to update upvotesCount
+                        _myAnswers[index]['volunteerAnswer']['upvotesCount'] =
+                            0;
+                      });
+                    },
                   );
                 },
               ),
@@ -2283,7 +2295,6 @@ Question: "$questionText"
   }
 
   Widget _buildFavoritesTab() {
-    // فلتر المفضلة حتى تستبعد الأسئلة المبلغ عنها
     final filteredFavorites =
         _favoriteQuestions.where((q) => q['isFlagged'] != true).toList();
 
