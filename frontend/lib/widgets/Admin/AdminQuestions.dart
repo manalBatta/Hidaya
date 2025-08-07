@@ -1429,19 +1429,7 @@ return _questionslist;
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 12),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${answer.volunteer.rating}/5',
-                        style: const TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
+                
                 ],
               ),
             ),
@@ -2296,23 +2284,7 @@ print('🍓🫕🍫 ${response.body}');
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: Colors.amber,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${answer.volunteer.rating}/5',
-                                        style: const TextStyle(
-                                          color: Color(0xFF6B7280),
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              
                                 ],
                               ),
                             ],
