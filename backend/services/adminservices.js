@@ -601,7 +601,8 @@ class AdminServices {
     console.log("Updating answer:", answerId, text);
     if (!answerId || !text) {
       throw new Error("Missing required fields");
-    }
+    }//make isHidden false and upvotesCount 0
+    // Find the answer by answerId and update it
     const updatedAnswer = await Answer.findOneAndUpdate(
       { answerId: answerId },
       { text: text , upvotesCount: 0 },
