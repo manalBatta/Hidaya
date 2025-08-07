@@ -605,8 +605,8 @@ class _QuestionCardState extends State<QuestionCard> {
     final canEdit =
         isOwner &&
         aiAnswer != null &&
-        aiAnswer.isNotEmpty &&
-        (topAnswerId == null || topAnswerId.isEmpty);
+        aiAnswer.isNotEmpty /*&&
+        (topAnswerId == null || topAnswerId.isEmpty)*/;
 
     // In the build method, get the scaffold context
     final scaffoldContext = context;
@@ -1547,7 +1547,8 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
   final createdAt = topAnswer['createdAt']?.toString() ?? '';
   final answerId = topAnswer['answerId']?.toString() ?? '';
   final scaffoldContext = context;
-
+  final isOwner= answeredBy['id'] ==
+      Provider.of<UserProvider>(context, listen: false).userId;
   debugPrint("🔍 isFlagged: $isFlagged");
   debugPrint("🔍 isHidden: $isHidden");
 
@@ -1622,6 +1623,70 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                 size: _getResponsiveIconSize(12),
                 color: AppColors.islamicGreen500,
               ),
+// Edit button for owner
+              if (isOwner)
+              IconButton(
+                icon: Icon(Icons.edit, color: Colors.blue),
+                tooltip: 'Edit Answer',
+                onPressed: () async {
+                  TextEditingController _editAnswerController = TextEditingController(text: answerText);
+                  bool isEditing = false;
+                  await showDialog(
+                    context: context,
+                    builder: (context) {
+                      String errorText = '';
+                      return StatefulBuilder(
+                        builder: (context, setState) {
+                          return AlertDialog(
+                            title: Text('Edit Answer'),
+                            content: TextField(
+                              controller: _editAnswerController,
+                              maxLines: 5,
+                              decoration: InputDecoration(
+                                hintText: 'Edit your answer...',
+                                errorText: errorText.isNotEmpty ? errorText : null,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  final newAnswerText = _editAnswerController.text.trim();
+                                  if (newAnswerText.length < 10) {
+                                    setState(() {
+                                      errorText = 'Answer must be at least 10 characters.';
+                                    });
+                                    return;
+                                  }
+                                  if (newAnswerText.isEmpty) {
+                                    setState(() {
+                                      errorText = 'Answer cannot be empty';
+                                    });
+                                    return;
+                                  }
+                                  // Call API to update answer
+                                  
+                                  isEditing = true;
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('Save'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+
+
+
               // Report icon
               IconButton(
                 icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
@@ -1705,11 +1770,91 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
     final userRole = userProvider.user?['role'] ?? 'user';
     final userId = userProvider.user?['id'];
     final isFlagged = answer['isFlagged'] ?? false;
-    final isOwner =
-        (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
+    final isHidden = answer['isHidden'] ?? false;
+    final isOwner = answer['answeredBy']?['id'] == userId;
     final scaffoldContext = context;
-    if (answer['isFlagged'] == true || answer['isHidden'] == true)
+    if (isFlagged == true || isHidden == true)
       return SizedBox.shrink(); // Hide flagged and hidden answers
+
+    // Edit answer state
+    TextEditingController _editAnswerController = TextEditingController(text: answerText);
+    bool isEditing = false;
+
+    void _showEditDialog() async {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          String errorText = '';
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text('Edit Your Answer'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _editAnswerController,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        labelText: 'Answer',
+                        errorText: errorText.isNotEmpty ? errorText : null,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final newText = _editAnswerController.text.trim();
+                      if (newText.isEmpty || newText.length < 10) {
+                        setState(() {
+                          errorText = 'Answer must be at least 10 characters.';
+                        });
+                        return;
+                      }
+                      // Call API to update answer
+                      try {
+                        final token = await AuthUtils.getValidToken(context);
+                        final url = Uri.parse('adminUpdateAnswerUrl/$answerId');
+                        final response = await http.put(
+                          url,
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: jsonEncode({'text': newText}),
+                        );
+                        if (response.statusCode == 200 || response.statusCode == 204) {
+                          setState(() {
+                            answer['text'] = newText;
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Answer updated successfully!')),
+                          );
+                        } else {
+                          setState(() {
+                            errorText = 'Failed to update answer.';
+                          });
+                        }
+                      } catch (e) {
+                        setState(() {
+                          errorText = 'Error: $e';
+                        });
+                      }
+                    },
+                    child: Text('Save'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
 
     return Stack(
       children: [
@@ -1781,11 +1926,17 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (isOwner) // <-- Add edit button for owner
+                    IconButton(
+                      icon: Icon(Icons.edit, color: Colors.blue),
+                      tooltip: 'Edit Answer',
+                      onPressed: _showEditDialog,
+                    ),
                 ],
               ),
               SizedBox(height: 8),
               Text(
-                answerText,
+                answer['text']?.toString() ?? '',
                 style: TextStyle(
                   fontSize: _getResponsiveFontSize(14),
                   color: AppColors.askPageTitle,
@@ -1795,7 +1946,7 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
               SizedBox(height: 8),
               if (createdAt.isNotEmpty)
                 Text(
-                  'Answered on ${_formatDate(createdAt)}',
+                  'Answered on  ${_formatDate(createdAt)}',
                   style: TextStyle(
                     fontSize: _getResponsiveFontSize(11),
                     color: AppColors.askPageSubtitle,

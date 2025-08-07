@@ -597,6 +597,7 @@ class AdminServices {
   }
    
   static async updateAnswerByAdmin(answerId, text) {
+    console.log("Searching for answerId:", answerId, typeof answerId);
     console.log("Updating answer:", answerId, text);
     if (!answerId || !text) {
       throw new Error("Missing required fields");

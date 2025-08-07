@@ -1,7 +1,7 @@
 import AnswerModel from "../models/Answers.js";
 import QuestionModel from "../models/Questions.js";
 import UserModel from "../models/User.js";
-
+import { sendNotificationToMultiple } from './notificationService.js';
 import { v4 as uuidv4 } from "uuid";
 class QuestionServices {
   static async SubmitQuestion(data, id) {
@@ -50,7 +50,7 @@ class QuestionServices {
         .filter(Boolean);
 
       const topAnswers = await AnswerModel.find(
-        { answerId: { $in: topAnswerIds }, isFlagged: { $ne: true } },
+        { answerId: { $in: topAnswerIds }, isFlagged: { $ne: true }, isHidden: { $ne: true } },
         {
           answerId: 1,
           questionId: 1,
@@ -193,6 +193,8 @@ class QuestionServices {
         if (q.topAnswerId) {
           const rawTopAnswer = await AnswerModel.findOne({
             answerId: q.topAnswerId,
+            isFlagged: { $ne: true },
+            isHidden: { $ne: true }
           }).lean();
 
           if (rawTopAnswer) {
@@ -210,6 +212,7 @@ class QuestionServices {
                 savedLessons: 1,
                 createdAt: 1,
                 isFlagged: 1,
+                
               }
             ).lean();
 
@@ -220,6 +223,8 @@ class QuestionServices {
               createdAt: rawTopAnswer.createdAt,
               language: rawTopAnswer.language,
               upvotesCount: rawTopAnswer.upvotesCount,
+              isFlagged: rawTopAnswer.isFlagged || false,
+              isHidden: rawTopAnswer.isHidden || false,
               answeredBy: topAnswerUser
                 ? {
                     id: topAnswerUser.userId,
@@ -335,6 +340,27 @@ class QuestionServices {
     question.isPublic = isPublic;
     question.aiAnswer = aiAnswer;
     await question.save();
+    //send notification to the volunteers who answered the question and hide the answers of the questions
+    const answers = await AnswerModel.find({ questionId: questionId });
+    if (answers.length > 0) {
+      const volunteerIds = [...new Set(answers.map(a => a.answeredBy))];
+      const notification = {
+        type: "question_updated",
+        title: "Question Updated",
+        message: `Question has been updated: "${question.text} ,you can check it and update your answer if needed to appear it for the users"`,
+        data: { questionId: question.questionId },
+        saveToDatabase: true
+      };
+      try {
+        const results = await sendNotificationToMultiple(volunteerIds, notification);
+        console.log("Notification results:", results);
+        //hide all the answers of the updated question 
+        await AnswerModel.updateMany({ questionId: questionId }, { isHidden: true });
+        console.log("👍👍👍👍👍👍👍Answers hidden successfully");
+      } catch (err) {
+        console.error("Failed to send notifications:", err);
+      }
+    }
     return question;
   }
 }

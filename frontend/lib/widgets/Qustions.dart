@@ -2287,6 +2287,18 @@ if (originalIndex != -1) {
                         _myAnswers.removeAt(index);
                       });
                     },
+                    onEdit: (text) {
+                      // Handle edit action
+                      //edit the answer after edit it in the data base
+                      setState(() {
+                        print('New text: $text');
+                        _myAnswers[index]['volunteerAnswer']['text'] = text;
+                        _myAnswers[index]['topAnswer']['text'] = text;
+                        //make sure to update upvotesCount
+                        _myAnswers[index]['volunteerAnswer']['upvotesCount'] =0;
+
+                      });
+                    },
                   );
                 },
               ),
