@@ -86,7 +86,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   bool hasHummanAnswer(Map<String, dynamic> question) {
     final topAnswerId = question['topAnswerId'];
-    print("topAnswerId by ruba : $topAnswerId");
     return topAnswerId != null && topAnswerId.toString().trim().isNotEmpty;
   }
 
@@ -116,7 +115,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   //Done deep checking
   Future<void> saveQuestion() async {
-    print("calling saveQuestion");
     setState(() {
       isSaving = true;
     });
@@ -143,7 +141,6 @@ class _QuestionCardState extends State<QuestionCard> {
         body: jsonEncode({'questionId': questionId}),
       );
 
-      print("save question response is :${jsonDecode(response.body)}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -260,15 +257,10 @@ class _QuestionCardState extends State<QuestionCard> {
       final questionId = widget.question['questionId'];
       final apiUrl = Uri.parse('$questions/$questionId');
 
-      print('🍯🍯🍯 Making API call to: $apiUrl');
-
       final response = await http.get(
         apiUrl,
         headers: {'Authorization': 'Bearer $token'},
       );
-
-      print('🍯🍯🍯 Response status: ${response.statusCode}');
-      print('🍯🍯🍯 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -304,7 +296,6 @@ class _QuestionCardState extends State<QuestionCard> {
         });
       }
     } catch (e) {
-      print('🍯🍯🍯 Error fetching answers: $e');
       setState(() {
         allAnswers = [];
         isLoadingAnswers = false;
@@ -481,7 +472,7 @@ class _QuestionCardState extends State<QuestionCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Answer submitted successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.islamicGreen600,
             ),
           );
 
@@ -809,7 +800,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                         content: Text(
                                           'Question deleted successfully',
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     if (widget.onRefresh != null)
@@ -922,7 +914,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                                       : Icons.lock,
                                                   color:
                                                       isPublic
-                                                          ? Colors.green
+                                                          ? AppColors
+                                                              .islamicGreen600
                                                           : Colors.orange,
                                                 ),
                                                 SizedBox(width: 8),
@@ -1008,15 +1001,13 @@ class _QuestionCardState extends State<QuestionCard> {
                                   final data = jsonDecode(response.body);
                                   if (response.statusCode == 200 &&
                                       data['success'] == true) {
-                                    print(
-                                      "status: ${response.statusCode}, data: $data",
-                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           'Question updated successfully',
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     setState(() {

@@ -2268,6 +2268,7 @@ Question: "$questionText"
                 itemCount: _myAnswers.length,
                 itemBuilder: (context, index) {
                   final item = _myAnswers[index];
+                  print('item from my answers: $item');
                   return MyAnswerCard(
                     item: item,
                     onDelete: () {

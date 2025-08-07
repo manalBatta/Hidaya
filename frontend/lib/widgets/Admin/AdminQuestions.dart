@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/config.dart';
 import 'package:frontend/utils/auth_utils.dart';
-import 'package:frontend/widgets/Admin/Analyticpage.dart';
 class Question {
   final String id;
   final String text;

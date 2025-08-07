@@ -654,6 +654,7 @@ class _AdminPanelState extends State<AdminPanel> {
         return _buildAddStoryPage();
       case '/admin/flags':
         return FlagsAdminPage();
+
       default:
         return _buildPlaceholderPage(route);
     }

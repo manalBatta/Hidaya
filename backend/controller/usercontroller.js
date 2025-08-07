@@ -114,7 +114,7 @@ export async function login(req, res, next) {
     },
   });
 
-  // Send welcome notification and check for missed notifications
+  /*  // Send welcome notification and check for missed notifications
   try {
     // Welcome notification using new service
     const welcomeResult = await sendNotification({
@@ -139,7 +139,7 @@ export async function login(req, res, next) {
   } catch (notificationError) {
     console.log("Failed to send welcome notification:", notificationError);
     // Don't fail the login if notification fails
-  }
+  } */
 }
 export async function updateprofile(req, res, next) {
   try {
