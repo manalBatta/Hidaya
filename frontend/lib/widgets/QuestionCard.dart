@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:http/http.dart' as http;
@@ -283,7 +282,7 @@ class _QuestionCardState extends State<QuestionCard> {
 
           //allAnswers = answers;
           // ✅ Remove flagged answers
-  allAnswers = answers.where((a) => a['isFlagged'] != true).toList();
+          allAnswers = answers.where((a) => a['isFlagged'] != true).toList();
 
           isLoadingAnswers = false;
         });
@@ -538,8 +537,17 @@ class _QuestionCardState extends State<QuestionCard> {
     return false;
   }
 
-  // Modified function to handle showing the answer form
+  // Modified function to handle showing/hiding the answer form
   Future<void> _handleShowAnswerForm() async {
+    // If the form is already shown, just toggle it off
+    if (showAnswerForm) {
+      setState(() {
+        showAnswerForm = false;
+        _answerController.clear();
+      });
+      return;
+    }
+
     // Always fetch latest answers before showing the form
     await _fetchAllAnswers();
     if (!_hasCurrentUserAnswered()) {
@@ -560,9 +568,9 @@ class _QuestionCardState extends State<QuestionCard> {
 
   void _handleReportSuccess(String answerId) {
     setState(() {
-
-      final answerIndex =
-          allAnswers.indexWhere((a) => a['answerId'] == answerId);
+      final answerIndex = allAnswers.indexWhere(
+        (a) => a['answerId'] == answerId,
+      );
 
       if (answerIndex != -1) {
         allAnswers[answerIndex]['isFlagged'] = true;
@@ -693,7 +701,9 @@ class _QuestionCardState extends State<QuestionCard> {
                         ),
 
                         // Report flag icon for users only to flag the question
-                        if ((userRole == 'user' || userRole == 'certified_volunteer') && !isOwner)//TODO: remove this after testing
+                        if ((userRole == 'user' ||
+                                userRole == 'certified_volunteer') &&
+                            !isOwner) //TODO: remove this after testing
                           IconButton(
                             icon: Icon(
                               Icons.flag_outlined,
@@ -1107,38 +1117,33 @@ class _QuestionCardState extends State<QuestionCard> {
                 // Show "Show/Hide all answers" button for certified volunteers
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Wrap(
-                    spacing: 5,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (_isCertifiedVolunteer() &&
                           question['responseType'] == 'human') ...[
-                        SizedBox(height: 16),
-                        Center(
-                          child: OutlinedButton.icon(
-                            onPressed: _handleShowAllAnswers,
-                            icon: Icon(
-                              showAllAnswers
-                                  ? Icons.visibility_off
-                                  : Icons.list_alt,
-                              size: _getResponsiveIconSize(16),
+                        OutlinedButton.icon(
+                          onPressed: _handleShowAllAnswers,
+                          icon: Icon(
+                            showAllAnswers
+                                ? Icons.visibility_off
+                                : Icons.list_alt,
+                            size: _getResponsiveIconSize(16),
+                          ),
+                          label: Text(
+                            showAllAnswers
+                                ? 'Hide all answers'
+                                : 'Show all answers',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.islamicGreen500,
+                            side: BorderSide(color: AppColors.islamicGreen500),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _getResponsivePadding(20),
+                              vertical: _getResponsivePadding(10),
                             ),
-                            label: Text(
-                              showAllAnswers
-                                  ? 'Hide all answers'
-                                  : 'Show all answers',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.islamicGreen500,
-                              side: BorderSide(
-                                color: AppColors.islamicGreen500,
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(20),
-                                vertical: _getResponsivePadding(10),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
                         ),
@@ -1148,30 +1153,28 @@ class _QuestionCardState extends State<QuestionCard> {
                       if (_isCertifiedVolunteer() &&
                           !_isTopAnswerByCurrentUser() &&
                           !_hasCurrentUserAnswered()) ...[
-                        SizedBox(height: 16),
-                        Center(
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                isSubmittingAnswer
-                                    ? null
-                                    : _handleShowAnswerForm,
-                            icon: Icon(
-                              showAnswerForm ? Icons.close : Icons.edit,
-                              size: _getResponsiveIconSize(16),
+                        if (_isCertifiedVolunteer() &&
+                            question['responseType'] == 'human')
+                          SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          onPressed:
+                              isSubmittingAnswer ? null : _handleShowAnswerForm,
+                          icon: Icon(
+                            showAnswerForm ? Icons.close : Icons.edit,
+                            size: _getResponsiveIconSize(16),
+                          ),
+                          label: Text(
+                            showAnswerForm ? 'Cancel' : 'Answer Question',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.islamicGreen500,
+                            foregroundColor: AppColors.islamicWhite,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _getResponsivePadding(20),
+                              vertical: _getResponsivePadding(10),
                             ),
-                            label: Text(
-                              showAnswerForm ? 'Cancel' : 'Answer Question',
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.islamicGreen500,
-                              foregroundColor: AppColors.islamicWhite,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(20),
-                                vertical: _getResponsivePadding(10),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
                         ),
@@ -1234,13 +1237,17 @@ class _QuestionCardState extends State<QuestionCard> {
                     )
                   else
                     Column(
-                      children: allAnswers
-                          .where((answer) => answer['isFlagged'] != true)
-                          .toList() // ← حولها لـ List
-                          .asMap()
-                          .entries
-                          .map((entry) => _buildAnswerCard(entry.value, entry.key))
-                          .toList(),
+                      children:
+                          allAnswers
+                              .where((answer) => answer['isFlagged'] != true)
+                              .toList() // ← حولها لـ List
+                              .asMap()
+                              .entries
+                              .map(
+                                (entry) =>
+                                    _buildAnswerCard(entry.value, entry.key),
+                              )
+                              .toList(),
                     ),
                 ],
               ),
@@ -1527,156 +1534,158 @@ class _QuestionCardState extends State<QuestionCard> {
   }
 
   // Widget to display top answer
-Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
-  final isFlagged = topAnswer['isFlagged'];
-  if (isFlagged == true) return SizedBox.shrink();
-  final answeredBy = topAnswer['answeredBy'];
-  final answerText = topAnswer['text']?.toString() ?? '';
-  final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
-  final answererName = _getAnswererDisplayName(answeredBy);
-  final createdAt = topAnswer['createdAt']?.toString() ?? '';
-  final answerId = topAnswer['answerId']?.toString() ?? '';
-  final scaffoldContext = context;
+  Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+    final isFlagged = topAnswer['isFlagged'];
+    if (isFlagged == true) return SizedBox.shrink();
+    final answeredBy = topAnswer['answeredBy'];
+    final answerText = topAnswer['text']?.toString() ?? '';
+    final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
+    final answererName = _getAnswererDisplayName(answeredBy);
+    final createdAt = topAnswer['createdAt']?.toString() ?? '';
+    final answerId = topAnswer['answerId']?.toString() ?? '';
+    final scaffoldContext = context;
 
-  debugPrint("🔍 isFlagged: $isFlagged");
+    debugPrint("🔍 isFlagged: $isFlagged");
 
-  return Container(
-    margin: EdgeInsets.only(top: 8),
-    padding: EdgeInsets.all(6),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Container(
-      padding: EdgeInsets.all(16),
+    return Container(
+      margin: EdgeInsets.only(top: 8),
+      padding: EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: AppColors.islamicGreen400.withOpacity(0.5),
-        border: Border.all(
-          color: AppColors.islamicGreen500.withOpacity(0.5),
-          width: 2,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.islamicGreen400.withOpacity(0.5),
+          border: Border.all(
+            color: AppColors.islamicGreen500.withOpacity(0.5),
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
         ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Answerer info row
-          Row(
-            children: [
-              // Top answer indicator
-              Container(
-                margin: EdgeInsets.only(right: 8),
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.islamicGreen500,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.star,
-                      size: _getResponsiveIconSize(10),
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 2),
-                    Text(
-                      'Top Answer',
-                      style: TextStyle(
-                        fontSize: _getResponsiveFontSize(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Answerer info row
+            Row(
+              children: [
+                // Top answer indicator
+                Container(
+                  margin: EdgeInsets.only(right: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.islamicGreen500,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: _getResponsiveIconSize(10),
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 2),
+                      Text(
+                        'Top Answer',
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(10),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Icon(
-                Icons.verified_user,
-                size: _getResponsiveIconSize(16),
-                color: AppColors.islamicGreen500,
-              ),
-              SizedBox(width: 4),
-              Text(
-                answererName,
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(12),
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.askPageTitle,
+                Icon(
+                  Icons.verified_user,
+                  size: _getResponsiveIconSize(16),
+                  color: AppColors.islamicGreen500,
                 ),
-              ),
-              SizedBox(width: 4),
-              Icon(
-                Icons.verified,
-                size: _getResponsiveIconSize(12),
-                color: AppColors.islamicGreen500,
-              ),
-              // Report icon
-              IconButton(
-                icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
-                tooltip: 'Report',
-                onPressed: () async {
-                  await showDialog(
-                    context: context,
-                    builder: (context) => ReportModal(
-                      questionId: answerId,
-                      questionText: answerText,
-                      itemType: 'answer',
-                      scaffoldContext: scaffoldContext,
-                      onReportSuccess: () => _handleReportSuccess(answerId),
-                    ),
-                  );
-                },
-              ),
-              SizedBox(width: 4),
-              // Upvote section
-              Tooltip(
-                message: _isCertifiedVolunteer()
-                    ? "Expand to upvote this answer"
-                    : "$upvotesCount Muslims approved this",
-                child: Icon(
-                  Icons.thumb_up,
+                SizedBox(width: 4),
+                Text(
+                  answererName,
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(12),
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.askPageTitle,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.verified,
                   size: _getResponsiveIconSize(12),
-                  color: AppColors.askPageSubtitle,
+                  color: AppColors.islamicGreen500,
                 ),
-              ),
-              SizedBox(width: 4),
-              Text(
-                upvotesCount,
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(12),
-                  color: AppColors.askPageSubtitle,
+                // Report icon
+                IconButton(
+                  icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+                  tooltip: 'Report',
+                  onPressed: () async {
+                    await showDialog(
+                      context: context,
+                      builder:
+                          (context) => ReportModal(
+                            questionId: answerId,
+                            questionText: answerText,
+                            itemType: 'answer',
+                            scaffoldContext: scaffoldContext,
+                            onReportSuccess:
+                                () => _handleReportSuccess(answerId),
+                          ),
+                    );
+                  },
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          // Answer text
-          Text(
-            answerText,
-            style: TextStyle(
-              fontSize: _getResponsiveFontSize(14),
-              color: AppColors.askPageTitle,
-              height: 1.4,
+                SizedBox(width: 4),
+                // Upvote section
+                Tooltip(
+                  message:
+                      _isCertifiedVolunteer()
+                          ? "Expand to upvote this answer"
+                          : "$upvotesCount Muslims approved this",
+                  child: Icon(
+                    Icons.thumb_up,
+                    size: _getResponsiveIconSize(12),
+                    color: AppColors.askPageSubtitle,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Text(
+                  upvotesCount,
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(12),
+                    color: AppColors.askPageSubtitle,
+                  ),
+                ),
+              ],
             ),
-          ),
-          SizedBox(height: 8),
-          // Timestamp
-          if (createdAt.isNotEmpty)
+            SizedBox(height: 8),
+            // Answer text
             Text(
-              'Answered on ${_formatDate(createdAt)}',
+              answerText,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(11),
-                color: AppColors.askPageSubtitle,
-                fontStyle: FontStyle.italic,
+                fontSize: _getResponsiveFontSize(14),
+                color: AppColors.askPageTitle,
+                height: 1.4,
               ),
             ),
-        ],
+            SizedBox(height: 8),
+            // Timestamp
+            if (createdAt.isNotEmpty)
+              Text(
+                'Answered on ${_formatDate(createdAt)}',
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(11),
+                  color: AppColors.askPageSubtitle,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   // Widget to display individual answer in the scrollable list
   //By Ruba
@@ -1758,18 +1767,83 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                     color:
                         isCertified ? AppColors.islamicGreen500 : Colors.grey,
                   ),
-                  SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      answererName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.askPageTitle,
-                        fontSize: _getResponsiveFontSize(13),
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                  SizedBox(width: 4),
+                  Text(
+                    answererName,
+                    style: TextStyle(
+                      fontSize: _getResponsiveFontSize(12),
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.askPageTitle,
                     ),
                   ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.verified,
+                    size: _getResponsiveIconSize(12),
+                    color: AppColors.islamicGreen500,
+                  ),
+                  Spacer(),
+
+                  // Upvote icon for certified volunteers
+                  if (answeredBy['id']?.toString() !=
+                      Provider.of<UserProvider>(
+                        context,
+                        listen: false,
+                      ).userId?.toString())
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isUpvoted
+                                ? Icons.thumb_up
+                                : Icons.thumb_up_outlined,
+                            color: AppColors.askPageSubtitle,
+                          ),
+                          tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
+                          onPressed:
+                              isCertified
+                                  ? () => _handleUpvote(answerId)
+                                  : () {},
+                        ),
+                        Text(
+                          upvotesCount,
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(12),
+                            color: AppColors.askPageSubtitle,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  // 🔴 Flag icon positioned top-right
+                  if ((userRole == 'user' ||
+                          userRole == 'certified_volunteer') &&
+                      !isOwner)
+                    Positioned(
+                      top: 4,
+                      right: 16,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.flag_outlined,
+                          color: Colors.redAccent,
+                        ),
+                        tooltip: 'Report',
+                        onPressed: () async {
+                          await showDialog(
+                            context: context,
+                            builder:
+                                (context) => ReportModal(
+                                  questionId: answerId,
+                                  questionText: answerText,
+                                  itemType: 'answer',
+                                  scaffoldContext: scaffoldContext,
+                                  onReportSuccess:
+                                      () => _handleReportSuccess(answerId),
+                                ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
               SizedBox(height: 8),
@@ -1792,32 +1866,6 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                   ),
                 ),
             ],
-          ),
-        ),
-
-
-      // 🔴 Flag icon positioned top-right
-      if ((userRole == 'user' || userRole == 'certified_volunteer') && !isOwner)
-      Positioned(
-
-          top: 4,
-          right: 4,
-          child: IconButton(
-            icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
-            tooltip: 'Report',
-            onPressed: () async {
-              await showDialog(
-                context: context,
-                builder:
-                    (context) => ReportModal(
-                      questionId: answerId,
-                      questionText: answerText,
-                      itemType: 'answer',
-                      scaffoldContext: scaffoldContext,
-                      onReportSuccess: () => _handleReportSuccess(answerId),
-                    ),
-              );
-            },
           ),
         ),
       ],

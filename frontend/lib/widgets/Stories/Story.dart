@@ -53,23 +53,33 @@ class Story {
   });
 
   factory Story.fromJson(Map<String, dynamic> json) {
+    final mediaUrl = json['mediaUrl']?.toString();
+    if (mediaUrl == null || mediaUrl.isEmpty) {
+      throw Exception('Story mediaUrl is required but was null or empty');
+    }
+
     return Story(
-      id: json['_id'],
-      title: json['title'],
-      background: json['background'],
-      journeyToIslam: json['journeyToIslam'],
-      afterIslam: json['afterIslam'],
+      id: json['_id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      background: json['background']?.toString(),
+      journeyToIslam: json['journeyToIslam']?.toString(),
+      afterIslam: json['afterIslam']?.toString(),
       type: json['type'] == 'video' ? StoryType.video : StoryType.image,
-      mediaUrl: json['mediaUrl'],
-      quote: json['quote'],
-      saveCount: int.tryParse(json['SaveCount'] ?? '0') ?? 0,
-      likeCount: int.tryParse(json['likeCount'] ?? '0') ?? 0,
-      views: int.tryParse(json['views'] ?? '0') ?? 0,
-      name: json['name'],
-      country: json['country'],
-      tags: (json['tags'] as List<dynamic>).map((e) => e.toString()).toList(),
-      createdAt: DateTime.parse(json['createdAt']),
-      description: json['description'],
+      mediaUrl: mediaUrl,
+      quote: json['quote']?.toString(),
+      saveCount: int.tryParse(json['SaveCount']?.toString() ?? '0') ?? 0,
+      likeCount: int.tryParse(json['likeCount']?.toString() ?? '0') ?? 0,
+      views: int.tryParse(json['views']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+      country: json['country']?.toString() ?? '',
+      tags:
+          (json['tags'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      description: json['description']?.toString(),
     );
   }
 }
@@ -169,17 +179,21 @@ class _StoriesPageState extends State<StoriesPage>
     );
     // Initialize _savedStories from UserProvider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      setState(() {
-        _savedStories = Set<String>.from(userProvider.savedStories);
-      });
+      if (mounted) {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        setState(() {
+          _savedStories = Set<String>.from(userProvider.savedStories);
+        });
+      }
     });
     // Initialize _likedStories from UserProvider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      setState(() {
-        _likedStories = Set<String>.from(userProvider.likedStories);
-      });
+      if (mounted) {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        setState(() {
+          _likedStories = Set<String>.from(userProvider.likedStories);
+        });
+      }
     });
     _fetchAndSetStories();
   }
@@ -187,11 +201,13 @@ class _StoriesPageState extends State<StoriesPage>
   Future<void> _fetchAndSetStories({int page = 1, bool append = false}) async {
     if (_isFetchingMore) return;
     if (append && (page > _totalPages)) return;
-    setState(() {
-      if (!append) _isLoading = true;
-      _error = null;
-      _isFetchingMore = append;
-    });
+    if (mounted) {
+      setState(() {
+        if (!append) _isLoading = true;
+        _error = null;
+        _isFetchingMore = append;
+      });
+    }
     try {
       final response = await http.get(
         Uri.parse('$storyUrl?page=$page&limit=5'),
@@ -202,26 +218,30 @@ class _StoriesPageState extends State<StoriesPage>
         final List<Story> newStories =
             storiesJson.map((json) => Story.fromJson(json)).toList();
         final pagination = data['data']['pagination'];
-        setState(() {
-          if (append) {
-            _filteredStories.addAll(newStories);
-          } else {
-            _filteredStories = newStories;
-          }
-          _isLoading = false;
-          _isFetchingMore = false;
-          _currentPage = pagination['page'] ?? page;
-          _totalPages = pagination['totalPages'] ?? 1;
-        });
+        if (mounted) {
+          setState(() {
+            if (append) {
+              _filteredStories.addAll(newStories);
+            } else {
+              _filteredStories = newStories;
+            }
+            _isLoading = false;
+            _isFetchingMore = false;
+            _currentPage = pagination['page'] ?? page;
+            _totalPages = pagination['totalPages'] ?? 1;
+          });
+        }
       } else {
         throw Exception('Failed to load stories');
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-        _isFetchingMore = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+          _isFetchingMore = false;
+        });
+      }
     }
   }
 
@@ -230,11 +250,22 @@ class _StoriesPageState extends State<StoriesPage>
       final nextStory = _filteredStories[currentIndex + 1];
       if (nextStory.type == StoryType.video &&
           !_videoControllers.containsKey(nextStory.id)) {
-        final controller = VideoPlayerController.networkUrl(
-          Uri.parse(nextStory.mediaUrl),
-        );
-        _videoControllers[nextStory.id] = controller;
-        _videoInitFutures[nextStory.id] = controller.initialize();
+        try {
+          final controller = VideoPlayerController.networkUrl(
+            Uri.parse(nextStory.mediaUrl),
+          );
+          _videoControllers[nextStory.id] = controller;
+          _videoInitFutures[nextStory.id] = controller.initialize().catchError((
+            error,
+          ) {
+            print('Error preinitializing video controller: $error');
+            return;
+          });
+        } catch (e) {
+          print(
+            'Error creating video controller in _preinitializeNextVideo: $e',
+          );
+        }
       }
     }
   }
@@ -411,15 +442,34 @@ class _StoriesPageState extends State<StoriesPage>
         final story = _filteredStories.firstWhere((s) => s.id == storyId);
         // Only create a video controller for video stories!
         if (story.type == StoryType.video) {
-          final controller = VideoPlayerController.networkUrl(
-            Uri.parse(story.mediaUrl),
-          );
-          _videoControllers[storyId] = controller;
-          _videoInitFutures[storyId] = controller.initialize().then((_) {
-            controller.setLooping(true);
-            controller.play();
-            setState(() {});
-          });
+          try {
+            final controller = VideoPlayerController.networkUrl(
+              Uri.parse(story.mediaUrl),
+            );
+            _videoControllers[storyId] = controller;
+            _videoInitFutures[storyId] = controller
+                .initialize()
+                .then((_) {
+                  controller.setLooping(true);
+                  controller.play();
+                  if (mounted) {
+                    setState(() {});
+                  }
+                })
+                .catchError((error) {
+                  print(
+                    'Error initializing video controller in _handleCardTap: $error',
+                  );
+                  if (mounted) {
+                    setState(() {});
+                  }
+                });
+          } catch (e) {
+            print('Error creating video controller in _handleCardTap: $e');
+            if (mounted) {
+              setState(() {});
+            }
+          }
         }
       }
     });
@@ -982,6 +1032,26 @@ class _StoriesPageState extends State<StoriesPage>
   }
 
   Widget _buildStoryContent(Story story, bool isExpanded) {
+    // Validate mediaUrl
+    if (story.mediaUrl.isEmpty) {
+      return Container(
+        color: IslamicTheme.primary.withOpacity(0.2),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: IslamicTheme.primary, size: 48),
+              SizedBox(height: 8),
+              Text(
+                'Invalid media URL',
+                style: TextStyle(color: IslamicTheme.primary, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (story.type == StoryType.video) {
       if (isExpanded && _videoControllers.containsKey(story.id)) {
         final controller = _videoControllers[story.id]!;
@@ -1047,42 +1117,94 @@ class _StoriesPageState extends State<StoriesPage>
         );
       } else {
         // Initialize controller for thumbnail if not already
-        final controller = VideoPlayerController.networkUrl(
-          Uri.parse(story.mediaUrl),
-        );
-        _videoControllers[story.id] = controller;
-        _videoInitFutures[story.id] = controller.initialize();
-        return FutureBuilder(
-          future: _videoInitFutures[story.id],
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              controller.pause();
-              return Center(
-                child: AspectRatio(
-                  aspectRatio: controller.value.aspectRatio,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
+        try {
+          final controller = VideoPlayerController.networkUrl(
+            Uri.parse(story.mediaUrl),
+          );
+          _videoControllers[story.id] = controller;
+          _videoInitFutures[story.id] = controller.initialize().catchError((
+            error,
+          ) {
+            print('Error initializing video controller: $error');
+            return;
+          });
+          return FutureBuilder(
+            future: _videoInitFutures[story.id],
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done &&
+                  !snapshot.hasError) {
+                controller.pause();
+                return Center(
+                  child: AspectRatio(
+                    aspectRatio: controller.value.aspectRatio,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        children: [
+                          VideoPlayer(controller),
+                          Container(color: Colors.black.withOpacity(0.5)),
+                          Center(
+                            child: Icon(
+                              Icons.play_circle_outline,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                return Container(
+                  color: IslamicTheme.primary.withOpacity(0.2),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        VideoPlayer(controller),
-                        Container(color: Colors.black.withOpacity(0.5)),
-                        Center(
-                          child: Icon(
-                            Icons.play_circle_outline,
-                            size: 80,
-                            color: Colors.white.withOpacity(0.7),
+                        Icon(
+                          Icons.error_outline,
+                          color: IslamicTheme.primary,
+                          size: 48,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Failed to load video',
+                          style: TextStyle(
+                            color: IslamicTheme.primary,
+                            fontSize: 14,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              );
-            } else {
-              return Center(child: CircularProgressIndicator());
-            }
-          },
-        );
+                );
+              }
+            },
+          );
+        } catch (e) {
+          print('Error creating video controller: $e');
+          return Container(
+            color: IslamicTheme.primary.withOpacity(0.2),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: IslamicTheme.primary,
+                    size: 48,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Invalid video URL',
+                    style: TextStyle(color: IslamicTheme.primary, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
       }
     }
     // For images
@@ -1111,6 +1233,30 @@ class _StoriesPageState extends State<StoriesPage>
                         ),
                       ),
                     ),
+                errorWidget:
+                    (context, url, error) => Container(
+                      color: IslamicTheme.primary.withOpacity(0.2),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: IslamicTheme.primary,
+                              size: 48,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: IslamicTheme.primary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
               ),
             ),
           ),
@@ -1130,6 +1276,30 @@ class _StoriesPageState extends State<StoriesPage>
                     valueColor: AlwaysStoppedAnimation<Color>(
                       IslamicTheme.primary,
                     ),
+                  ),
+                ),
+              ),
+          errorWidget:
+              (context, url, error) => Container(
+                color: IslamicTheme.primary.withOpacity(0.2),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: IslamicTheme.primary,
+                        size: 48,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Failed to load image',
+                        style: TextStyle(
+                          color: IslamicTheme.primary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1245,9 +1415,18 @@ class _StoriesPageState extends State<StoriesPage>
                       border: Border.all(color: Colors.white, width: 2),
                     ),
                     child: ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: "assets/StoryImages/profile.jpg",
+                      child: Image.asset(
+                        "assets/StoryImages/profile.jpg",
                         fit: BoxFit.cover,
+                        errorBuilder:
+                            (context, error, stackTrace) => Container(
+                              color: IslamicTheme.primary.withOpacity(0.2),
+                              child: Icon(
+                                Icons.person,
+                                color: IslamicTheme.primary,
+                                size: 20,
+                              ),
+                            ),
                       ),
                     ),
                   ),
@@ -1472,9 +1651,14 @@ class _StoriesPageState extends State<StoriesPage>
                   border: Border.all(color: textColor, width: 2),
                 ),
                 child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: "assets/StoryImages/profile.jpg",
+                  child: Image.asset(
+                    "assets/StoryImages/profile.jpg",
                     fit: BoxFit.cover,
+                    errorBuilder:
+                        (context, error, stackTrace) => Container(
+                          color: IslamicTheme.primary.withOpacity(0.2),
+                          child: Icon(Icons.person, color: textColor, size: 20),
+                        ),
                   ),
                 ),
               ),

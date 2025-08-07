@@ -96,7 +96,7 @@ IMPORTANT: Your answer must be less than 50 words. Do not exceed this limit.
 
   // Build the prompt as an array: system prompt first, then chat history
   const prompt = [new AIMessage(systemPrompt), ...chatHistory];
-
+  console.log("prompt send to ai is", prompt);
   const result = await model.invoke(prompt);
   console.log("ai result.content", result);
   return result.content;

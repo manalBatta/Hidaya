@@ -103,7 +103,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     super.initState();
     _initializeAnimations();
     //here to stop chat when not needed
-    _initializeChatSession();
+    // _initializeChatSession();
     _inputController.addListener(() {
       setState(() {}); // Rebuilds the widget when the input changes
     });
@@ -135,10 +135,14 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
     if (userProvider.chatInitialized) {
       _scrollToBottom();
+      print("chat is already initialized");
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      print("chat not mounted so I returned");
+      return;
+    }
     try {
       final token = await AuthUtils.getValidToken(context);
       if (!mounted) return;
@@ -159,6 +163,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         _scrollToBottom();
         final dynamic greetingData = data['greeting'];
         String greetingText;
+        print("ai response $data");
         if (greetingData is List) {
           greetingText = "No response";
         } else {
