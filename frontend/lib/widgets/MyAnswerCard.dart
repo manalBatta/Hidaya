@@ -22,7 +22,7 @@ class MyAnswerCard extends StatefulWidget {
 
 class _MyAnswerCardState extends State<MyAnswerCard> {
   bool _isDeleting = false;
-  bool _deleted = false;
+
   Future<void> _deleteAnswer(String answerId) async {
     if (!mounted) return;
     setState(() {
@@ -35,7 +35,6 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Answer deleted successfully')));
-        _deleted = true;
         if (widget.onDelete != null) {
           widget.onDelete!();
           return; // Prevent further code from running after widget is disposed
@@ -102,8 +101,11 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
 
     // Determine if the volunteer has an answer to allow delete
     final Map<String, dynamic>? ownAnswer = volunteerAnswer ?? topAnswer;
+    // Fix: Ensure ownAnswerId is properly converted to string
     final String? ownAnswerId =
-        ownAnswer != null ? ownAnswer['answerId']?.toString() : null;
+        ownAnswer != null && ownAnswer['answerId'] != null
+            ? ownAnswer['answerId'].toString()
+            : null;
     final bool canDelete = ownAnswer != null && ownAnswer['answeredBy'] != null;
 
     return Container(
@@ -237,9 +239,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
     bool highlight = false,
   }) {
     final user = Provider.of<UserProvider>(context, listen: false).user;
-    final answererId = answer['answeredBy'] is Map ? answer['answeredBy']['id'] : null;
-    final userId = user?['id'];
-    final isOwner = answer['answeredBy']?['id'] == userId;
+
     final answerer =
         answer['answeredBy'] is Map
             ? answer['answeredBy']['displayName']?.toString()
@@ -247,9 +247,13 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
     final answerText = answer['text']?.toString() ?? '';
     final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
     final createdAt = _formatDate(answer['createdAt']?.toString() ?? '');
-    final answerId = answer['answerId']?.toString() ?? '';
-    TextEditingController _editAnswerController = TextEditingController(text: answerText);
-   
+    // Fix: Ensure answerId is properly converted to string
+    final answerId =
+        answer['answerId'] != null ? answer['answerId'].toString() : '';
+    TextEditingController _editAnswerController = TextEditingController(
+      text: answerText,
+    );
+
     void _showEditDialog() async {
       await showDialog(
         context: context,
@@ -288,40 +292,36 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
                       }
                       // Call API to update answer
                       try {
-                       // final token = await AuthUtils.getValidToken(context);
-                       print("AnswerId before update: $answerId");
+                        // final token = await AuthUtils.getValidToken(context);
 
-                        final url = Uri.parse('$adminUpdateAnswerUrl/$answerId');
-                        print( 'the url is:'+url.toString());
+                        final url = Uri.parse(
+                          '$adminUpdateAnswerUrl/$answerId',
+                        );
                         final response = await http.put(
                           url,
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
+                          headers: {'Content-Type': 'application/json'},
                           body: jsonEncode({'text': newText}),
                         );
-                        print("Response status code: ${response.statusCode}");
-                        print("Response body: ${response.body}");
-                        if (response.statusCode == 200 || response.statusCode == 204) {
-                          print("Answer updated successfully!");
+
+                        if (response.statusCode == 200 ||
+                            response.statusCode == 204) {
                           final updatedAnswer = jsonDecode(response.body);
                           Navigator.of(context).pop();
                           if (mounted) {
                             // Update the answer in the UI using onEdit callback
-    setState(() {
-      answer['text'] = updatedAnswer['text'];
-      answer['upvotesCount'] = updatedAnswer['upvotesCount'];
-      answer['createdAt'] = updatedAnswer['createdAt'];
-    });
-       widget.onEdit?.call(newText);
-
-  }
-  print("Answer updated successfully!");
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Answer updated successfully!')),
-  );
-                          
-                          
+                            setState(() {
+                              answer['text'] = updatedAnswer['text'];
+                              answer['upvotesCount'] =
+                                  updatedAnswer['upvotesCount'];
+                              answer['createdAt'] = updatedAnswer['createdAt'];
+                            });
+                            widget.onEdit?.call(newText);
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Answer updated successfully!'),
+                            ),
+                          );
                         } else {
                           setState(() {
                             errorText = 'Failed to update answer.';
@@ -408,6 +408,16 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
               Spacer(),
               Row(
                 children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: AppColors.askPageHumanBadge,
+                    ),
+
+                    tooltip: 'Edit Answer',
+                    onPressed: _showEditDialog,
+                  ),
                   Icon(
                     Icons.thumb_up,
                     size: 12,
@@ -421,12 +431,6 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
                       color: AppColors.askPageSubtitle,
                     ),
                   ),
-                  if (true)
-                    IconButton(
-                      icon: Icon(Icons.edit, color: Colors.blue),
-                      tooltip: 'Edit Answer',
-                      onPressed: _showEditDialog,
-                    ),
                 ],
               ),
             ],

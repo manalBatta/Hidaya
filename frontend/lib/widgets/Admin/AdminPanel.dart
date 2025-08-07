@@ -4,7 +4,6 @@ import 'package:frontend/utils/auth_utils.dart';
 import 'package:frontend/widgets/Admin/AdminDashboard.dart';
 import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
-import 'package:frontend/widgets/Admin/Analyticpage.dart';
 
 // Islamic Theme Colors
 class IslamicColors {
@@ -652,8 +651,7 @@ class _AdminPanelState extends State<AdminPanel> {
         return _buildStoriesPage();
       case '/admin/stories/add':
         return _buildAddStoryPage();
-      case '/admin/analytics':
-        return AnalyticsPage();
+
       default:
         return _buildPlaceholderPage(route);
     }

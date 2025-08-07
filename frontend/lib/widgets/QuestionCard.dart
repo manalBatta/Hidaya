@@ -86,7 +86,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   bool hasHummanAnswer(Map<String, dynamic> question) {
     final topAnswerId = question['topAnswerId'];
-    print("topAnswerId by ruba : $topAnswerId");
     return topAnswerId != null && topAnswerId.toString().trim().isNotEmpty;
   }
 
@@ -116,7 +115,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   //Done deep checking
   Future<void> saveQuestion() async {
-    print("calling saveQuestion");
     setState(() {
       isSaving = true;
     });
@@ -143,7 +141,6 @@ class _QuestionCardState extends State<QuestionCard> {
         body: jsonEncode({'questionId': questionId}),
       );
 
-      print("save question response is :${jsonDecode(response.body)}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -260,15 +257,10 @@ class _QuestionCardState extends State<QuestionCard> {
       final questionId = widget.question['questionId'];
       final apiUrl = Uri.parse('$questions/$questionId');
 
-      print('🍯🍯🍯 Making API call to: $apiUrl');
-
       final response = await http.get(
         apiUrl,
         headers: {'Authorization': 'Bearer $token'},
       );
-
-      print('🍯🍯🍯 Response status: ${response.statusCode}');
-      print('🍯🍯🍯 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -292,7 +284,6 @@ class _QuestionCardState extends State<QuestionCard> {
               answers
                   .where((a) => a['isFlagged'] != true && a['isHidden'] != true)
                   .toList();
-          print('allAnswers: $allAnswers');
           isLoadingAnswers = false;
         });
         // Fetch the upvoted answer ID for this question
@@ -304,7 +295,6 @@ class _QuestionCardState extends State<QuestionCard> {
         });
       }
     } catch (e) {
-      print('🍯🍯🍯 Error fetching answers: $e');
       setState(() {
         allAnswers = [];
         isLoadingAnswers = false;
@@ -481,7 +471,7 @@ class _QuestionCardState extends State<QuestionCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Answer submitted successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.islamicGreen600,
             ),
           );
 
@@ -809,7 +799,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                         content: Text(
                                           'Question deleted successfully',
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     if (widget.onRefresh != null)
@@ -922,7 +913,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                                       : Icons.lock,
                                                   color:
                                                       isPublic
-                                                          ? Colors.green
+                                                          ? AppColors
+                                                              .islamicGreen600
                                                           : Colors.orange,
                                                 ),
                                                 SizedBox(width: 8),
@@ -1008,15 +1000,13 @@ class _QuestionCardState extends State<QuestionCard> {
                                   final data = jsonDecode(response.body);
                                   if (response.statusCode == 200 &&
                                       data['success'] == true) {
-                                    print(
-                                      "status: ${response.statusCode}, data: $data",
-                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           'Question updated successfully',
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     setState(() {
@@ -1551,7 +1541,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   // Widget to display top answer
   Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
-    print('topAnswer🍭🍭🍭: $topAnswer');
     final isFlagged = topAnswer['isFlagged'];
     final isHidden = topAnswer['isHidden'];
     if (isFlagged == true || isHidden == true) return SizedBox.shrink();
@@ -1565,8 +1554,6 @@ class _QuestionCardState extends State<QuestionCard> {
     final isOwner =
         answeredBy['id'] ==
         Provider.of<UserProvider>(context, listen: false).userId;
-    debugPrint("🔍 isFlagged: $isFlagged");
-    debugPrint("🔍 isHidden: $isHidden");
 
     return Container(
       margin: EdgeInsets.only(top: 8),
@@ -1633,14 +1620,9 @@ class _QuestionCardState extends State<QuestionCard> {
                     color: AppColors.askPageTitle,
                   ),
                 ),
+
                 SizedBox(width: 4),
-                Icon(Icons.verified),
-                SizedBox(width: 4),
-                Icon(
-                  Icons.verified,
-                  size: _getResponsiveIconSize(12),
-                  color: AppColors.islamicGreen500,
-                ),
+
                 // Edit button for owner
                 if (isOwner)
                   IconButton(
@@ -1707,38 +1689,6 @@ class _QuestionCardState extends State<QuestionCard> {
                     },
                   ),
 
-                // Report icon
-                IconButton(
-                  icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
-                  tooltip: 'Report',
-                  onPressed: () async {
-                    await showDialog(
-                      context: context,
-                      builder:
-                          (context) => ReportModal(
-                            questionId: answerId,
-                            questionText: answerText,
-                            itemType: 'answer',
-                            scaffoldContext: scaffoldContext,
-                            onReportSuccess:
-                                () => _handleReportSuccess(answerId),
-                          ),
-                    );
-                  },
-                ),
-                SizedBox(width: 4),
-                // Upvote section
-                Tooltip(
-                  message:
-                      _isCertifiedVolunteer()
-                          ? "Expand to upvote this answer"
-                          : "$upvotesCount Muslims approved this",
-                  child: Icon(
-                    Icons.thumb_up,
-                    size: _getResponsiveIconSize(12),
-                    color: AppColors.islamicGreen500,
-                  ),
-                ),
                 // Report icon
                 IconButton(
                   icon: Icon(Icons.flag_outlined, color: Colors.redAccent),

@@ -403,9 +403,6 @@ class _ProfilePageState extends State {
     _certTitleController.dispose();
     _certInstitutionController.dispose();
     _spokenLanguagesController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -413,8 +410,9 @@ class _ProfilePageState extends State {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
-      builder: (context) =>
-          ChangePasswordDialog(scaffoldMessenger: scaffoldMessenger),
+      builder:
+          (context) =>
+              ChangePasswordDialog(scaffoldMessenger: scaffoldMessenger),
     );
   }
 
@@ -1253,54 +1251,31 @@ class _ProfilePageState extends State {
                   ),
                   SizedBox(width: 12),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _showChangePasswordDialog,
-                      icon: Icon(Icons.lock, size: 16),
-                      label: Text('Change Password'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.islamicGreen600,
-                        side: BorderSide(color: AppColors.islamicGreen300),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NotificationCenter(),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.notifications_active, size: 16),
+                      label: Text('View All Notifications'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.islamicGreen500,
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 12),
-              /* ElevatedButton.icon(
-                onPressed: _sendTestNotification,
-                icon: Icon(Icons.notifications, size: 16),
-                label: Text('Test Notifications'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.islamicGold500,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              SizedBox(height: 12), */
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NotificationCenter(),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.notifications_active, size: 16),
-                label: Text('View All Notifications'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.islamicGreen500,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
+
               SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () async {
@@ -1320,7 +1295,6 @@ class _ProfilePageState extends State {
         ),
         // Settings button at top right
         Positioned(top: 0, right: 0, child: _buildSettingsMenu()),
-
       ],
     );
   }
@@ -1807,12 +1781,12 @@ class _ProfilePageState extends State {
                 Expanded(
                   child: _buildContentCard(
                     Icons.book,
-                    'Saved Lessons',
-                    (userObj['savedLessons'] == null ||
-                            userObj['savedLessons'].isEmpty)
-                        ? 'start saving lessons'
-                        : userObj['savedLessons'].length.toString(),
-                    'lessons saved',
+                    'Saved Stories',
+                    (userObj['savedStories'] == null ||
+                            userObj['savedStories'].isEmpty)
+                        ? 'save first story'
+                        : userObj['savedStories'].length.toString(),
+                    'stories saved',
                     AppColors.islamicGreen50,
                     AppColors.islamicGreen600,
                     () {
@@ -2141,7 +2115,7 @@ class _ProfilePageState extends State {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Profile updated successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.islamicGreen600,
           ),
         );
       }
@@ -2211,7 +2185,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Password changed successfully!'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.islamicGreen600,
         ),
       );
 
@@ -2221,8 +2195,9 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     } else {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
-            content: Text('Failed to change password. Please try again.'),
-            backgroundColor: Colors.red),
+          content: Text('Failed to change password. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -2231,8 +2206,9 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     Navigator.of(context).pop(); // Close the current dialog
     showDialog(
       context: context,
-      builder: (context) =>
-          ForgotPasswordDialog(scaffoldMessenger: widget.scaffoldMessenger),
+      builder:
+          (context) =>
+              ForgotPasswordDialog(scaffoldMessenger: widget.scaffoldMessenger),
     );
   }
 
@@ -2244,9 +2220,13 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: AppColors.islamicGreen200),
       ),
-      title: const Text('Change Password',
-          style: TextStyle(
-              color: AppColors.islamicGreen800, fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Change Password',
+        style: TextStyle(
+          color: AppColors.islamicGreen800,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       content: Form(
         key: _passwordFormKey,
         child: Column(
@@ -2256,23 +2236,29 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               controller: _currentPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: 'Current Password',
-                  labelStyle: TextStyle(
-                      color: AppColors.islamicGreen700,
-                      fontWeight: FontWeight.w500)),
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Enter your current password'
-                  : null,
+                labelText: 'Current Password',
+                labelStyle: TextStyle(
+                  color: AppColors.islamicGreen700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              validator:
+                  (value) =>
+                      value == null || value.isEmpty
+                          ? 'Enter your current password'
+                          : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _newPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: 'New Password',
-                  labelStyle: TextStyle(
-                      color: AppColors.islamicGreen700,
-                      fontWeight: FontWeight.w500)),
+                labelText: 'New Password',
+                labelStyle: TextStyle(
+                  color: AppColors.islamicGreen700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Enter a new password';
@@ -2288,10 +2274,12 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               controller: _confirmPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: 'Confirm New Password',
-                  labelStyle: TextStyle(
-                      color: AppColors.islamicGreen700,
-                      fontWeight: FontWeight.w500)),
+                labelText: 'Confirm New Password',
+                labelStyle: TextStyle(
+                  color: AppColors.islamicGreen700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               validator: (value) {
                 if (value != _newPasswordController.text) {
                   return 'Passwords do not match';
@@ -2304,8 +2292,10 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: _showForgotPasswordDialog,
-                child: const Text('Forgot Password?',
-                    style: TextStyle(color: AppColors.islamicGreen600)),
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(color: AppColors.islamicGreen600),
+                ),
               ),
             ),
           ],
@@ -2314,15 +2304,19 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel',
-              style: TextStyle(
-                  color: AppColors.islamicGreen600,
-                  fontWeight: FontWeight.w600)),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(
+              color: AppColors.islamicGreen600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.islamicGreen500,
-              foregroundColor: Colors.white),
+            backgroundColor: AppColors.islamicGreen500,
+            foregroundColor: Colors.white,
+          ),
           onPressed: () {
             if (_passwordFormKey.currentState!.validate()) {
               _changePassword();
@@ -2369,9 +2363,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'email': _emailController.text,
-      }),
+      body: jsonEncode({'email': _emailController.text}),
     );
     print(response.body);
     if (!mounted) return;
@@ -2380,7 +2372,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Password reset link sent to your email.'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.islamicGreen600,
         ),
       );
     } else {
@@ -2405,25 +2397,32 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: AppColors.islamicGreen200),
       ),
-      title: const Text('Forgot Password',
-          style: TextStyle(
-              color: AppColors.islamicGreen800, fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Forgot Password',
+        style: TextStyle(
+          color: AppColors.islamicGreen800,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-                'Enter your email address and we will send you a link to reset your password.'),
+              'Enter your email address and we will send you a link to reset your password.',
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                  labelText: 'Email',
-                  labelStyle: TextStyle(
-                      color: AppColors.islamicGreen700,
-                      fontWeight: FontWeight.w500)),
+                labelText: 'Email',
+                labelStyle: TextStyle(
+                  color: AppColors.islamicGreen700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               validator: (value) {
                 if (value == null || value.isEmpty || !value.contains('@')) {
                   return 'Please enter a valid email';
@@ -2437,15 +2436,19 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel',
-              style: TextStyle(
-                  color: AppColors.islamicGreen600,
-                  fontWeight: FontWeight.w600)),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(
+              color: AppColors.islamicGreen600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.islamicGreen500,
-              foregroundColor: Colors.white),
+            backgroundColor: AppColors.islamicGreen500,
+            foregroundColor: Colors.white,
+          ),
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               _sendResetLink();
