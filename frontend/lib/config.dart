@@ -28,7 +28,10 @@ final forgotPassword = url + "forgot-password"; //to forgot password
 final deleteAns = url + "answers/delete/";
 final deletAccounturl = url + "delete-account";
 final storyUrl = url + "story";
+final addStoryUrl = url + "admin/addstory";
+final updateStoryUrl = url + "admin/updatestory";
 final saveStoryUrl = url + "story/savestory";
+final deleteStoryUrl=url+"admin/deletestory";
 final likeStoryUrl = url + "story/likestory";
 final userGrowth = url + "admin/user-growth";
 final gender = url + "admin/gender-distribution";
@@ -43,8 +46,12 @@ final adminEditUserUrl = url + "admin/edit-user"; // usage: adminEditUserUrl
 // Admin endpoints for questions and answers
 final adminAllQuestionsUrl = url + "admin/questions";
 final adminAllAnswersUrl = url + "admin/answers";
-final adminUpdateQuestionUrl = url + "admin/update-question"; // usage: adminUpdateQuestionUrl + questionId
-final flagQuestionUrl = url + "admin/flag-question/"; // usage: flagQuestionUrl + questionId
-final adminUpdateAnswerUrl = url + "admin/update-answer"; // usage: adminUpdateAnswerUrl + answerId
-final adminHideAnswerUrl = url + "admin/hide-answer"; // usage: adminHideAnswerUrl + answerId
+final adminUpdateQuestionUrl =
+    url + "admin/update-question"; // usage: adminUpdateQuestionUrl + questionId
+final flagQuestionUrl =
+    url + "admin/flag-question/"; // usage: flagQuestionUrl + questionId
+final adminUpdateAnswerUrl =
+    url + "admin/update-answer"; // usage: adminUpdateAnswerUrl + answerId
+final adminHideAnswerUrl =
+    url + "admin/hide-answer"; // usage: adminHideAnswerUrl + answerId
 final adminReviewAndUpdateAnswerUrl = url + "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId

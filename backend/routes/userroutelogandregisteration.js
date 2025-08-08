@@ -40,6 +40,7 @@ import {
   savestory,
   likestory,
   getstorybyid,
+  updatestory,
 } from "../controller/StoryController.js";
 
 import {
@@ -64,8 +65,6 @@ import {
   adminUpdateAnswer,
   hideanswer,
 } from "../controller/AdminController.js";
-
-
 
 router.post("/register", register);
 router.post("/login", login);
@@ -105,6 +104,8 @@ router.post("/story/savestory", authMiddleware, savestory);
 router.post("/story/likestory", authMiddleware, likestory);
 //get story by id
 router.get("/getstorybyid", authMiddleware, getstorybyid);
+// update story (user/admin depending on auth & policy)
+router.put("/story/:id", authMiddleware, updatestory);
 
 // Admin routes for questions and answers
 router.get("/admin/questions", getAllQuestions);
@@ -128,12 +129,13 @@ router.get("/admin/flags", getflags);
 router.get("/admin/getallstories", getallstoriesforadmin);
 //Add new story
 router.post("/admin/addstory", addstory);
+//update story
 router.patch("/admin/updatestory/:id", updateStory);
 //delete story
 router.delete("/admin/deletestory/:id", deleteStory);
- router.get("/admin/questions", getAllQuestions);
- router.get("/admin/answers", getAllAnswers);
- router.put("/admin/update-question/:id", updatequestionbyadmin);  
+router.get("/admin/questions", getAllQuestions);
+router.get("/admin/answers", getAllAnswers);
+router.put("/admin/update-question/:id", updatequestionbyadmin);
 // Flag a question
 router.post("/admin/flag-question/:id", flagQuestion);
 // Update an answer by admin
