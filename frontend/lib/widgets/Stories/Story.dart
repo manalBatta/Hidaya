@@ -725,32 +725,6 @@ class _StoriesPageState extends State<StoriesPage>
     );
   }
 
-  /*   Widget _buildPageIndicators() {
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_filteredStories.length, (index) {
-          return AnimatedContainer(
-            duration: Duration(milliseconds: 300),
-            margin: EdgeInsets.symmetric(horizontal: 4),
-            width: index == _currentIndex ? 32 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color:
-                  index == _currentIndex
-                      ? IslamicTheme.primary
-                      : Colors.white.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          );
-        }),
-      ),
-    );
-  } */
-
   Widget _buildStoryPage(Story story) {
     final isExpanded = _expandedStory == story.id;
     final keepUnblurred = _keepUnblurred[story.id] == true;
@@ -1341,34 +1315,6 @@ class _StoriesPageState extends State<StoriesPage>
           ),
           child: Text('"$quote"'),
         ),
-      ),
-    );
-  }
-
-  Widget _buildVideoControls() {
-    return Positioned(
-      top: 16,
-      right: 16,
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Icon(Icons.pause, color: Colors.white, size: 20),
-          ),
-          SizedBox(height: 8),
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Icon(Icons.volume_up, color: Colors.white, size: 20),
-          ),
-        ],
       ),
     );
   }

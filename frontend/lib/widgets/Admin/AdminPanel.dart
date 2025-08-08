@@ -4,6 +4,8 @@ import 'package:frontend/utils/auth_utils.dart';
 import 'package:frontend/widgets/Admin/AdminDashboard.dart';
 import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
+import 'package:frontend/widgets/Admin/AdminStoriesPage.dart';
+import 'AddStoryPage.dart';
 
 // Islamic Theme Colors
 class IslamicColors {
@@ -100,12 +102,12 @@ class _AdminPanelState extends State<AdminPanel> {
     NavigationItem(
       id: 'stories',
       label: 'Revert Stories',
-      icon: Icons.bookmark_outline,
+      icon: Icons.brightness_6_outlined,
       subItems: [
         NavigationItem(
           id: 'all-stories',
           label: 'All Stories',
-          icon: Icons.bookmark,
+          icon: Icons.brightness_6,
           route: '/admin/stories',
         ),
         NavigationItem(
@@ -648,9 +650,13 @@ class _AdminPanelState extends State<AdminPanel> {
       case '/admin/lessons':
         return _buildLessonsPage();
       case '/admin/stories':
-        return _buildStoriesPage();
+        return AdminStoriesPage(
+          onNavigateToAddStory: () => _navigateToRoute('/admin/stories/add'),
+        );
       case '/admin/stories/add':
-        return _buildAddStoryPage();
+        return AddStoryPage(
+          onBackToStories: () => _navigateToRoute('/admin/stories'),
+        );
 
       default:
         return _buildPlaceholderPage(route);
@@ -663,277 +669,6 @@ class _AdminPanelState extends State<AdminPanel> {
 
   Widget _buildStoriesPage() {
     return _buildPlaceholderPage('/admin/stories');
-  }
-
-  Widget _buildAddStoryPage() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add New Story',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: IslamicColors.green800,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Create a new revert story to inspire others',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: IslamicColors.green600,
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: () => _navigateToRoute('/admin/stories'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: IslamicColors.green600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.arrow_back, size: 16),
-                    SizedBox(width: 8),
-                    Text('Back to Stories'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          // Form
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: IslamicColors.green100),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Story Information',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: IslamicColors.green800,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTextField(
-                        'Story Title',
-                        'Enter a compelling title',
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdown('Language', [
-                        'English',
-                        'Arabic',
-                        'Urdu',
-                        'Turkish',
-                      ]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTextField(
-                        'Author Name',
-                        'Enter author name',
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildTextField('Author Country', 'Enter country'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  'Story Content',
-                  'Share the inspiring journey...',
-                  maxLines: 6,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTextField(
-                        'Tags',
-                        'conversion, faith, journey (comma-separated)',
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdown('Media Type', [
-                        'Text',
-                        'Audio',
-                        'Video',
-                      ]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () => _navigateToRoute('/admin/stories'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: IslamicColors.green700,
-                        side: const BorderSide(color: IslamicColors.green300),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: _handleSaveStory,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: IslamicColors.green600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Create Story'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, String hint, {int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: IslamicColors.green700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green500),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdown(String label, List<String> options) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: IslamicColors.green700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green500),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
-          items:
-              options
-                  .map(
-                    (option) =>
-                        DropdownMenuItem(value: option, child: Text(option)),
-                  )
-                  .toList(),
-          onChanged: (value) {},
-        ),
-      ],
-    );
   }
 
   Widget _buildPlaceholderPage(String route) {
@@ -1057,15 +792,5 @@ class _AdminPanelState extends State<AdminPanel> {
             ],
           ),
     );
-  }
-
-  void _handleSaveStory() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Story created successfully!'),
-        backgroundColor: IslamicColors.green600,
-      ),
-    );
-    _navigateToRoute('/admin/stories');
   }
 }
