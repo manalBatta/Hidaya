@@ -658,6 +658,8 @@ class _AdminPanelState extends State<AdminPanel> {
         return AddStoryPage(
           onBackToStories: () => _navigateToRoute('/admin/stories'),
         );
+        case '/admin/flags':
+           return FlagsAdminPage();
 
       default:
         return _buildPlaceholderPage(route);
