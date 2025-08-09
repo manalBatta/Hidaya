@@ -231,6 +231,8 @@ class _NotificationCenterState extends State<NotificationCenter> {
         return '🎉';
       case 'test':
         return '🔔';
+      case 'question_updated':
+        return '📝';
       default:
         return '📢';
     }
@@ -248,6 +250,8 @@ class _NotificationCenterState extends State<NotificationCenter> {
         return AppColors.islamicGreen400;
       case 'test':
         return AppColors.islamicGold400;
+      case 'question_updated':
+        return AppColors.islamicGreen500;
       default:
         return AppColors.islamicGreen500;
     }
@@ -539,11 +543,187 @@ class _NotificationCenterState extends State<NotificationCenter> {
           print('Navigate to new question: $questionId');
         }
         break;
-      case 'welcome':
-      case 'test':
+      case 'welcome':break;
+      case 'test': break;
+      case 'question_updated': // I want to show the updated question with the answer of the volunteer to update his answer
         // No navigation needed
+              _handleQuestionUpdated(context, data, notification['message']);
+        print('✴️✴️✴️Notification: $notification');
+      /*  final questionId = data?['questionId'];
+        final answerId = data?['answerId'];
+         //i want to make a popup dialog with the text of the notifcation and small button called review answer
+        if (questionId != null && answerId != null) {
+          print('Navigate to updated question: $questionId');
+          //get the question and answer from the database
+        
+         _showAnswerDialogToPreviewAndEdit(context, data['questionText'], data['answerText'], (updatedAnswer) async {
+          //update the answer in the database and make the answer hiddentemporary false
+          
+          final response = await http.put(
+            Uri.parse('${adminReviewAndUpdateAnswerUrl}$answerId'),
+            headers: {
+              "Content-Type": "application/json",
+              //"Authorization": "Bearer $token",
+            },
+            body: jsonEncode({
+              "answerText": updatedAnswer,
+            }),
+          );
+          if (response.statusCode == 200) {
+            print('Answer updated successfully');
+            //show a snackbar to the user that the answer has been updated successfully
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Answer updated successfully'),
+                backgroundColor: AppColors.islamicGreen500,
+              ),
+            );
+          } else {
+            print('Failed to update answer');
+            //show a snackbar to the user that the answer has not been updated successfully
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to update answer'),
+                backgroundColor: AppColors.errorRed,
+              ),
+            );
+          }
+          // Handle the updated answer
+          print('Updated answer: $updatedAnswer');
+         });
+        }*/
         break;
     }
   }
 }
  
+ void _showAnswerDialogToPreviewAndEdit(
+  BuildContext context,
+  String questionText,
+  String initialAnswer,
+  void Function(String updatedAnswer) onSave,
+) {
+  TextEditingController _answerController = TextEditingController(text: initialAnswer);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Review and Update Your Answer'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Question:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 4),
+            Text(
+              questionText,
+              style: TextStyle(color: Colors.black87),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Your Answer:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 4),
+            TextField(
+              controller: _answerController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Edit your answer here...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+            },
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              String updatedAnswer = _answerController.text.trim();
+              onSave(updatedAnswer); // Call the save callback
+              Navigator.of(context).pop(); // Close the dialog
+            },
+            child: Text('Save'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
+
+void _handleQuestionUpdated(BuildContext context, Map<String, dynamic> data, String? message) {
+  final questionId = data['questionId'];
+  final answerId = data['answerId'];
+
+  if (questionId != null && answerId != null) {
+    print('✴️ Navigate to updated question: $questionId');
+
+    // Save the outer context BEFORE showing the dialog
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text("Updated Question"),
+          content: Text(message ?? "The question was updated."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _showAnswerDialogToPreviewAndEdit(
+                  context, // <-- Use outer context here
+                  data['questionText'],
+                  data['answerText'],
+                  (updatedAnswer) async {
+                    final response = await http.put(
+                      Uri.parse('${adminReviewAndUpdateAnswerUrl}$answerId'),
+                      headers: {"Content-Type": "application/json"},
+                      body: jsonEncode({"answerText": updatedAnswer}),
+                    );
+                    
+                    if (response.statusCode == 200) {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Answer updated successfully'),
+                          backgroundColor: AppColors.islamicGreen500,
+                        ),
+                      );
+                    } else {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update answer'),
+                          backgroundColor: AppColors.errorRed,
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+              child: Text("Review Answer"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+
+
+   

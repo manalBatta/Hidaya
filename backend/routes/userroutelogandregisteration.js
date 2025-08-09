@@ -30,6 +30,7 @@ import {
   getanswersofvolunteer,
   getanswerupvotedbyvolunteer,
   deleteAnswer,
+  reviewandupdateanswer,
 } from "../controller/answercontroller.js";
 import { reportquestion } from "../controller/flagcontroller.js";
 import { getalllesson } from "../controller/lessoncontroller.js";
@@ -39,12 +40,31 @@ import {
   savestory,
   likestory,
   getstorybyid,
+  updatestory,
 } from "../controller/StoryController.js";
 
-
-import { getusersgrowth ,getquestioncategories,getgenderdistribution,getdashboardstats,gettodayactivity,gettopcontent,getusersdata,approvevoulnteer} from "../controller/AdminController.js";
-
-
+import {
+  getusersgrowth,
+  getquestioncategories,
+  getgenderdistribution,
+  getdashboardstats,
+  gettodayactivity,
+  gettopcontent,
+  getusersdata,
+  approvevoulnteer,
+  adminEditUser,
+  getflags,
+  getallstoriesforadmin,
+  addstory,
+  updateStory,
+  deleteStory,
+  getAllQuestions,
+  getAllAnswers,
+  updatequestionbyadmin,
+  flagQuestion,
+  adminUpdateAnswer,
+  hideanswer,
+} from "../controller/AdminController.js";
 
 router.post("/register", register);
 router.post("/login", login);
@@ -84,6 +104,12 @@ router.post("/story/savestory", authMiddleware, savestory);
 router.post("/story/likestory", authMiddleware, likestory);
 //get story by id
 router.get("/getstorybyid", authMiddleware, getstorybyid);
+// update story (user/admin depending on auth & policy)
+router.put("/story/:id", authMiddleware, updatestory);
+
+// Admin routes for questions and answers
+router.get("/admin/questions", getAllQuestions);
+router.get("/admin/answers", getAllAnswers);
 //admin routes
 //admin/usersgrowth
 router.get("/admin/user-growth", getusersgrowth);
@@ -91,9 +117,31 @@ router.get("/admin/question-categories", getquestioncategories);
 router.get("/admin/gender-distribution", getgenderdistribution);
 router.get("/admin/dashboard-stats", getdashboardstats);
 router.get("/admin/today-activity", gettodayactivity);
-router.get("/admin/top-content",gettopcontent);
+router.get("/admin/top-content", gettopcontent);
 //admin/usersdata
-router.get("/admin/users",getusersdata);
-router.post("/admin/approve-voulnteer",approvevoulnteer);
 
+router.put("/admin/edit-user", authMiddleware, adminEditUser);
+
+router.get("/admin/users", getusersdata);
+router.post("/admin/approve-voulnteer", approvevoulnteer);
+router.get("/admin/flags", getflags);
+//get all the stories
+router.get("/admin/getallstories", getallstoriesforadmin);
+//Add new story
+router.post("/admin/addstory", addstory);
+//update story
+router.patch("/admin/updatestory/:id", updateStory);
+//delete story
+router.delete("/admin/deletestory/:id", deleteStory);
+router.get("/admin/questions", getAllQuestions);
+router.get("/admin/answers", getAllAnswers);
+router.put("/admin/update-question/:id", updatequestionbyadmin);
+// Flag a question
+router.post("/admin/flag-question/:id", flagQuestion);
+// Update an answer by admin
+router.put("/admin/update-answer/:id", adminUpdateAnswer);
+//hide answer by the admin
+router.put("/admin/hide-answer/:id", hideanswer);
+//review and update answer by the volunteer
+router.put("/review-and-update-answer/:id", reviewandupdateanswer);
 export default router;

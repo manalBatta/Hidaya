@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/constants/colors.dart';
 import 'package:http/http.dart' as http;
 import '../utils/auth_utils.dart';
 import 'dart:convert';
@@ -103,7 +104,7 @@ class _ReportModalState extends State<ReportModal> {
   ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
     SnackBar(
       content: Text(msg),
-      backgroundColor: isError ? Colors.red : Colors.green,
+      backgroundColor: isError ? Colors.red : AppColors.islamicGreen600,
       behavior: SnackBarBehavior.floating,
     ),
   );

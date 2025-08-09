@@ -21,6 +21,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
+import 'package:frontend/widgets/Admin/AdminPanel.dart';
 
 Future<void> resetAppState() async {
   // Clear SharedPreferences
@@ -195,9 +196,11 @@ class _HidayaAppState extends State<HidayaApp> {
         return MaterialApp(
           home:
               userProvider.isLoggedIn
-                  ? ResponsiveLayout(
-                    userRole: userProvider.user?['role'] ?? 'user',
-                  )
+                  ? (userProvider.user?['role'] == 'admin'
+                      ? AdminPanel()
+                      : ResponsiveLayout(
+                        userRole: userProvider.user?['role'] ?? 'user',
+                      ))
                   : SignInPage(),
         );
       },

@@ -200,7 +200,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
     try {
       final response = await Supabase.instance.client.storage
-          .from('certifications') // ✅ use same bucket
+          .from('story')
           .uploadBinary(
             fileName,
             fileBytes,
@@ -211,7 +211,7 @@ class _RegisterPageState extends State<RegisterPage> {
         print('Upload successful');
 
         final publicUrl = Supabase.instance.client.storage
-            .from('certifications') // ✅ use same bucket
+            .from('story')
             .getPublicUrl(fileName);
 
         print('🌍 Public URL: $publicUrl');
@@ -348,14 +348,14 @@ class _RegisterPageState extends State<RegisterPage> {
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body);
       if (response.statusCode == 201 && data['status'] == true) {
-        
-           showDialog(
+        showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text('Registration Successful'),
               content: const Text(
-                  'A verification email has been sent to your email address. Please check your inbox to complete the registration.'),
+                'A verification email has been sent to your email address. Please check your inbox to complete the registration.',
+              ),
               actions: <Widget>[
                 TextButton(
                   child: const Text('OK'),
@@ -364,7 +364,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const SignInPage()),
+                        builder: (context) => const SignInPage(),
+                      ),
                     );
                   },
                 ),

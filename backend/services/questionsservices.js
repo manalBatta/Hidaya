@@ -1,7 +1,7 @@
 import AnswerModel from "../models/Answers.js";
 import QuestionModel from "../models/Questions.js";
 import UserModel from "../models/User.js";
-
+import { sendNotification } from './notificationService.js';
 import { v4 as uuidv4 } from "uuid";
 class QuestionServices {
   static async SubmitQuestion(data, id) {
@@ -50,7 +50,7 @@ class QuestionServices {
         .filter(Boolean);
 
       const topAnswers = await AnswerModel.find(
-        { answerId: { $in: topAnswerIds }, isFlagged: { $ne: true } },
+        { answerId: { $in: topAnswerIds }, isFlagged: { $ne: true }, isHidden: { $ne: true } },
         {
           answerId: 1,
           questionId: 1,
@@ -60,6 +60,8 @@ class QuestionServices {
           language: 1,
           upvotesCount: 1,
           isFlagged: 1,
+          isHidden: 1,
+          hiddenTemporary: 1,
         }
       );
       console.log("🔍 Top Answers with isFlagged:", topAnswers);
@@ -98,6 +100,9 @@ class QuestionServices {
           createdAt: ans.createdAt,
           language: ans.language,
           upvotesCount: ans.upvotesCount,
+          isFlagged: ans.isFlagged || false,
+          isHidden: ans.isHidden || false,
+          hiddenTemporary: ans.hiddenTemporary || false,
           answeredBy: ansUser
             ? {
                 id: ansUser.userId,
@@ -190,6 +195,9 @@ class QuestionServices {
         if (q.topAnswerId) {
           const rawTopAnswer = await AnswerModel.findOne({
             answerId: q.topAnswerId,
+            isFlagged: { $ne: true },
+            isHidden: { $ne: true },
+            hiddenTemporary: { $ne: true },
           }).lean();
 
           if (rawTopAnswer) {
@@ -207,6 +215,7 @@ class QuestionServices {
                 savedLessons: 1,
                 createdAt: 1,
                 isFlagged: 1,
+                
               }
             ).lean();
 
@@ -217,6 +226,9 @@ class QuestionServices {
               createdAt: rawTopAnswer.createdAt,
               language: rawTopAnswer.language,
               upvotesCount: rawTopAnswer.upvotesCount,
+              isFlagged: rawTopAnswer.isFlagged || false,
+              isHidden: rawTopAnswer.isHidden || false,
+              hiddenTemporary: rawTopAnswer.hiddenTemporary || false,
               answeredBy: topAnswerUser
                 ? {
                     id: topAnswerUser.userId,
@@ -289,10 +301,17 @@ class QuestionServices {
 
   static async DeleteQuestion(userId, questionId) {
     const question = await QuestionModel.findOne({ questionId }); //find the question by the questionId
+    console.log("Deleting question@@@@:", question);
     if (!question) {
       return null;
     }
-    if (question.askedBy !== userId) {
+    // Check if the user is the one who asked the question or an admin
+    const user = await UserModel.findOne({ userId });
+     if (!user) {
+    return null;
+  }
+    if (question.askedBy !== userId && user.role !== "admin") {
+      console.log("User is not authorized to delete this question");
       return null;
     }
     await QuestionModel.deleteOne({ questionId }); //delete the question from the question table
@@ -325,6 +344,56 @@ class QuestionServices {
     question.isPublic = isPublic;
     question.aiAnswer = aiAnswer;
     await question.save();
+    //send notification to the volunteers who answered the question and hide the answers of the questions
+    const answers = await AnswerModel.find({ questionId: questionId });
+      const results = [];
+      for (const answer of answers) {
+        const volunteerId = answer.answeredBy;
+        const notification = {
+          userId: volunteerId,
+          type: "question_updated",
+          title: "Question Updated 🔄",
+          message: `The question you answered has been updated: "${question.text}". Please review and update your answer if needed, tab here to review and update your answer`,
+          data: {
+            questionId: question.questionId,
+            answerId: answer.answerId,
+            questionText: question.text,
+            answerText: answer.text,
+          },
+          saveToDatabase: true
+        };
+    
+        console.log(`📣 Sending to ${volunteerId}:`, notification);
+    
+        try {
+          const result = await sendNotification(notification);
+          results.push({ userId: volunteerId, ...result });
+        } catch (err) {
+          console.error(`❌ Failed to notify ${volunteerId}:`, err);
+        }
+      }
+      console.log("✅ All notification results:", results);
+      await AnswerModel.updateMany({ questionId: questionId }, { hiddenTemporary: true });
+
+   /* if (answers.length > 0) {
+      const volunteerIds = [...new Set(answers.map(a => a.answeredBy))];
+      const notification = {
+        type: "question_updated",
+        title: "Question Updated",
+        message: `Question has been updated: "${question.text} ,you can check it and update your answer if needed to appear it for the users"`,
+        data: { questionId: question.questionId },
+        saveToDatabase: true
+      };
+      try {
+        const results = await sendNotificationToMultiple(volunteerIds, notification);
+        console.log("Notification results:", results);
+        //hide all the answers of the updated question 
+        await AnswerModel.updateMany({ questionId: questionId }, { hiddenTemporary: true });
+        console.log("👍👍👍👍👍👍👍Answers hidden successfully");
+      } catch (err) {
+        console.error("Failed to send notifications:", err);
+      }
+    }*/
     return question;
   }
 }

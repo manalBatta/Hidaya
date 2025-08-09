@@ -43,15 +43,15 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
     NavigationItem(
       id: 'hidayaStories',
       label: 'Hidaya Stories',
-      icon: Icons.book_outlined,
-      activeIcon: Icons.book,
+      icon: Icons.brightness_6_outlined,
+      activeIcon: Icons.brightness_6,
       page: StoriesPage(),
     ),
     NavigationItem(
       id: 'lessons',
       label: 'Lessons',
-      icon: Icons.book_outlined,
-      activeIcon: Icons.book,
+      icon: Icons.brightness_6_outlined,
+      activeIcon: Icons.brightness_6,
       page: LessonsPage(),
     ),
     NavigationItem(

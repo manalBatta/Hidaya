@@ -9,7 +9,7 @@ mongoose
   })
   .then(() => console.log("✅ MongoDB Atlas Connected"))
   .catch((err) => {
-    console.error("❌ MongoDB Connection Error:", err);
+    console.error("❌ MongoDB Connection Error from backend:", err);
     process.exit(1);
   });
 

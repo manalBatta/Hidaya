@@ -18,25 +18,34 @@ class FlagServices {
 
       await newFlag.save();
 
-      if (data.itemType.toLowerCase() === "question") {
-        await QuestionModel.findOneAndUpdate(
-          { questionId: data.itemId },
-          { isFlagged: true }
-        );
-      }
-
-      if (data.itemType.toLowerCase() === "answer") {
-        const answer = await AnswerModel.findOneAndUpdate(
-          { answerId: data.itemId },
-          { isFlagged: true },
-          { new: true }
-        );
-
-        if (answer && answer.questionId) {
-          await this.recalculateTopAnswer(answer.questionId);
-        } else {
-          console.warn("Answer not found or missing questionId");
+      // Safely update the flagged item
+      try {
+        if (data.itemType.toLowerCase() === "question") {
+          const question = await QuestionModel.findOne({ questionId: data.itemId });
+          if (question) {
+            question.isFlagged = true;
+            await question.save();
+          } else {
+            console.warn(`Question with ID ${data.itemId} not found for flagging`);
+          }
         }
+
+        if (data.itemType.toLowerCase() === "answer") {
+          const answer = await AnswerModel.findOne({ answerId: data.itemId });
+          if (answer) {
+            answer.isFlagged = true;
+            await answer.save();
+            
+            if (answer.questionId) {
+              await this.recalculateTopAnswer(answer.questionId);
+            }
+          } else {
+            console.warn(`Answer with ID ${data.itemId} not found for flagging`);
+          }
+        }
+      } catch (updateError) {
+        console.warn("Error updating flagged item:", updateError);
+        // Don't throw the error - the flag was already saved successfully
       }
 
       return { newFlag };
@@ -46,20 +55,32 @@ class FlagServices {
   }
 
   static async recalculateTopAnswer(questionId) {
-    console.log("🔍 Recalculating top answer for question:", questionId);
-    const answers = await AnswerModel.find({
-      questionId: questionId,
-      isFlagged: { $ne: true },
-    }).sort({ upvotesCount: -1 });
-    const question = await QuestionModel.findOne({ questionId: questionId });
+    try {
+      console.log("🔍 Recalculating top answer for question:", questionId);
+      const answers = await AnswerModel.find({
+        questionId: questionId,
+        isFlagged: { $ne: true },
+        isHidden: { $ne: true }, // <-- ignore hidden answers
+      }).sort({ upvotesCount: -1 });
+      
+      const question = await QuestionModel.findOne({ questionId: questionId });
+      if (!question) {
+        console.warn(`🏆🏆Question with ID ${questionId} not found for top answer recalculation`);
+        return;
+      }
 
-    if (answers.length > 0) {
-      question.topAnswerId = answers[0].answerId;
-    } else {
-      question.topAnswerId = null;
+      if (answers.length > 0) {
+        question.topAnswerId = answers[0].answerId;
+        console.log(`🏆🏆🏆Top answer for question ${questionId} is now ${question.topAnswerId}`);
+      } else {
+        question.topAnswerId = '';// Set to empty string if no valid answers
+         console.log(`🏆🏆🏆No valid answers found for question ${questionId}, setting topAnswerId to null`);
+      }
+
+      await question.save();
+    } catch (error) {
+      console.warn("Error recalculating top answer:", error);
     }
-
-    await question.save();
   }
 }
 

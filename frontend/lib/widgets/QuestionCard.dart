@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/UserProvider.dart';
 import 'package:http/http.dart' as http;
@@ -87,7 +86,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   bool hasHummanAnswer(Map<String, dynamic> question) {
     final topAnswerId = question['topAnswerId'];
-    print("topAnswerId by ruba : $topAnswerId");
     return topAnswerId != null && topAnswerId.toString().trim().isNotEmpty;
   }
 
@@ -117,7 +115,6 @@ class _QuestionCardState extends State<QuestionCard> {
 
   //Done deep checking
   Future<void> saveQuestion() async {
-    print("calling saveQuestion");
     setState(() {
       isSaving = true;
     });
@@ -144,7 +141,6 @@ class _QuestionCardState extends State<QuestionCard> {
         body: jsonEncode({'questionId': questionId}),
       );
 
-      print("save question response is :${jsonDecode(response.body)}");
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -265,6 +261,7 @@ class _QuestionCardState extends State<QuestionCard> {
         apiUrl,
         headers: {'Authorization': 'Bearer $token'},
       );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -282,9 +279,12 @@ class _QuestionCardState extends State<QuestionCard> {
           });
 
           //allAnswers = answers;
-          // ✅ Remove flagged answers
-  allAnswers = answers.where((a) => a['isFlagged'] != true).toList();
-
+          // ✅ Remove flagged answers and hidden answers
+          allAnswers =
+              answers
+                  .where((a) => a['isFlagged'] != true && a['isHidden'] != true && a['hiddenTemporary'] != true)
+                  .toList();
+          print('✅✅✅allAnswers: $allAnswers');
           isLoadingAnswers = false;
         });
         // Fetch the upvoted answer ID for this question
@@ -472,7 +472,7 @@ class _QuestionCardState extends State<QuestionCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Answer submitted successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.islamicGreen600,
             ),
           );
 
@@ -538,8 +538,17 @@ class _QuestionCardState extends State<QuestionCard> {
     return false;
   }
 
-  // Modified function to handle showing the answer form
+  // Modified function to handle showing/hiding the answer form
   Future<void> _handleShowAnswerForm() async {
+    // If the form is already shown, just toggle it off
+    if (showAnswerForm) {
+      setState(() {
+        showAnswerForm = false;
+        _answerController.clear();
+      });
+      return;
+    }
+
     // Always fetch latest answers before showing the form
     await _fetchAllAnswers();
     if (!_hasCurrentUserAnswered()) {
@@ -560,9 +569,9 @@ class _QuestionCardState extends State<QuestionCard> {
 
   void _handleReportSuccess(String answerId) {
     setState(() {
-
-      final answerIndex =
-          allAnswers.indexWhere((a) => a['answerId'] == answerId);
+      final answerIndex = allAnswers.indexWhere(
+        (a) => a['answerId'] == answerId,
+      );
 
       if (answerIndex != -1) {
         allAnswers[answerIndex]['isFlagged'] = true;
@@ -598,8 +607,9 @@ class _QuestionCardState extends State<QuestionCard> {
     final canEdit =
         isOwner &&
         aiAnswer != null &&
-        aiAnswer.isNotEmpty &&
-        (topAnswerId == null || topAnswerId.isEmpty);
+        aiAnswer
+            .isNotEmpty /*&&
+        (topAnswerId == null || topAnswerId.isEmpty)*/;
 
     // In the build method, get the scaffold context
     final scaffoldContext = context;
@@ -693,7 +703,9 @@ class _QuestionCardState extends State<QuestionCard> {
                         ),
 
                         // Report flag icon for users only to flag the question
-                        if ((userRole == 'user' || userRole == 'certified_volunteer') && !isOwner)//TODO: remove this after testing
+                        if ((userRole == 'user' ||
+                                userRole == 'certified_volunteer') &&
+                            !isOwner) //TODO: remove this after testing
                           IconButton(
                             icon: Icon(
                               Icons.flag_outlined,
@@ -788,7 +800,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                         content: Text(
                                           'Question deleted successfully',
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     if (widget.onRefresh != null)
@@ -901,7 +914,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                                       : Icons.lock,
                                                   color:
                                                       isPublic
-                                                          ? Colors.green
+                                                          ? AppColors
+                                                              .islamicGreen600
                                                           : Colors.orange,
                                                 ),
                                                 SizedBox(width: 8),
@@ -987,15 +1001,13 @@ class _QuestionCardState extends State<QuestionCard> {
                                   final data = jsonDecode(response.body);
                                   if (response.statusCode == 200 &&
                                       data['success'] == true) {
-                                    print(
-                                      "status: ${response.statusCode}, data: $data",
-                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           'Question updated successfully',
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     setState(() {
@@ -1107,38 +1119,33 @@ class _QuestionCardState extends State<QuestionCard> {
                 // Show "Show/Hide all answers" button for certified volunteers
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Wrap(
-                    spacing: 5,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (_isCertifiedVolunteer() &&
                           question['responseType'] == 'human') ...[
-                        SizedBox(height: 16),
-                        Center(
-                          child: OutlinedButton.icon(
-                            onPressed: _handleShowAllAnswers,
-                            icon: Icon(
-                              showAllAnswers
-                                  ? Icons.visibility_off
-                                  : Icons.list_alt,
-                              size: _getResponsiveIconSize(16),
+                        OutlinedButton.icon(
+                          onPressed: _handleShowAllAnswers,
+                          icon: Icon(
+                            showAllAnswers
+                                ? Icons.visibility_off
+                                : Icons.list_alt,
+                            size: _getResponsiveIconSize(16),
+                          ),
+                          label: Text(
+                            showAllAnswers
+                                ? 'Hide all answers'
+                                : 'Show all answers',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.islamicGreen500,
+                            side: BorderSide(color: AppColors.islamicGreen500),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _getResponsivePadding(20),
+                              vertical: _getResponsivePadding(10),
                             ),
-                            label: Text(
-                              showAllAnswers
-                                  ? 'Hide all answers'
-                                  : 'Show all answers',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.islamicGreen500,
-                              side: BorderSide(
-                                color: AppColors.islamicGreen500,
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(20),
-                                vertical: _getResponsivePadding(10),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
                         ),
@@ -1148,30 +1155,28 @@ class _QuestionCardState extends State<QuestionCard> {
                       if (_isCertifiedVolunteer() &&
                           !_isTopAnswerByCurrentUser() &&
                           !_hasCurrentUserAnswered()) ...[
-                        SizedBox(height: 16),
-                        Center(
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                isSubmittingAnswer
-                                    ? null
-                                    : _handleShowAnswerForm,
-                            icon: Icon(
-                              showAnswerForm ? Icons.close : Icons.edit,
-                              size: _getResponsiveIconSize(16),
+                        if (_isCertifiedVolunteer() &&
+                            question['responseType'] == 'human')
+                          SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          onPressed:
+                              isSubmittingAnswer ? null : _handleShowAnswerForm,
+                          icon: Icon(
+                            showAnswerForm ? Icons.close : Icons.edit,
+                            size: _getResponsiveIconSize(16),
+                          ),
+                          label: Text(
+                            showAnswerForm ? 'Cancel' : 'Answer Question',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.islamicGreen500,
+                            foregroundColor: AppColors.islamicWhite,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _getResponsivePadding(20),
+                              vertical: _getResponsivePadding(10),
                             ),
-                            label: Text(
-                              showAnswerForm ? 'Cancel' : 'Answer Question',
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.islamicGreen500,
-                              foregroundColor: AppColors.islamicWhite,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(20),
-                                vertical: _getResponsivePadding(10),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
                         ),
@@ -1234,13 +1239,22 @@ class _QuestionCardState extends State<QuestionCard> {
                     )
                   else
                     Column(
-                      children: allAnswers
-                          .where((answer) => answer['isFlagged'] != true)
-                          .toList() // ← حولها لـ List
-                          .asMap()
-                          .entries
-                          .map((entry) => _buildAnswerCard(entry.value, entry.key))
-                          .toList(),
+                      children:
+                          allAnswers
+                              .where(
+                                (answer) =>
+                                    answer['isFlagged'] != true &&
+                                    answer['isHidden'] != true &&
+                                    answer['hiddenTemporary'] != true,
+                              )
+                              .toList() // ← حولها لـ List
+                              .asMap()
+                              .entries
+                              .map(
+                                (entry) =>
+                                    _buildAnswerCard(entry.value, entry.key),
+                              )
+                              .toList(),
                     ),
                 ],
               ),
@@ -1357,11 +1371,19 @@ class _QuestionCardState extends State<QuestionCard> {
               ),
             ),
 
-          if (question['responseType'] == 'ai' &&
-              ((question['aiAnswer'] != null &&
-                      question['aiAnswer'].toString().isNotEmpty) ||
-                  (question['aiResponse'] != null &&
-                      question['aiResponse'].toString().isNotEmpty)))
+         if (
+  question['responseType'] == 'ai' &&
+  (
+    ((question['aiAnswer'] != null && question['aiAnswer'].toString().isNotEmpty) ||
+     (question['aiResponse'] != null && question['aiResponse'].toString().isNotEmpty))
+  ) &&
+  !(
+    question['topAnswer'] != null &&
+    question['topAnswer']['isFlagged'] != true &&
+    question['topAnswer']['isHidden'] != true &&
+    question['topAnswer']['hiddenTemporary'] != true
+  )
+)
             AIResponseCard(
               aiAnswer:
                   question['aiAnswer']?.toString() ??
@@ -1373,7 +1395,8 @@ class _QuestionCardState extends State<QuestionCard> {
           if (question['responseType'] == 'human' &&
               question['topAnswer'] != null &&
               !showAllAnswers &&
-              question['topAnswer']['isFlagged'] != true)
+              question['topAnswer']['isFlagged'] != true &&
+              question['topAnswer']['isHidden'] != true)
             _buildTopAnswerCard(question['topAnswer']),
         ],
       ),
@@ -1528,8 +1551,10 @@ class _QuestionCardState extends State<QuestionCard> {
 
   // Widget to display top answer
 Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+  print('topAnswer🍭🍭🍭: $topAnswer');
   final isFlagged = topAnswer['isFlagged'];
-  if (isFlagged == true) return SizedBox.shrink();
+  final isHidden = topAnswer['isHidden'];
+  if (isFlagged == true || isHidden == true || topAnswer['hiddenTemporary'] == true) return SizedBox.shrink();
   final answeredBy = topAnswer['answeredBy'];
   final answerText = topAnswer['text']?.toString() ?? '';
   final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
@@ -1537,8 +1562,11 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
   final createdAt = topAnswer['createdAt']?.toString() ?? '';
   final answerId = topAnswer['answerId']?.toString() ?? '';
   final scaffoldContext = context;
-
+  final isOwner =
+      answeredBy['id'] ==
+      Provider.of<UserProvider>(context, listen: false).userId;
   debugPrint("🔍 isFlagged: $isFlagged");
+  debugPrint("🔍 isHidden: $isHidden");
 
   return Container(
     margin: EdgeInsets.only(top: 8),
@@ -1606,12 +1634,78 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                 ),
               ),
               SizedBox(width: 4),
+              // Verified icon (only one)
               Icon(
                 Icons.verified,
                 size: _getResponsiveIconSize(12),
                 color: AppColors.islamicGreen500,
               ),
-              // Report icon
+              // Edit button for owner
+              if (isOwner)
+                IconButton(
+                  icon: Icon(Icons.edit, color: Colors.blue),
+                  tooltip: 'Edit Answer',
+                  onPressed: () async {
+                    TextEditingController _editAnswerController =
+                        TextEditingController(text: answerText);
+                    bool isEditing = false;
+                    await showDialog(
+                      context: context,
+                      builder: (context) {
+                        String errorText = '';
+                        return StatefulBuilder(
+                          builder: (context, setState) {
+                            return AlertDialog(
+                              title: Text('Edit Answer'),
+                              content: TextField(
+                                controller: _editAnswerController,
+                                maxLines: 5,
+                                decoration: InputDecoration(
+                                  hintText: 'Edit your answer...',
+                                  errorText:
+                                      errorText.isNotEmpty ? errorText : null,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    final newAnswerText =
+                                        _editAnswerController.text.trim();
+                                    if (newAnswerText.length < 10) {
+                                      setState(() {
+                                        errorText =
+                                            'Answer must be at least 10 characters.';
+                                      });
+                                      return;
+                                    }
+                                    if (newAnswerText.isEmpty) {
+                                      setState(() {
+                                        errorText = 'Answer cannot be empty';
+                                      });
+                                      return;
+                                    }
+                                    // Call API to update answer
+
+                                    isEditing = true;
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Save'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              // Report icon (only one)
               IconButton(
                 icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
                 tooltip: 'Report',
@@ -1637,7 +1731,7 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                 child: Icon(
                   Icons.thumb_up,
                   size: _getResponsiveIconSize(12),
-                  color: AppColors.askPageSubtitle,
+                  color: AppColors.islamicGreen500,
                 ),
               ),
               SizedBox(width: 4),
@@ -1694,11 +1788,94 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
     final userRole = userProvider.user?['role'] ?? 'user';
     final userId = userProvider.user?['id'];
     final isFlagged = answer['isFlagged'] ?? false;
-    final isOwner =
-        (answeredBy is Map ? answeredBy['id'] : answeredBy) == userId;
+    final isHidden = answer['isHidden'] ?? false;
+    final isOwner = answer['answeredBy']?['id'] == userId;
     final scaffoldContext = context;
-    if (answer['isFlagged'] == true)
-      return SizedBox.shrink(); // Hide flagged answers
+    if (isFlagged == true || isHidden == true)
+      return SizedBox.shrink(); // Hide flagged and hidden answers
+
+    // Edit answer state
+    TextEditingController _editAnswerController = TextEditingController(
+      text: answerText,
+    );
+    bool isEditing = false;
+
+    void _showEditDialog() async {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          String errorText = '';
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text('Edit Your Answer'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _editAnswerController,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        labelText: 'Answer',
+                        errorText: errorText.isNotEmpty ? errorText : null,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final newText = _editAnswerController.text.trim();
+                      if (newText.isEmpty || newText.length < 10) {
+                        setState(() {
+                          errorText = 'Answer must be at least 10 characters.';
+                        });
+                        return;
+                      }
+                      // Call API to update answer
+                      try {
+                        final token = await AuthUtils.getValidToken(context);
+                        final url = Uri.parse('adminUpdateAnswerUrl/$answerId');
+                        final response = await http.put(
+                          url,
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({'text': newText}),
+                        );
+                        if (response.statusCode == 200 ||
+                            response.statusCode == 204) {
+                          setState(() {
+                            answer['text'] = newText;
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Answer updated successfully!'),
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            errorText = 'Failed to update answer.';
+                          });
+                        }
+                      } catch (e) {
+                        setState(() {
+                          errorText = 'Error: $e';
+                        });
+                      }
+                    },
+                    child: Text('Save'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
 
     return Stack(
       children: [
@@ -1758,23 +1935,94 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                     color:
                         isCertified ? AppColors.islamicGreen500 : Colors.grey,
                   ),
-                  SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      answererName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.askPageTitle,
-                        fontSize: _getResponsiveFontSize(13),
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                  SizedBox(width: 4),
+                  Text(
+                    answererName,
+                    style: TextStyle(
+                      fontSize: _getResponsiveFontSize(12),
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.askPageTitle,
                     ),
                   ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.verified,
+                    size: _getResponsiveIconSize(12),
+                    color: AppColors.islamicGreen500,
+                  ),
+                  Spacer(),
+
+                  // Upvote icon for certified volunteers
+                  if (answeredBy['id']?.toString() !=
+                      Provider.of<UserProvider>(
+                        context,
+                        listen: false,
+                      ).userId?.toString())
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isUpvoted
+                                ? Icons.thumb_up
+                                : Icons.thumb_up_outlined,
+                            color: AppColors.askPageSubtitle,
+                          ),
+                          tooltip: isUpvoted ? 'Upvoted' : 'Upvote',
+                          onPressed:
+                              isCertified
+                                  ? () => _handleUpvote(answerId)
+                                  : () {},
+                        ),
+                        Text(
+                          upvotesCount,
+                          style: TextStyle(
+                            fontSize: _getResponsiveFontSize(12),
+                            color: AppColors.askPageSubtitle,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  // 🔴 Flag icon positioned top-right
+                  if ((userRole == 'user' ||
+                          userRole == 'certified_volunteer') &&
+                      !isOwner)
+                    Positioned(
+                      top: 4,
+                      right: 16,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.flag_outlined,
+                          color: Colors.redAccent,
+                        ),
+                        tooltip: 'Report',
+                        onPressed: () async {
+                          await showDialog(
+                            context: context,
+                            builder:
+                                (context) => ReportModal(
+                                  questionId: answerId,
+                                  questionText: answerText,
+                                  itemType: 'answer',
+                                  scaffoldContext: scaffoldContext,
+                                  onReportSuccess:
+                                      () => _handleReportSuccess(answerId),
+                                ),
+                          );
+                        },
+                      ),
+                    ),
+                  if (isOwner) // <-- Add edit button for owner
+                    IconButton(
+                      icon: Icon(Icons.edit, color: Colors.blue),
+                      tooltip: 'Edit Answer',
+                      onPressed: _showEditDialog,
+                    ),
                 ],
               ),
               SizedBox(height: 8),
               Text(
-                answerText,
+                answer['text']?.toString() ?? '',
                 style: TextStyle(
                   fontSize: _getResponsiveFontSize(14),
                   color: AppColors.askPageTitle,
@@ -1784,7 +2032,7 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
               SizedBox(height: 8),
               if (createdAt.isNotEmpty)
                 Text(
-                  'Answered on ${_formatDate(createdAt)}',
+                  'Answered on  ${_formatDate(createdAt)}',
                   style: TextStyle(
                     fontSize: _getResponsiveFontSize(11),
                     color: AppColors.askPageSubtitle,
@@ -1792,32 +2040,6 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
                   ),
                 ),
             ],
-          ),
-        ),
-
-
-      // 🔴 Flag icon positioned top-right
-      if ((userRole == 'user' || userRole == 'certified_volunteer') && !isOwner)
-      Positioned(
-
-          top: 4,
-          right: 4,
-          child: IconButton(
-            icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
-            tooltip: 'Report',
-            onPressed: () async {
-              await showDialog(
-                context: context,
-                builder:
-                    (context) => ReportModal(
-                      questionId: answerId,
-                      questionText: answerText,
-                      itemType: 'answer',
-                      scaffoldContext: scaffoldContext,
-                      onReportSuccess: () => _handleReportSuccess(answerId),
-                    ),
-              );
-            },
           ),
         ),
       ],
@@ -1841,5 +2063,11 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
     final userId = Provider.of<UserProvider>(context, listen: false).userId;
 
     return answeredById?.toString() == userId;
+  }
+
+
+  bool _allanswerofthequestionhiddentemporary(){
+    final allAnswers = widget.question['allAnswers'] ?? [];
+    return allAnswers.every((answer) => answer['hiddenTemporary'] == true);
   }
 }

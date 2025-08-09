@@ -4,12 +4,16 @@ import 'package:frontend/providers/UserProvider.dart';
 import 'package:http/http.dart' as http;
 import '../constants/colors.dart';
 import 'package:provider/provider.dart';
+//import 'package:frontend/utils/AuthUtils.dart';
+import 'dart:convert';
 
 class MyAnswerCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback? onDelete;
+  final ValueChanged<String>? onEdit;
+
   // item should have keys: 'question', 'topAnswer', 'volunteerAnswer'
-  const MyAnswerCard({Key? key, required this.item, this.onDelete})
+  const MyAnswerCard({Key? key, required this.item, this.onDelete, this.onEdit})
     : super(key: key);
 
   @override
@@ -18,7 +22,7 @@ class MyAnswerCard extends StatefulWidget {
 
 class _MyAnswerCardState extends State<MyAnswerCard> {
   bool _isDeleting = false;
-  bool _deleted = false;
+
   Future<void> _deleteAnswer(String answerId) async {
     if (!mounted) return;
     setState(() {
@@ -31,7 +35,6 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Answer deleted successfully')));
-        _deleted = true;
         if (widget.onDelete != null) {
           widget.onDelete!();
           return; // Prevent further code from running after widget is disposed
@@ -98,8 +101,11 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
 
     // Determine if the volunteer has an answer to allow delete
     final Map<String, dynamic>? ownAnswer = volunteerAnswer ?? topAnswer;
+    // Fix: Ensure ownAnswerId is properly converted to string
     final String? ownAnswerId =
-        ownAnswer != null ? ownAnswer['answerId']?.toString() : null;
+        ownAnswer != null && ownAnswer['answerId'] != null
+            ? ownAnswer['answerId'].toString()
+            : null;
     final bool canDelete = ownAnswer != null && ownAnswer['answeredBy'] != null;
 
     return Container(
@@ -233,6 +239,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
     bool highlight = false,
   }) {
     final user = Provider.of<UserProvider>(context, listen: false).user;
+
     final answerer =
         answer['answeredBy'] is Map
             ? answer['answeredBy']['displayName']?.toString()
@@ -240,6 +247,102 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
     final answerText = answer['text']?.toString() ?? '';
     final upvotesCount = answer['upvotesCount']?.toString() ?? '0';
     final createdAt = _formatDate(answer['createdAt']?.toString() ?? '');
+    // Fix: Ensure answerId is properly converted to string
+    final answerId =
+        answer['answerId'] != null ? answer['answerId'].toString() : '';
+    TextEditingController _editAnswerController = TextEditingController(
+      text: answerText,
+    );
+
+    void _showEditDialog() async {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          String errorText = '';
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text('Edit Your Answer'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _editAnswerController,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        labelText: 'Answer',
+                        errorText: errorText.isNotEmpty ? errorText : null,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final newText = _editAnswerController.text.trim();
+                      if (newText.isEmpty || newText.length < 10) {
+                        setState(() {
+                          errorText = 'Answer must be at least 10 characters.';
+                        });
+                        return;
+                      }
+                      // Call API to update answer
+                      try {
+                        // final token = await AuthUtils.getValidToken(context);
+
+                        final url = Uri.parse(
+                          '$adminUpdateAnswerUrl/$answerId',
+                        );
+                        final response = await http.put(
+                          url,
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({'text': newText}),
+                        );
+
+                        if (response.statusCode == 200 ||
+                            response.statusCode == 204) {
+                          final updatedAnswer = jsonDecode(response.body);
+                          Navigator.of(context).pop();
+                          if (mounted) {
+                            // Update the answer in the UI using onEdit callback
+                            setState(() {
+                              answer['text'] = updatedAnswer['text'];
+                              answer['upvotesCount'] =
+                                  updatedAnswer['upvotesCount'];
+                              answer['createdAt'] = updatedAnswer['createdAt'];
+                            });
+                            widget.onEdit?.call(newText);
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Answer updated successfully!'),
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            errorText = 'Failed to update answer.';
+                          });
+                        }
+                      } catch (e) {
+                        setState(() {
+                          errorText = 'Error: $e';
+                        });
+                      }
+                    },
+                    child: Text('Save'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+
     return Container(
       margin: EdgeInsets.only(top: 8, bottom: 8),
       padding: EdgeInsets.all(12),
@@ -305,6 +408,16 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
               Spacer(),
               Row(
                 children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: AppColors.askPageHumanBadge,
+                    ),
+
+                    tooltip: 'Edit Answer',
+                    onPressed: _showEditDialog,
+                  ),
                   Icon(
                     Icons.thumb_up,
                     size: 12,
@@ -324,25 +437,22 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
           ),
           SizedBox(height: 8),
           Text(
-            answerText,
+            answer['text']?.toString() ?? '',
             style: TextStyle(
               fontSize: 14,
               color: AppColors.askPageTitle,
               height: 1.4,
             ),
           ),
-          if (createdAt.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                'Answered on $createdAt',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.askPageSubtitle,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+          SizedBox(height: 8),
+          Text(
+            createdAt,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.askPageSubtitle,
+              fontStyle: FontStyle.italic,
             ),
+          ),
         ],
       ),
     );

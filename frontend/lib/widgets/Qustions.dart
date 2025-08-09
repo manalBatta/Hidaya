@@ -862,7 +862,7 @@ Question: "$questionText"
               }
             },
           );
-  
+
       return await completer.future;
     } catch (e) {
       print("error extracting tags: $e");
@@ -874,16 +874,23 @@ Question: "$questionText"
   //Done deep checking
   List<Map<String, dynamic>> _getFilteredCommunityQuestions() {
     return _communityQuestions
-        .where((q) =>
-            q['isFlagged'] != true &&
-            (_searchQuery.isEmpty ||
-                q['text'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                q['category']
-                    .toLowerCase()
-                    .contains(_searchQuery.toLowerCase()) ||
-                (q['tags'] != null &&
-                    (q['tags'] as List).any((tag) =>
-                        tag.toString().toLowerCase().contains(_searchQuery.toLowerCase())))))
+        .where(
+          (q) =>
+              q['isFlagged'] != true &&
+              (_searchQuery.isEmpty ||
+                  q['text'].toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  q['category'].toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  (q['tags'] != null &&
+                      (q['tags'] as List).any(
+                        (tag) => tag.toString().toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ),
+                      ))),
+        )
         .toList();
   }
 
@@ -1202,7 +1209,7 @@ Question: "$questionText"
             final question = ans['question'];
             final questionId = question?['questionId'];
             if (questionId == null) continue;
-              if (ans['isFlagged'] == true) continue;
+            if (ans['isFlagged'] == true || ans['isHidden'] == true || ans['hiddenTemporary'] == true) continue;
             // If you want the latest answer, compare createdAt
             if (!latestAnswersByQuestion.containsKey(questionId) ||
                 DateTime.parse(ans['createdAt']).isAfter(
@@ -1327,15 +1334,6 @@ Question: "$questionText"
     _getMyQuestions();
   }
 
-  //By Ruba
-
-  //By Ruby
-  void _startRepeatingTimer() {
-    _timer = Timer.periodic(Duration(seconds: 2), (Timer timer) {
-      refreshAllTabs();
-    });
-  }
-
   Future<void> _loadMoreCommunityQuestionsIfNeeded() async {
     if (_isAutoLoading || !_hasMoreCommunityQuestions) return;
     _isAutoLoading = true;
@@ -1364,16 +1362,17 @@ Question: "$questionText"
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            _buildHeader(),
+            if (userProvider?.role == "user")
+              // Header
+              _buildHeader(),
             SizedBox(height: 24),
 
             // Submit Question Form
-            _buildSubmissionForm(),
+            if (userProvider?.role == "user") _buildSubmissionForm(),
             SizedBox(height: 24),
 
-            // Guidelines
-            _buildGuidelines(),
+            // Guidelinesif (userProvider?.role == "user")
+            if (userProvider?.role == "user") _buildGuidelines(),
             SizedBox(height: 24),
 
             // Tabbed Interface
@@ -1831,7 +1830,6 @@ Question: "$questionText"
   }
 
   Widget _buildRecentQuestions() {
-
     return Card(
       color: Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(
@@ -1862,23 +1860,28 @@ Question: "$questionText"
               ],
             ),
             SizedBox(height: 16),
-              
+
             ..._recentQuestions
-                .where((question)=> question['isFlagged'] != true) 
-                .map((question) => QuestionCard(question: question,
-                onReportSuccess: () {
-                  // if (!mounted) return; 
-                              setState(() {
-                   debugPrint("🚩 Marking question as flagged at index");
-              final index = _recentQuestions.indexWhere((q) =>
-                  (q['questionId'] ?? q['_id']) ==
-                  (question['questionId'] ?? question['_id']));
-              if (index != -1) {
-                _recentQuestions[index]['isFlagged'] = true;
-              }
-            });
-                },               
-                ))
+                .where((question) => question['isFlagged'] != true)
+                .map(
+                  (question) => QuestionCard(
+                    question: question,
+                    onReportSuccess: () {
+                      // if (!mounted) return;
+                      setState(() {
+                        debugPrint("🚩 Marking question as flagged at index");
+                        final index = _recentQuestions.indexWhere(
+                          (q) =>
+                              (q['questionId'] ?? q['_id']) ==
+                              (question['questionId'] ?? question['_id']),
+                        );
+                        if (index != -1) {
+                          _recentQuestions[index]['isFlagged'] = true;
+                        }
+                      });
+                    },
+                  ),
+                )
                 .toList(),
           ],
         ),
@@ -2069,19 +2072,11 @@ Question: "$questionText"
     );
   }
 
-
-void _printCommunityQuestions() {
-  const encoder = JsonEncoder.withIndent('  ');
-  final pretty = encoder.convert(_communityQuestions);
-  debugPrint(pretty);
-}
-
-
-
-
-
-
-
+  void _printCommunityQuestions() {
+    const encoder = JsonEncoder.withIndent('  ');
+    final pretty = encoder.convert(_communityQuestions);
+    debugPrint(pretty);
+  }
 
   Widget _buildCommunityTab() {
     List<Map<String, dynamic>> filteredQuestions =
@@ -2171,34 +2166,36 @@ void _printCommunityQuestions() {
                                   refreshAllTabs();
                                 }
                               },
-                              onReportSuccess: (){
-               final questionId = question['questionId'];
-final originalIndex = _communityQuestions.indexWhere(
-  (q) => q['questionId'] == questionId,
-);
-if (originalIndex != -1) {
-  setState(() {
-    _communityQuestions[originalIndex]['isFlagged'] = true;
-  });
-}
-
+                              onReportSuccess: () {
+                                final questionId = question['questionId'];
+                                final originalIndex = _communityQuestions
+                                    .indexWhere(
+                                      (q) => q['questionId'] == questionId,
+                                    );
+                                if (originalIndex != -1) {
+                                  setState(() {
+                                    _communityQuestions[originalIndex]['isFlagged'] =
+                                        true;
+                                  });
+                                }
                               },
-                            onReportAnswerSuccess: () {
-                              _printCommunityQuestions();
-  final questionId = question['questionId'];
-  final originalIndex = _communityQuestions.indexWhere(
-    (q) => q['questionId'] == questionId,
-  );
+                              onReportAnswerSuccess: () {
+                                _printCommunityQuestions();
+                                final questionId = question['questionId'];
+                                final originalIndex = _communityQuestions
+                                    .indexWhere(
+                                      (q) => q['questionId'] == questionId,
+                                    );
 
-  if (originalIndex != -1) {
-    setState(() {
-      _communityQuestions[originalIndex]['topAnswer']['isFlagged'] = true;
-    });
-  }
+                                if (originalIndex != -1) {
+                                  setState(() {
+                                    _communityQuestions[originalIndex]['topAnswer']['isFlagged'] =
+                                        true;
+                                  });
+                                }
 
-  refreshAllTabs(); 
-}
-
+                                refreshAllTabs();
+                              },
                             );
                           },
                         ),
@@ -2236,13 +2233,6 @@ if (originalIndex != -1) {
     );
   }
 
-
-
-
-
-
-
-
   Widget _buildMyQuestionsTab() {
     return Padding(
       padding: EdgeInsets.all(16),
@@ -2278,6 +2268,7 @@ if (originalIndex != -1) {
                 itemCount: _myAnswers.length,
                 itemBuilder: (context, index) {
                   final item = _myAnswers[index];
+                  print('item from my answers: $item');
                   return MyAnswerCard(
                     item: item,
                     onDelete: () {
@@ -2286,49 +2277,60 @@ if (originalIndex != -1) {
                         _myAnswers.removeAt(index);
                       });
                     },
+                    onEdit: (text) {
+                      // Handle edit action
+                      //edit the answer after edit it in the data base
+                      setState(() {
+                        print('New text: $text');
+                        _myAnswers[index]['volunteerAnswer']['text'] = text;
+                        _myAnswers[index]['topAnswer']['text'] = text;
+                        //make sure to update upvotesCount
+                        _myAnswers[index]['volunteerAnswer']['upvotesCount'] =
+                            0;
+                      });
+                    },
                   );
                 },
               ),
     );
   }
 
-Widget _buildFavoritesTab() {
-  // فلتر المفضلة حتى تستبعد الأسئلة المبلغ عنها
-  final filteredFavorites = _favoriteQuestions
-      .where((q) => q['isFlagged'] != true)
-      .toList();
+  Widget _buildFavoritesTab() {
+    final filteredFavorites =
+        _favoriteQuestions.where((q) => q['isFlagged'] != true).toList();
 
-  return Padding(
-    padding: EdgeInsets.all(16),
-    child: filteredFavorites.isEmpty
-        ? _buildEmptyState(
-            'No favorite questions',
-            'Save questions you find helpful',
-          )
-        : ListView.builder(
-            controller: _favoritesScrollController,
-            itemCount: filteredFavorites.length,
-            itemBuilder: (context, index) {
-              return QuestionCard(
-                question: filteredFavorites[index],
-                onReportSuccess: () {
-                  if (!mounted) return;
-                  setState(() {
-                    final id = filteredFavorites[index]['questionId'];
-                    final originalIndex = _favoriteQuestions.indexWhere(
-                        (q) => q['questionId'] == id);
-                    if (originalIndex != -1) {
-                      _favoriteQuestions[originalIndex]['isFlagged'] = true;
-                    }
-                  });
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child:
+          filteredFavorites.isEmpty
+              ? _buildEmptyState(
+                'No favorite questions',
+                'Save questions you find helpful',
+              )
+              : ListView.builder(
+                controller: _favoritesScrollController,
+                itemCount: filteredFavorites.length,
+                itemBuilder: (context, index) {
+                  return QuestionCard(
+                    question: filteredFavorites[index],
+                    onReportSuccess: () {
+                      if (!mounted) return;
+                      setState(() {
+                        final id = filteredFavorites[index]['questionId'];
+                        final originalIndex = _favoriteQuestions.indexWhere(
+                          (q) => q['questionId'] == id,
+                        );
+                        if (originalIndex != -1) {
+                          _favoriteQuestions[originalIndex]['isFlagged'] = true;
+                        }
+                      });
+                    },
+                    onRefresh: refreshAllTabs,
+                  );
                 },
-                onRefresh: refreshAllTabs,
-              );
-            },
-          ),
-  );
-}
-
+              ),
+    );
+  }
 
   Widget _buildEmptyState(String title, String subtitle) {
     return Center(

@@ -58,7 +58,12 @@ class _SignInPageState extends State<SignInPage> {
     final requestbody = {
       'email': _emailController.text,
       'password': _passwordController.text,
-      'role': _accountType == 'volunteer' ? 'volunteer_pending' : 'user',
+      'role':
+          _accountType == 'admin'
+              ? 'admin'
+              : _accountType == 'volunteer'
+              ? 'volunteer_pending'
+              : 'user',
     };
     var response = await http.post(
       Uri.parse(login),
@@ -67,19 +72,22 @@ class _SignInPageState extends State<SignInPage> {
     );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 && data['status'] == true) {
-      if (data['user']['isEmailVerified'] == false) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please verify your email')),
-        );
-        
-        return;
+      if (mounted) {
+        if (data['user']['isEmailVerified'] == false) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please verify your email')),
+          );
+          return;
+        }
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login successful'),
-          backgroundColor: AppColors.islamicGreen500,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login successful'),
+            backgroundColor: AppColors.islamicGreen500,
+          ),
+        );
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', data['token']);
 

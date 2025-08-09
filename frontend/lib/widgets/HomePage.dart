@@ -102,6 +102,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
   void initState() {
     super.initState();
     _initializeAnimations();
+    //here to stop chat when not needed
     // _initializeChatSession();
     _inputController.addListener(() {
       setState(() {}); // Rebuilds the widget when the input changes
@@ -134,10 +135,14 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
     if (userProvider.chatInitialized) {
       _scrollToBottom();
+      print("chat is already initialized");
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      print("chat not mounted so I returned");
+      return;
+    }
     try {
       final token = await AuthUtils.getValidToken(context);
       if (!mounted) return;
@@ -158,6 +163,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         _scrollToBottom();
         final dynamic greetingData = data['greeting'];
         String greetingText;
+        print("ai response $data");
         if (greetingData is List) {
           greetingText = "No response";
         } else {
@@ -178,12 +184,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         _scrollToBottom();
       }
     } catch (e) {
-
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
-
     }
 
     userProvider.setChatInitialized(true);
@@ -664,63 +668,63 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildAnimatedWaveform(),
-                    const SizedBox(height: 32),
-                    if (_isResponding)
-                      Text(
-                        'AI is responding...',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF059669),
-                        ),
-                      )
-                    else if (_isTyping)
-                      Text(
-                        'Typing response...',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color:
-                              _isDarkMode
-                                  ? Colors.green.shade300
-                                  : const Color(0xFF059669),
-                        ),
-                      )
-                    else if (messages.isEmpty)
-                      Column(
-                        children: [
-                          Text(
-                            'Welcome to the immersive Islamic AI experience',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color:
-                                  _isDarkMode
-                                      ? Colors.white
-                                      : const Color(0xFF064E3B),
-                            ),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildAnimatedWaveform(),
+                      const SizedBox(height: 32),
+                      if (_isResponding)
+                        Text(
+                          'AI is responding...',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF059669),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Ask me anything about Islam, and I\'ll guide you with wisdom from the Quran and Sunnah',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color:
-                                  _isDarkMode
-                                      ? Colors.grey.shade300
-                                      : const Color(0xFF059669),
-                            ),
+                        )
+                      else if (_isTyping)
+                        Text(
+                          'Typing response...',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color:
+                                _isDarkMode
+                                    ? Colors.green.shade300
+                                    : const Color(0xFF059669),
                           ),
-                        ],
-                      ),
-                  ],
+                        )
+                      else if (messages.isEmpty)
+                        Column(
+                          children: [
+                            Text(
+                              'Welcome to the immersive Islamic AI experience',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                                color:
+                                    _isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF064E3B),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Ask me anything about Islam, and I\'ll guide you with wisdom from the Quran and Sunnah',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color:
+                                    _isDarkMode
+                                        ? Colors.grey.shade300
+                                        : const Color(0xFF059669),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
               ),
               // Chat Section
               Expanded(

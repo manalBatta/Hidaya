@@ -1,4 +1,5 @@
 import StoryServices from "../services/storyservices.js";
+import StoryModel from "../models/Stories.js";
 
 export async function getallstories(req, res, next) {
   try {
@@ -57,6 +58,45 @@ export async function getstorybyid(req, res, next) {
     res.status(200).json(result);
   } catch (err) {
     console.log("---> err in getstorybyid -->", err);
+    next(err);
+  }
+}
+
+export async function updatestory(req, res, next) {
+  try {
+    const { id } = req.params;
+    const updateData = req.body || {};
+
+    if (!id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Story id is required" });
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res
+        .status(400)
+        .json({ status: false, message: "No data provided for update" });
+    }
+
+    const updated = await StoryModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Story not found" });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Story updated successfully",
+      data: updated,
+    });
+  } catch (err) {
+    console.log("---> err in updatestory -->", err);
     next(err);
   }
 }
