@@ -47,3 +47,4 @@ final adminUpdateQuestionUrl = url + "admin/update-question"; // usage: adminUpd
 final flagQuestionUrl = url + "admin/flag-question/"; // usage: flagQuestionUrl + questionId
 final adminUpdateAnswerUrl = url + "admin/update-answer"; // usage: adminUpdateAnswerUrl + answerId
 final adminHideAnswerUrl = url + "admin/hide-answer"; // usage: adminHideAnswerUrl + answerId
+final adminReviewAndUpdateAnswerUrl = url + "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId

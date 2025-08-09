@@ -236,4 +236,17 @@ export async function deleteAnswer(req, res) {
   }
 }
 
+export async function reviewandupdateanswer(req, res, next) {
+  try {
+    console.log("🔥🔥🔥reviewandupdateanswer");
+    const { id } = req.params;
+    const { answerText } = req.body;
+    console.log("🔥🔥🔥answerId", id);
+    console.log("🔥🔥🔥answerText", answerText);
+    const result = await AnswerServices.ReviewAndUpdateAnswer(id, answerText);
+    res.json({ message: "Answer updated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
  

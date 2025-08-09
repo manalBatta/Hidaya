@@ -30,6 +30,7 @@ import {
   getanswersofvolunteer,
   getanswerupvotedbyvolunteer,
   deleteAnswer,
+  reviewandupdateanswer,
 } from "../controller/answercontroller.js";
 import { reportquestion } from "../controller/flagcontroller.js";
 import { getalllesson } from "../controller/lessoncontroller.js";
@@ -139,4 +140,6 @@ router.post("/admin/flag-question/:id", flagQuestion);
 router.put("/admin/update-answer/:id", adminUpdateAnswer);
 //hide answer by the admin
 router.put("/admin/hide-answer/:id", hideanswer);
+//review and update answer by the volunteer
+router.put("/review-and-update-answer/:id", reviewandupdateanswer);
 export default router;

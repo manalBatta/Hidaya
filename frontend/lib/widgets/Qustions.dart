@@ -1209,7 +1209,7 @@ Question: "$questionText"
             final question = ans['question'];
             final questionId = question?['questionId'];
             if (questionId == null) continue;
-            if (ans['isFlagged'] == true || ans['isHidden'] == true) continue;
+            if (ans['isFlagged'] == true || ans['isHidden'] == true || ans['hiddenTemporary'] == true) continue;
             // If you want the latest answer, compare createdAt
             if (!latestAnswersByQuestion.containsKey(questionId) ||
                 DateTime.parse(ans['createdAt']).isAfter(

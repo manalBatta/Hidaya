@@ -6,7 +6,7 @@ import Story from '../models/Stories.js';
  import Answer from '../models/Answers.js';
  import { v4 as uuidv4 } from 'uuid';
 import FlagServices from './flagsservices.js';
-import { sendNotificationToMultiple } from './notificationService.js';
+import { sendNotification } from './notificationService.js';
 const timezone = 'Asia/Palestine';
 
 const categories = [
@@ -551,30 +551,40 @@ class AdminServices {
       console.log("Updated question:", updatedQuestion);
       //send notification to the  all volunteers who answered the question
       const answers = await Answer.find({ questionId: questionId });
-      if (answers.length > 0) {
-        const volunteerIds = [...new Set(answers.map(a => a.answeredBy))];
-        const notification = {
-          type: "question_updated",
-          title: "Question Updated",
-          message: `Question has been updated: "${updatedQuestion.text} ,you can check it and update your answer if needed to appear it for the users"`,
-          data: { questionId: updatedQuestion.questionId },
-          saveToDatabase: true
-        };
-        try {
-          const results = await sendNotificationToMultiple(volunteerIds, notification);
-          console.log("Notification results:", results);
-          //hide all the answers of the updated question 
-          await Answer.updateMany({ questionId: questionId }, { isHidden: true });
-        } catch (err) {
-          console.error("Failed to send notifications:", err);
-        }
-      } 
-      
-      else {
-        console.log("No volunteers found who answered this question.");
-      }
+      const results = [];
 
-      console.log("Updated question:", updatedQuestion);
+
+  for (const answer of answers) {
+    const volunteerId = answer.answeredBy;
+    const notification = {
+      userId: volunteerId,
+      type: "question_updated",
+      title: "Question Updated 🔄",
+      message: `The question you answered has been updated by the admin: "${updatedQuestion.text}". Please review and update your answer if needed, tab here to review and update your answer`,
+      data: {
+        questionId: updatedQuestion.questionId,
+        answerId: answer.answerId,
+        questionText: updatedQuestion.text,
+        answerText: answer.text,
+      },
+      saveToDatabase: true
+    };
+
+    console.log(`📣 Sending to ${volunteerId}:`, notification);
+
+    try {
+      const result = await sendNotification(notification);
+      results.push({ userId: volunteerId, ...result });
+    } catch (err) {
+      console.error(`❌ Failed to notify ${volunteerId}:`, err);
+    }
+  }
+
+  console.log("✅ All notification results:", results);
+
+  // Hide all answers temporarily
+  await Answer.updateMany({ questionId: questionId }, { hiddenTemporary: true });
+      // Removed extraneous 'else' and misplaced code to fix syntax error
       return updatedQuestion;
     }
   }

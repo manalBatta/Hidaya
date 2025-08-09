@@ -1,7 +1,7 @@
 import AnswerModel from "../models/Answers.js";
 import QuestionModel from "../models/Questions.js";
 import UserModel from "../models/User.js";
-import { sendNotificationToMultiple } from './notificationService.js';
+import { sendNotification } from './notificationService.js';
 import { v4 as uuidv4 } from "uuid";
 class QuestionServices {
   static async SubmitQuestion(data, id) {
@@ -61,6 +61,7 @@ class QuestionServices {
           upvotesCount: 1,
           isFlagged: 1,
           isHidden: 1,
+          hiddenTemporary: 1,
         }
       );
       console.log("🔍 Top Answers with isFlagged:", topAnswers);
@@ -101,6 +102,7 @@ class QuestionServices {
           upvotesCount: ans.upvotesCount,
           isFlagged: ans.isFlagged || false,
           isHidden: ans.isHidden || false,
+          hiddenTemporary: ans.hiddenTemporary || false,
           answeredBy: ansUser
             ? {
                 id: ansUser.userId,
@@ -194,7 +196,8 @@ class QuestionServices {
           const rawTopAnswer = await AnswerModel.findOne({
             answerId: q.topAnswerId,
             isFlagged: { $ne: true },
-            isHidden: { $ne: true }
+            isHidden: { $ne: true },
+            hiddenTemporary: { $ne: true },
           }).lean();
 
           if (rawTopAnswer) {
@@ -225,6 +228,7 @@ class QuestionServices {
               upvotesCount: rawTopAnswer.upvotesCount,
               isFlagged: rawTopAnswer.isFlagged || false,
               isHidden: rawTopAnswer.isHidden || false,
+              hiddenTemporary: rawTopAnswer.hiddenTemporary || false,
               answeredBy: topAnswerUser
                 ? {
                     id: topAnswerUser.userId,
@@ -342,7 +346,36 @@ class QuestionServices {
     await question.save();
     //send notification to the volunteers who answered the question and hide the answers of the questions
     const answers = await AnswerModel.find({ questionId: questionId });
-    if (answers.length > 0) {
+      const results = [];
+      for (const answer of answers) {
+        const volunteerId = answer.answeredBy;
+        const notification = {
+          userId: volunteerId,
+          type: "question_updated",
+          title: "Question Updated 🔄",
+          message: `The question you answered has been updated: "${question.text}". Please review and update your answer if needed, tab here to review and update your answer`,
+          data: {
+            questionId: question.questionId,
+            answerId: answer.answerId,
+            questionText: question.text,
+            answerText: answer.text,
+          },
+          saveToDatabase: true
+        };
+    
+        console.log(`📣 Sending to ${volunteerId}:`, notification);
+    
+        try {
+          const result = await sendNotification(notification);
+          results.push({ userId: volunteerId, ...result });
+        } catch (err) {
+          console.error(`❌ Failed to notify ${volunteerId}:`, err);
+        }
+      }
+      console.log("✅ All notification results:", results);
+      await AnswerModel.updateMany({ questionId: questionId }, { hiddenTemporary: true });
+
+   /* if (answers.length > 0) {
       const volunteerIds = [...new Set(answers.map(a => a.answeredBy))];
       const notification = {
         type: "question_updated",
@@ -355,12 +388,12 @@ class QuestionServices {
         const results = await sendNotificationToMultiple(volunteerIds, notification);
         console.log("Notification results:", results);
         //hide all the answers of the updated question 
-        await AnswerModel.updateMany({ questionId: questionId }, { isHidden: true });
+        await AnswerModel.updateMany({ questionId: questionId }, { hiddenTemporary: true });
         console.log("👍👍👍👍👍👍👍Answers hidden successfully");
       } catch (err) {
         console.error("Failed to send notifications:", err);
       }
-    }
+    }*/
     return question;
   }
 }

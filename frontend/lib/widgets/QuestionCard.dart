@@ -290,9 +290,9 @@ class _QuestionCardState extends State<QuestionCard> {
           // ✅ Remove flagged answers and hidden answers
           allAnswers =
               answers
-                  .where((a) => a['isFlagged'] != true && a['isHidden'] != true)
+                  .where((a) => a['isFlagged'] != true && a['isHidden'] != true && a['hiddenTemporary'] != true)
                   .toList();
-          print('allAnswers: $allAnswers');
+          print('✅✅✅allAnswers: $allAnswers');
           isLoadingAnswers = false;
         });
         // Fetch the upvoted answer ID for this question
@@ -1253,7 +1253,8 @@ class _QuestionCardState extends State<QuestionCard> {
                               .where(
                                 (answer) =>
                                     answer['isFlagged'] != true &&
-                                    answer['isHidden'] != true,
+                                    answer['isHidden'] != true &&
+                                    answer['hiddenTemporary'] != true,
                               )
                               .toList() // ← حولها لـ List
                               .asMap()
@@ -1379,11 +1380,19 @@ class _QuestionCardState extends State<QuestionCard> {
               ),
             ),
 
-          if (question['responseType'] == 'ai' &&
-              ((question['aiAnswer'] != null &&
-                      question['aiAnswer'].toString().isNotEmpty) ||
-                  (question['aiResponse'] != null &&
-                      question['aiResponse'].toString().isNotEmpty)))
+         if (
+  question['responseType'] == 'ai' &&
+  (
+    ((question['aiAnswer'] != null && question['aiAnswer'].toString().isNotEmpty) ||
+     (question['aiResponse'] != null && question['aiResponse'].toString().isNotEmpty))
+  ) &&
+  !(
+    question['topAnswer'] != null &&
+    question['topAnswer']['isFlagged'] != true &&
+    question['topAnswer']['isHidden'] != true &&
+    question['topAnswer']['hiddenTemporary'] != true
+  )
+)
             AIResponseCard(
               aiAnswer:
                   question['aiAnswer']?.toString() ??
@@ -1550,263 +1559,227 @@ class _QuestionCardState extends State<QuestionCard> {
   }
 
   // Widget to display top answer
-  Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
-    print('topAnswer🍭🍭🍭: $topAnswer');
-    final isFlagged = topAnswer['isFlagged'];
-    final isHidden = topAnswer['isHidden'];
-    if (isFlagged == true || isHidden == true) return SizedBox.shrink();
-    final answeredBy = topAnswer['answeredBy'];
-    final answerText = topAnswer['text']?.toString() ?? '';
-    final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
-    final answererName = _getAnswererDisplayName(answeredBy);
-    final createdAt = topAnswer['createdAt']?.toString() ?? '';
-    final answerId = topAnswer['answerId']?.toString() ?? '';
-    final scaffoldContext = context;
-    final isOwner =
-        answeredBy['id'] ==
-        Provider.of<UserProvider>(context, listen: false).userId;
-    debugPrint("🔍 isFlagged: $isFlagged");
-    debugPrint("🔍 isHidden: $isHidden");
+Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
+  print('topAnswer🍭🍭🍭: $topAnswer');
+  final isFlagged = topAnswer['isFlagged'];
+  final isHidden = topAnswer['isHidden'];
+  if (isFlagged == true || isHidden == true || topAnswer['hiddenTemporary'] == true) return SizedBox.shrink();
+  final answeredBy = topAnswer['answeredBy'];
+  final answerText = topAnswer['text']?.toString() ?? '';
+  final upvotesCount = topAnswer['upvotesCount']?.toString() ?? '0';
+  final answererName = _getAnswererDisplayName(answeredBy);
+  final createdAt = topAnswer['createdAt']?.toString() ?? '';
+  final answerId = topAnswer['answerId']?.toString() ?? '';
+  final scaffoldContext = context;
+  final isOwner =
+      answeredBy['id'] ==
+      Provider.of<UserProvider>(context, listen: false).userId;
+  debugPrint("🔍 isFlagged: $isFlagged");
+  debugPrint("🔍 isHidden: $isHidden");
 
-    return Container(
-      margin: EdgeInsets.only(top: 8),
-      padding: EdgeInsets.all(6),
+  return Container(
+    margin: EdgeInsets.only(top: 8),
+    padding: EdgeInsets.all(6),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Container(
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.islamicGreen400.withOpacity(0.5),
-          border: Border.all(
-            color: AppColors.islamicGreen500.withOpacity(0.5),
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(8),
+        color: AppColors.islamicGreen400.withOpacity(0.5),
+        border: Border.all(
+          color: AppColors.islamicGreen500.withOpacity(0.5),
+          width: 2,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Answerer info row
-            Row(
-              children: [
-                // Top answer indicator
-                Container(
-                  margin: EdgeInsets.only(right: 8),
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.islamicGreen500,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.star,
-                        size: _getResponsiveIconSize(10),
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 2),
-                      Text(
-                        'Top Answer',
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(10),
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.verified_user,
-                  size: _getResponsiveIconSize(16),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Answerer info row
+          Row(
+            children: [
+              // Top answer indicator
+              Container(
+                margin: EdgeInsets.only(right: 8),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
                   color: AppColors.islamicGreen500,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                SizedBox(width: 4),
-                Text(
-                  answererName,
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(12),
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.askPageTitle,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star,
+                      size: _getResponsiveIconSize(10),
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: 2),
+                    Text(
+                      'Top Answer',
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(10),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 4),
-                Icon(Icons.verified),
-                SizedBox(width: 4),
-                Icon(
-                  Icons.verified,
+              ),
+              Icon(
+                Icons.verified_user,
+                size: _getResponsiveIconSize(16),
+                color: AppColors.islamicGreen500,
+              ),
+              SizedBox(width: 4),
+              Text(
+                answererName,
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(12),
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.askPageTitle,
+                ),
+              ),
+              SizedBox(width: 4),
+              // Verified icon (only one)
+              Icon(
+                Icons.verified,
+                size: _getResponsiveIconSize(12),
+                color: AppColors.islamicGreen500,
+              ),
+              // Edit button for owner
+              if (isOwner)
+                IconButton(
+                  icon: Icon(Icons.edit, color: Colors.blue),
+                  tooltip: 'Edit Answer',
+                  onPressed: () async {
+                    TextEditingController _editAnswerController =
+                        TextEditingController(text: answerText);
+                    bool isEditing = false;
+                    await showDialog(
+                      context: context,
+                      builder: (context) {
+                        String errorText = '';
+                        return StatefulBuilder(
+                          builder: (context, setState) {
+                            return AlertDialog(
+                              title: Text('Edit Answer'),
+                              content: TextField(
+                                controller: _editAnswerController,
+                                maxLines: 5,
+                                decoration: InputDecoration(
+                                  hintText: 'Edit your answer...',
+                                  errorText:
+                                      errorText.isNotEmpty ? errorText : null,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    final newAnswerText =
+                                        _editAnswerController.text.trim();
+                                    if (newAnswerText.length < 10) {
+                                      setState(() {
+                                        errorText =
+                                            'Answer must be at least 10 characters.';
+                                      });
+                                      return;
+                                    }
+                                    if (newAnswerText.isEmpty) {
+                                      setState(() {
+                                        errorText = 'Answer cannot be empty';
+                                      });
+                                      return;
+                                    }
+                                    // Call API to update answer
+
+                                    isEditing = true;
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Save'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              // Report icon (only one)
+              IconButton(
+                icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
+                tooltip: 'Report',
+                onPressed: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (context) => ReportModal(
+                      questionId: answerId,
+                      questionText: answerText,
+                      itemType: 'answer',
+                      scaffoldContext: scaffoldContext,
+                      onReportSuccess: () => _handleReportSuccess(answerId),
+                    ),
+                  );
+                },
+              ),
+              SizedBox(width: 4),
+              // Upvote section
+              Tooltip(
+                message: _isCertifiedVolunteer()
+                    ? "Expand to upvote this answer"
+                    : "$upvotesCount Muslims approved this",
+                child: Icon(
+                  Icons.thumb_up,
                   size: _getResponsiveIconSize(12),
                   color: AppColors.islamicGreen500,
                 ),
-                // Edit button for owner
-                if (isOwner)
-                  IconButton(
-                    icon: Icon(Icons.edit, color: Colors.blue),
-                    tooltip: 'Edit Answer',
-                    onPressed: () async {
-                      TextEditingController _editAnswerController =
-                          TextEditingController(text: answerText);
-                      bool isEditing = false;
-                      await showDialog(
-                        context: context,
-                        builder: (context) {
-                          String errorText = '';
-                          return StatefulBuilder(
-                            builder: (context, setState) {
-                              return AlertDialog(
-                                title: Text('Edit Answer'),
-                                content: TextField(
-                                  controller: _editAnswerController,
-                                  maxLines: 5,
-                                  decoration: InputDecoration(
-                                    hintText: 'Edit your answer...',
-                                    errorText:
-                                        errorText.isNotEmpty ? errorText : null,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      final newAnswerText =
-                                          _editAnswerController.text.trim();
-                                      if (newAnswerText.length < 10) {
-                                        setState(() {
-                                          errorText =
-                                              'Answer must be at least 10 characters.';
-                                        });
-                                        return;
-                                      }
-                                      if (newAnswerText.isEmpty) {
-                                        setState(() {
-                                          errorText = 'Answer cannot be empty';
-                                        });
-                                        return;
-                                      }
-                                      // Call API to update answer
-
-                                      isEditing = true;
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Text('Save'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-
-                // Report icon
-                IconButton(
-                  icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
-                  tooltip: 'Report',
-                  onPressed: () async {
-                    await showDialog(
-                      context: context,
-                      builder:
-                          (context) => ReportModal(
-                            questionId: answerId,
-                            questionText: answerText,
-                            itemType: 'answer',
-                            scaffoldContext: scaffoldContext,
-                            onReportSuccess:
-                                () => _handleReportSuccess(answerId),
-                          ),
-                    );
-                  },
-                ),
-                SizedBox(width: 4),
-                // Upvote section
-                Tooltip(
-                  message:
-                      _isCertifiedVolunteer()
-                          ? "Expand to upvote this answer"
-                          : "$upvotesCount Muslims approved this",
-                  child: Icon(
-                    Icons.thumb_up,
-                    size: _getResponsiveIconSize(12),
-                    color: AppColors.islamicGreen500,
-                  ),
-                ),
-                // Report icon
-                IconButton(
-                  icon: Icon(Icons.flag_outlined, color: Colors.redAccent),
-                  tooltip: 'Report',
-                  onPressed: () async {
-                    await showDialog(
-                      context: context,
-                      builder:
-                          (context) => ReportModal(
-                            questionId: answerId,
-                            questionText: answerText,
-                            itemType: 'answer',
-                            scaffoldContext: scaffoldContext,
-                            onReportSuccess:
-                                () => _handleReportSuccess(answerId),
-                          ),
-                    );
-                  },
-                ),
-                SizedBox(width: 4),
-                // Upvote section
-                Tooltip(
-                  message:
-                      _isCertifiedVolunteer()
-                          ? "Expand to upvote this answer"
-                          : "$upvotesCount Muslims approved this",
-                  child: Icon(
-                    Icons.thumb_up,
-                    size: _getResponsiveIconSize(12),
-                    color: AppColors.askPageSubtitle,
-                  ),
-                ),
-                SizedBox(width: 4),
-                Text(
-                  upvotesCount,
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(12),
-                    color: AppColors.askPageSubtitle,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            // Answer text
-            Text(
-              answerText,
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(14),
-                color: AppColors.askPageTitle,
-                height: 1.4,
               ),
-            ),
-            SizedBox(height: 8),
-            // Timestamp
-            if (createdAt.isNotEmpty)
+              SizedBox(width: 4),
               Text(
-                'Answered on ${_formatDate(createdAt)}',
+                upvotesCount,
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(11),
+                  fontSize: _getResponsiveFontSize(12),
                   color: AppColors.askPageSubtitle,
-                  fontStyle: FontStyle.italic,
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+          SizedBox(height: 8),
+          // Answer text
+          Text(
+            answerText,
+            style: TextStyle(
+              fontSize: _getResponsiveFontSize(14),
+              color: AppColors.askPageTitle,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 8),
+          // Timestamp
+          if (createdAt.isNotEmpty)
+            Text(
+              'Answered on ${_formatDate(createdAt)}',
+              style: TextStyle(
+                fontSize: _getResponsiveFontSize(11),
+                color: AppColors.askPageSubtitle,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // Widget to display individual answer in the scrollable list
   //By Ruba
@@ -2099,5 +2072,11 @@ class _QuestionCardState extends State<QuestionCard> {
     final userId = Provider.of<UserProvider>(context, listen: false).userId;
 
     return answeredById?.toString() == userId;
+  }
+
+
+  bool _allanswerofthequestionhiddentemporary(){
+    final allAnswers = widget.question['allAnswers'] ?? [];
+    return allAnswers.every((answer) => answer['hiddenTemporary'] == true);
   }
 }

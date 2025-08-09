@@ -2,6 +2,8 @@ import AnswerModel from "../models/Answers.js";
 import VoteModel from "../models/Votes.js";
 import QuestionModel from "../models/Questions.js";
 import UserModel from "../models/User.js";
+import FlagServices from './flagsservices.js';
+
 import { sendNotification } from "../services/notificationService.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -340,6 +342,30 @@ class AnswerServices {
       throw err;
     }
   }
+
+  static async ReviewAndUpdateAnswer(answerId, answerText) {
+    try { //i want to update the answer text and make the answer hiddentemporary false
+      console.log("🔥🔥🔥ReviewAndUpdateAnswer");
+      const answer = await AnswerModel.findOne({ answerId });
+      if (!answer) throw new Error("Answer not found");
+      answer.text = answerText;
+      answer.hiddenTemporary = false;
+      answer.upvotesCount =0;
+      await answer.save();
+          //recalculate the top answer
+          const question = await QuestionModel.findOne({ questionId: answer.questionId });
+          if (question && question.topAnswerId === answerId) {
+            console.log("🎻🎻🎻Recalculating top answer for question:", question.questionId);
+            await FlagServices.recalculateTopAnswer(question.questionId);
+          }
+      return answer;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+
+
 }
 
 export default AnswerServices;
