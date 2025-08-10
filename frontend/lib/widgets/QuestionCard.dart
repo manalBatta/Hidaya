@@ -284,7 +284,6 @@ class _QuestionCardState extends State<QuestionCard> {
               answers
                   .where((a) => a['isFlagged'] != true && a['isHidden'] != true && a['hiddenTemporary'] != true)
                   .toList();
-          print('✅✅✅allAnswers: $allAnswers');
           isLoadingAnswers = false;
         });
         // Fetch the upvoted answer ID for this question
@@ -472,7 +471,6 @@ class _QuestionCardState extends State<QuestionCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Answer submitted successfully!'),
-              backgroundColor: AppColors.islamicGreen600,
               backgroundColor: AppColors.islamicGreen600,
             ),
           );
@@ -803,8 +801,6 @@ class _QuestionCardState extends State<QuestionCard> {
                                         ),
                                         backgroundColor:
                                             AppColors.islamicGreen600,
-                                        backgroundColor:
-                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     if (widget.onRefresh != null)
@@ -919,8 +915,6 @@ class _QuestionCardState extends State<QuestionCard> {
                                                       isPublic
                                                           ? AppColors
                                                               .islamicGreen600
-                                                          ? AppColors
-                                                              .islamicGreen600
                                                           : Colors.orange,
                                                 ),
                                                 SizedBox(width: 8),
@@ -1011,8 +1005,6 @@ class _QuestionCardState extends State<QuestionCard> {
                                         content: Text(
                                           'Question updated successfully',
                                         ),
-                                        backgroundColor:
-                                            AppColors.islamicGreen600,
                                         backgroundColor:
                                             AppColors.islamicGreen600,
                                       ),
@@ -1569,9 +1561,12 @@ Widget _buildTopAnswerCard(Map<String, dynamic> topAnswer) {
   final createdAt = topAnswer['createdAt']?.toString() ?? '';
   final answerId = topAnswer['answerId']?.toString() ?? '';
   final scaffoldContext = context;
-  final isOwner =
+/* final isOwner =
       answeredBy['id'] ==
-      Provider.of<UserProvider>(context, listen: false).userId;
+      Provider.of<UserProvider>(context, listen: false).userId; */
+      final userId = Provider.of<UserProvider>(context, listen: false).userId;
+final isOwner = (answeredBy != null && answeredBy is Map && answeredBy['id'] == userId);
+
   debugPrint("🔍 isFlagged: $isFlagged");
   debugPrint("🔍 isHidden: $isHidden");
 
