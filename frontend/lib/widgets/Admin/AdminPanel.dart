@@ -6,6 +6,7 @@ import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
 import 'package:frontend/widgets/Admin/AdminStoriesPage.dart';
 import 'package:frontend/widgets/Admin/FlagsAdminPage.dart';
+import 'package:frontend/widgets/NotificationCenter.dart';
 import 'AddStoryPage.dart';
 
 // Islamic Theme Colors
@@ -98,6 +99,7 @@ class _AdminPanelState extends State<AdminPanel> {
           icon: Icons.add_box,
           route: '/admin/lessons/add',
         ),
+        ),
       ],
     ), */
     NavigationItem(
@@ -131,12 +133,12 @@ class _AdminPanelState extends State<AdminPanel> {
       icon: Icons.flag_outlined,
       route: '/admin/flags',
     ),
-    /*  NavigationItem(
+    NavigationItem(
       id: 'notifications',
       label: 'Notifications',
       icon: Icons.notifications_outlined,
       route: '/admin/notifications',
-    ), */
+    ),
     /*  NavigationItem(
       id: 'ai-insights',
       label: 'AI Insights',
@@ -197,6 +199,7 @@ class _AdminPanelState extends State<AdminPanel> {
       id: 'settings',
       label: 'Settings',
       icon: Icons.settings_outlined,
+      route: '/admin/settings',
       route: '/admin/settings',
     ), */
   ];
@@ -405,9 +408,42 @@ class _AdminPanelState extends State<AdminPanel> {
               ),
             ),
             const Spacer(),
+            // Notifications Icon
+            _buildNotificationsIcon(),
+            const SizedBox(width: 16),
+            _buildUserMenu(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildNotificationsIcon() {
+    return Stack(
+      children: [
+        IconButton(
+          onPressed: () => _navigateToRoute('/admin/notifications'),
+          icon: const Icon(
+            Icons.notifications_outlined,
+            color: IslamicColors.green700,
+            size: 24,
+          ),
+          tooltip: 'Notifications',
+        ),
+        // Notification badge
+        Positioned(
+          right: 8,
+          top: 8,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -455,7 +491,7 @@ class _AdminPanelState extends State<AdminPanel> {
       ),
       itemBuilder:
           (context) => [
-            const PopupMenuItem(
+            /*  const PopupMenuItem(
               value: 'settings',
               child: Row(
                 children: [
@@ -465,7 +501,7 @@ class _AdminPanelState extends State<AdminPanel> {
                 ],
               ),
             ),
-            const PopupMenuDivider(),
+            const PopupMenuDivider(), */
             const PopupMenuItem(
               value: 'logout',
               child: Row(
@@ -658,6 +694,8 @@ class _AdminPanelState extends State<AdminPanel> {
         );
       case '/admin/flags':
         return FlagsAdminPage();
+      case '/admin/notifications':
+        return NotificationCenter();
       default:
         return _buildPlaceholderPage(route);
     }

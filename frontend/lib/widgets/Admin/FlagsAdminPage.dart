@@ -854,7 +854,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                 label: const Text('Dismiss Flag'),
                               ),
                               const SizedBox(width: 12),
-                              OutlinedButton.icon(
+                              ElevatedButton.icon(
                                 onPressed: () {
                                   Navigator.pop(context);
                                   _showSnackbar(
@@ -868,6 +868,17 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                   foregroundColor: Colors.red,
                                   overlayColor: Colors.red.withOpacity(0.1),
                                 ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                label: const Text('Keep Content'),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _showSnackbar(
+                                    'Flag ${flag.flagId} has been marked as resolved.',
+                                  );
+                                },
+                                icon: const Icon(Icons.check, size: 16),
                               ),
                             ],
                           ),
