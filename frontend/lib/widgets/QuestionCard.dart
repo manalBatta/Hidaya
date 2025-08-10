@@ -473,6 +473,7 @@ class _QuestionCardState extends State<QuestionCard> {
             SnackBar(
               content: Text('Answer submitted successfully!'),
               backgroundColor: AppColors.islamicGreen600,
+              backgroundColor: AppColors.islamicGreen600,
             ),
           );
 
@@ -802,6 +803,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                         ),
                                         backgroundColor:
                                             AppColors.islamicGreen600,
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                       ),
                                     );
                                     if (widget.onRefresh != null)
@@ -916,6 +919,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                                       isPublic
                                                           ? AppColors
                                                               .islamicGreen600
+                                                          ? AppColors
+                                                              .islamicGreen600
                                                           : Colors.orange,
                                                 ),
                                                 SizedBox(width: 8),
@@ -1006,6 +1011,8 @@ class _QuestionCardState extends State<QuestionCard> {
                                         content: Text(
                                           'Question updated successfully',
                                         ),
+                                        backgroundColor:
+                                            AppColors.islamicGreen600,
                                         backgroundColor:
                                             AppColors.islamicGreen600,
                                       ),
