@@ -395,7 +395,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               : '${dashboardStats['totalusers'] ?? 0}',
           Icons.people,
           dashboardStats['monthlyincreaseinusers'] != null
-              ? '+${dashboardStats['monthlyincreaseinusers']} this month'
+              ? '${dashboardStats['monthlyincreaseinusers'] < 0 ? '' : '+'}${dashboardStats['monthlyincreaseinusers']} this month'
               : null,
           IslamicColors.green600,
           dashboardStats['monthlyincreaseinusers'] != null,
@@ -407,7 +407,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               : '${dashboardStats['totalcertifiedvolunteers'] ?? 0}',
           Icons.verified_user,
           dashboardStats['weeklyincreaseincertifiedvolunteers'] != null
-              ? '+${dashboardStats['weeklyincreaseincertifiedvolunteers']} this week'
+              ? '${dashboardStats['weeklyincreaseincertifiedvolunteers'] < 0 ? '' : '+'}${dashboardStats['weeklyincreaseincertifiedvolunteers']} this week'
               : null,
           IslamicColors.green600,
           dashboardStats['weeklyincreaseincertifiedvolunteers'] != null,
@@ -419,7 +419,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               : '${dashboardStats['totalpendingvolunteers'] ?? 0}',
           Icons.person_add,
           dashboardStats['dailyincreaseinpendingvolunteers'] != null
-              ? '+${dashboardStats['dailyincreaseinpendingvolunteers']} new today'
+              ? '${dashboardStats['dailyincreaseinpendingvolunteers'] < 0 ? '' : '+'}${dashboardStats['dailyincreaseinpendingvolunteers']} new today'
               : null,
           Colors.orange.shade600,
           dashboardStats['dailyincreaseinpendingvolunteers'] != null,
@@ -431,7 +431,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               : '${dashboardStats['totalquestions'] ?? 0}',
           Icons.help_outline,
           dashboardStats['dailyincreaseinquestions'] != null
-              ? '+${dashboardStats['dailyincreaseinquestions']} today'
+              ? '${dashboardStats['dailyincreaseinquestions'] < 0 ? '' : '+'}${dashboardStats['dailyincreaseinquestions']} today'
               : null,
           IslamicColors.green600,
           dashboardStats['dailyincreaseinquestions'] != null,
@@ -492,7 +492,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           isLoadingDashboardStats
               ? '...'
               : '${dashboardStats['totalstories'] ?? 0}',
-          Icons.bookmark,
+          Icons.brightness_6_outlined,
           null,
           IslamicColors.green600,
           false,

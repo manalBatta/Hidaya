@@ -85,17 +85,4 @@ class FlagServices {
 }
 
 export default FlagServices;
-/*
-     flagId: require('uuid').v4(),
-      itemType,
-      itemId,
-      reportedBy,
-      reson,
-      status: 'pending',
-      createdAt: new Date()
 
-
-
-
-
-*/

@@ -1,6 +1,7 @@
 import axios from "axios";
 import UserServices from "./userserviceslog&registeration.js";
 import { v4 as uuidv4 } from "uuid";
+import { send } from "process";
 
 // OneSignal configuration
 const ONESIGNAL_APP_ID = "b068d3f0-99d0-487c-a233-fde4b91a5b8c";
@@ -126,6 +127,7 @@ async function sendOneSignalPush(options) {
         contents: { en: message },
         data: data,
         priority: 10,
+       
       },
       {
         headers: {

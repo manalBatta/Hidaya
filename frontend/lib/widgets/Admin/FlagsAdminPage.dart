@@ -164,7 +164,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
     return Scaffold(
       backgroundColor: islamicCream,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,23 +190,6 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                         style: TextStyle(fontSize: 16, color: islamicGreen600),
                       ),
                     ],
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.bar_chart, size: 16),
-                    label: const Text('View Analytics'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: islamicGreen600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -240,95 +223,94 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
               const SizedBox(height: 24),
 
               // Content Card
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Section Header
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: Color(0xFFE5E7EB)),
-                          ),
+              Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Section Header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Color(0xFFE5E7EB)),
                         ),
-                        child: Row(
-                          children: [
-                            Text(
-                              _tabController.index == 0
-                                  ? 'Question Flags'
-                                  : 'Answer Flags',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: islamicGreen800,
-                              ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            _tabController.index == 0
+                                ? 'Question Flags'
+                                : 'Answer Flags',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: islamicGreen800,
                             ),
-                          ],
-                        ),
-                      ),
-
-                      // Search and Filters
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: _buildSearchAndFilters(),
-                      ),
-
-                      // Results Info
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Showing 1 to ${_filteredFlags.length} of ${_filteredFlags.length} results',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Table Header
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: Color(0xFFE5E7EB)),
                           ),
-                        ),
-                        child: _buildTableHeader(),
+                        ],
                       ),
+                    ),
 
-                      // Table Content
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: _filteredFlags.length,
-                          itemBuilder: (context, index) {
-                            return _buildFlagRow(_filteredFlags[index], index);
-                          },
+                    // Search and Filters
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      child: _buildSearchAndFilters(),
+                    ),
+
+                    // Results Info
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Showing 1 to ${_filteredFlags.length} of ${_filteredFlags.length} results',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Table Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Color(0xFFE5E7EB)),
                         ),
                       ),
-                    ],
-                  ),
+                      child: _buildTableHeader(),
+                    ),
+
+                    // Table Content
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _filteredFlags.length,
+                        itemBuilder: (context, index) {
+                          return _buildFlagRow(_filteredFlags[index], index);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -365,26 +347,8 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
       {
         'title': 'Total Flags',
         'value': _flags.length.toString(),
-        'icon': Icons.flag_outlined,
-        'color': Colors.red,
-      },
-      {
-        'title': 'Pending',
-        'value': _flags.where((f) => f.status == "pending").length.toString(),
-        'icon': Icons.access_time,
-        'color': Colors.orange,
-      },
-      {
-        'title': 'Resolved',
-        'value': _flags.where((f) => f.status == "resolved").length.toString(),
         'icon': Icons.shield_outlined,
-        'color': Colors.green,
-      },
-      {
-        'title': 'Dismissed',
-        'value': _flags.where((f) => f.status == "dismissed").length.toString(),
-        'icon': Icons.warning_outlined,
-        'color': Colors.grey,
+        'color': Colors.red,
       },
     ];
 
@@ -392,13 +356,12 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
       children:
           stats.asMap().entries.map((entry) {
             final stat = entry.value;
-            return Expanded(
-              child: Container(
-                margin: EdgeInsets.only(
-                  right: entry.key < stats.length - 1 ? 16 : 0,
-                ),
-                child: _buildStatCard(stat),
+            return Container(
+              width: 250,
+              margin: EdgeInsets.only(
+                right: entry.key < stats.length - 1 ? 16 : 0,
               ),
+              child: _buildStatCard(stat),
             );
           }).toList(),
     );
@@ -515,7 +478,6 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
         Expanded(flex: 2, child: _buildHeaderCell('Item ID')),
         Expanded(flex: 3, child: _buildHeaderCell('Reported By')),
         Expanded(flex: 4, child: _buildHeaderCell('Reason')),
-        Expanded(flex: 2, child: _buildHeaderCell('Status')),
         Expanded(flex: 2, child: _buildHeaderCell('Created At')),
         const SizedBox(width: 40), // Actions column
       ],
@@ -589,8 +551,8 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
             ),
 
             // Status Column
-            Expanded(flex: 2, child: _buildStatusBadge(flag.status)),
-
+            //Expanded(flex: 2, child: _buildStatusBadge(flag.status)),
+            const SizedBox(width: 10),
             // Created At Column
             Expanded(
               flex: 2,
@@ -880,20 +842,6 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                           // Action Buttons
                           Row(
                             children: [
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  _showSnackbar(
-                                    'Flag ${flag.flagId} has been marked as resolved.',
-                                  );
-                                },
-                                icon: const Icon(Icons.check, size: 16),
-                                label: const Text('Resolve Flag'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
                               const SizedBox(width: 12),
                               OutlinedButton.icon(
                                 onPressed: () {
@@ -906,7 +854,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                 label: const Text('Dismiss Flag'),
                               ),
                               const SizedBox(width: 12),
-                              ElevatedButton.icon(
+                              OutlinedButton.icon(
                                 onPressed: () {
                                   Navigator.pop(context);
                                   _showSnackbar(
@@ -916,8 +864,9 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                 icon: const Icon(Icons.delete, size: 16),
                                 label: const Text('Remove Content'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
+                                  iconColor: Colors.red,
+                                  foregroundColor: Colors.red,
+                                  overlayColor: Colors.red.withOpacity(0.1),
                                 ),
                               ),
                             ],

@@ -5,6 +5,7 @@ import 'package:frontend/widgets/Admin/AdminDashboard.dart';
 import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
 import 'package:frontend/widgets/Admin/AdminStoriesPage.dart';
+import 'package:frontend/widgets/Admin/FlagsAdminPage.dart';
 import 'AddStoryPage.dart';
 
 // Islamic Theme Colors
@@ -107,7 +108,7 @@ class _AdminPanelState extends State<AdminPanel> {
         NavigationItem(
           id: 'all-stories',
           label: 'All Stories',
-          icon: Icons.brightness_6,
+          icon: Icons.brightness_6_outlined,
           route: '/admin/stories',
         ),
         NavigationItem(
@@ -404,8 +405,6 @@ class _AdminPanelState extends State<AdminPanel> {
               ),
             ),
             const Spacer(),
-            // User menu
-            _buildUserMenu(),
           ],
         ),
       ),
@@ -657,7 +656,8 @@ class _AdminPanelState extends State<AdminPanel> {
         return AddStoryPage(
           onBackToStories: () => _navigateToRoute('/admin/stories'),
         );
-
+      case '/admin/flags':
+        return FlagsAdminPage();
       default:
         return _buildPlaceholderPage(route);
     }
