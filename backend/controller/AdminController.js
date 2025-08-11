@@ -403,3 +403,84 @@ export const hideanswer = async (req, res) => {
     res.status(500).json({ success: false, message: "Hiding answer failed" });
   }
 };
+
+export const resolveFlag = async (req, res) => {
+  try {
+    const { flagId } = req.params;
+
+    if (!flagId ) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const resolvedFlag = await AdminServices.ResolveFlag(flagId);
+
+    if (!resolvedFlag) {
+      return res.status(404).json({ success: false, message: "Flag not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Flag resolved successfully", flag: resolvedFlag });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Resolving flag failed" });
+  }
+};
+
+export const rejectFlag = async (req, res) => {
+  try {
+    const { flagId } = req.params;
+
+    if (!flagId ) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const rejectedFlag = await AdminServices.RejectFlag(flagId);
+
+    if (!rejectedFlag) {
+      return res.status(404).json({ success: false, message: "Flag not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Flag rejected successfully", flag: rejectedFlag });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Rejecting flag failed" });
+  }
+};
+
+export const dismissFlag = async (req, res) => {
+  try {
+    const { flagId } = req.params;
+     console.log("Dismiss Flag Called with flagId:", flagId);
+
+    if (!flagId ) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const dismissedFlag = await AdminServices.DismissFlag(flagId);
+
+    if (!dismissedFlag) {
+      return res.status(404).json({ success: false, message: "Flag not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Flag dismissed successfully", flag: dismissedFlag });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Dismissing flag failed" });
+  }
+};
+
+export const deleteFlagByAdmin = async (req, res) => {
+  try {
+    const { flagId } = req.params;
+
+    if (!flagId) {
+      return res.status(400).json({ success: false, message: "Invalid input" });
+    }
+
+    const deletedFlag = await AdminServices.DeleteFlagByAdmin(flagId);
+
+    if (!deletedFlag) {
+      return res.status(404).json({ success: false, message: "Flag not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Flag deleted successfully", flag: deletedFlag });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Deleting flag failed" });
+  }
+};

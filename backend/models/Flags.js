@@ -14,10 +14,16 @@ const flagSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ["pending", "reviewed", "resolved"],
+    enum: ["pending", "dismissed", "resolved", "rejected"],
     default: "pending",
   },
   createdAt: { type: Date, required: true, default: Date.now },
+  sleepmode: {
+    type: Boolean,
+    default: false,
+  },
+  notificationSentAt: { type: Date, default: null },
+    notificationSentAtDismissed: { type: Date, default: null },//store the timestamp when notification is sent for dismissed flags
 });
 
 export default model("Flag", flagSchema, "Flags");

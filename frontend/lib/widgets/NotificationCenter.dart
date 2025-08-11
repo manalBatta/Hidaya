@@ -548,50 +548,32 @@ class _NotificationCenterState extends State<NotificationCenter> {
       case 'question_updated': // I want to show the updated question with the answer of the volunteer to update his answer
         // No navigation needed
               _handleQuestionUpdated(context, data, notification['message']);
-        print('✴️✴️✴️Notification: $notification');
-      /*  final questionId = data?['questionId'];
-        final answerId = data?['answerId'];
-         //i want to make a popup dialog with the text of the notifcation and small button called review answer
-        if (questionId != null && answerId != null) {
-          print('Navigate to updated question: $questionId');
-          //get the question and answer from the database
-        
-         _showAnswerDialogToPreviewAndEdit(context, data['questionText'], data['answerText'], (updatedAnswer) async {
-          //update the answer in the database and make the answer hiddentemporary false
-          
-          final response = await http.put(
-            Uri.parse('${adminReviewAndUpdateAnswerUrl}$answerId'),
-            headers: {
-              "Content-Type": "application/json",
-              //"Authorization": "Bearer $token",
-            },
-            body: jsonEncode({
-              "answerText": updatedAnswer,
-            }),
-          );
-          if (response.statusCode == 200) {
-            print('Answer updated successfully');
-            //show a snackbar to the user that the answer has been updated successfully
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Answer updated successfully'),
-                backgroundColor: AppColors.islamicGreen500,
-              ),
-            );
-          } else {
-            print('Failed to update answer');
-            //show a snackbar to the user that the answer has not been updated successfully
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to update answer'),
-                backgroundColor: AppColors.errorRed,
-              ),
-            );
-          }
-          // Handle the updated answer
-          print('Updated answer: $updatedAnswer');
-         });
-        }*/
+        print(' Notification: $notification');
+
+        break;
+        case 'flag_resolved':
+          // Handle flag resolved notification
+         _handleFlagResolved(context, data, notification['message']);
+         //delete the flag
+        _deleteThreadFlag(context, data);
+          print('Notification: $notification');
+        break;
+
+        case 'flag_rejected':
+          // Handle flag rejected notification
+          _handleFlagRejected(context, data, notification['message']);
+          //delete the flag
+         _deleteThreadFlag(context, data);
+          print(' Notification: $notification');
+        break;
+      case 'flag_dismissed':
+        // Handle flag dismissed notification
+        _handleFlagDismissed(context, data, notification['message']);
+        print(' Notification: $notification');
+        break;
+      default:
+        // Handle other notification types if needed
+        print('Unknown notification type: $type');
         break;
     }
   }
@@ -724,6 +706,215 @@ void _handleQuestionUpdated(BuildContext context, Map<String, dynamic> data, Str
   }
 }
 
+void _handleFlagResolved(BuildContext context, Map<String, dynamic> data, String? message) {
+  final flagId = data['flagId'];
+//  final questionId = data['questionId'];
+  final itemType = data['itemType'];
+  final reason = data['reason'];
+  final status = data['status'];
+  final reportedBy = data['reporterName'] ?? 'Unknown Reporter';
+  final createdAt = data['createdAt'] != null
+    ? DateTime.parse(data['createdAt']).toLocal().toString()
+    : 'Unknown';
+
+  final flaggedContent = data['flaggedContent'];
+
+  if (flagId != null ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text("Flag Dismissed"),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message != null) Text(message),
+                SizedBox(height: 8),
+                Text("Flag ID: $flagId"),
+                Text("Item Type: $itemType"),
+                Text("Reason: $reason"),
+                Text("Status: $status"),
+                Text("Reported By: $reportedBy"),
+                Text("Created At: $createdAt"),
+                SizedBox(height: 10),
+                Text(
+                  "Flagged Content:",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(flaggedContent ?? "No content available"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+void _handleFlagRejected(BuildContext context, Map<String, dynamic> data, String? message) {
+  final flagId = data['flagId'];
+//  final questionId = data['questionId'];
+  final itemType = data['itemType'];
+  final reason = data['reason'];
+  final status = data['status'];
+  final reportedBy = data['reporterName'] ?? 'Unknown Reporter';
+  final createdAt = data['createdAt'] != null
+    ? DateTime.parse(data['createdAt']).toLocal().toString()
+    : 'Unknown';
+
+  final flaggedContent = data['flaggedContent'];
+
+  if (flagId != null ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text("Flag Dismissed"),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message != null) Text(message),
+                SizedBox(height: 8),
+                Text("Flag ID: $flagId"),
+                Text("Item Type: $itemType"),
+                Text("Reason: $reason"),
+                Text("Status: $status"),
+                Text("Reported By: $reportedBy"),
+                Text("Created At: $createdAt"),
+                SizedBox(height: 10),
+                Text(
+                  "Flagged Content:",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(flaggedContent ?? "No content available"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+void _handleFlagDismissed(BuildContext context, Map<String, dynamic> data, String? message) {
+  final flagId = data['flagId'];
+//  final questionId = data['questionId'];
+  final itemType = data['itemType'];
+  final reason = data['reason'];
+  final status = data['status'];
+  final reportedBy = data['reporterName'] ?? 'Unknown Reporter';
+  final createdAt = data['createdAt'] != null
+    ? DateTime.parse(data['createdAt']).toLocal().toString()
+    : 'Unknown';
+
+  final flaggedContent = data['flaggedContent'];
+
+  if (flagId != null ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text("Flag Dismissed"),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message != null) Text(message),
+                SizedBox(height: 8),
+                Text("Flag ID: $flagId"),
+                Text("Item Type: $itemType"),
+                Text("Reason: $reason"),
+                Text("Status: $status"),
+                Text("Reported By: $reportedBy"),
+                Text("Created At: $createdAt"),
+                SizedBox(height: 10),
+                Text(
+                  "Flagged Content:",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(flaggedContent ?? "No content available"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text("Close"),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.green),
+              onPressed: () {
+                // Resolve action
+              },
+              icon: Icon(Icons.check),
+              label: Text("Resolve"),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () {
+                // Reject action
+              },
+              icon: Icon(Icons.close),
+              label: Text("Reject"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
 
-   
+
+void _deleteThreadFlag(BuildContext context, Map<String, dynamic> data) {
+  final flagId = data['flagId'];
+//  final questionId = data['questionId'];
+
+  if (flagId != null ) {
+    print('✴️ Deleting flag: $flagId');
+
+    // Call the API to delete the flag
+    http.delete(
+      Uri.parse('${adminDeleteFlagUrl}$flagId'),
+      headers: {"Content-Type": "application/json"},
+    ).then((response) {
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Flag deleted successfully'),
+            backgroundColor: AppColors.islamicGreen500,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete flag'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    }).catchError((error) {
+      print('Error deleting flag: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting flag'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    });
+  }
+}

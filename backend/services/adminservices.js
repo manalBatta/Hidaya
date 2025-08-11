@@ -5,8 +5,11 @@ import Story from '../models/Stories.js';
  import Flag from '../models/Flags.js';
  import Answer from '../models/Answers.js';
  import { v4 as uuidv4 } from 'uuid';
+ import cron from "node-cron";
+
 import FlagServices from './flagsservices.js';
 import { sendNotification } from './notificationService.js';
+import e from 'express';
 const timezone = 'Asia/Palestine';
 
 const categories = [
@@ -331,11 +334,39 @@ class AdminServices {
         return user;
     }
 
-    static async getFlags(){
-        const flags = await Flag.find({});
-        console.log(flags);
-        return flags;
-    }
+  static async getFlags() {
+  console.log("Fetching all flags with details...");
+  try {
+    const flags = await Flag.find({});
+
+    const flagsWithDetails = await Promise.all(
+      flags.map(async (flag) => {
+        const reporter = await User.findOne({ userId: flag.reportedBy }).lean();
+
+        let itemDetails = null;
+        if (flag.itemType === "answer") {
+          itemDetails = await Answer.findOne({ answerId: flag.itemId }).lean();
+        } else if (flag.itemType === "question") {
+          itemDetails = await Question.findOne({ questionId: flag.itemId }).lean();
+        }
+
+        return {
+          ...flag.toObject(),
+          reporter,
+          itemDetails,
+        };
+      })
+    );
+
+    return flagsWithDetails;
+  } catch (error) {
+    console.error("Error fetching flags:", error);
+    return [];
+  }
+}
+
+
+    
 
     static async getallstories(){
         const stories = await Story.find({});
@@ -654,12 +685,397 @@ class AdminServices {
     }
   }
 
+  static async ResolveFlag(flagId) {
+    let contentOwnerId = null;
+    let flaggedContent = null;
+
+    console.log("Resolving flag:", flagId);
+    if (!flagId) {
+      throw new Error("Missing required fields");
+    }
+    const updatedFlag = await Flag.findOneAndUpdate(
+      { flagId: flagId },
+      { status: "resolved" },
+      { new: true }
+    );
+    if (!updatedFlag) {
+      throw new Error("Failed to resolve flag");
+    } else {
+      console.log("Updated flag:", updatedFlag);
+      //Delete the answer or question based on the flag
+      if (updatedFlag.itemType === "answer") {
+        console.log("Deleting answer for flag:", updatedFlag.itemId);
+        const answer = await Answer.findOne({ answerId: updatedFlag.itemId });
+        console.log("Answer found:", answer);
+        if (answer) { 
+          contentOwnerId = answer.answeredBy;
+          flaggedContent = answer.text?.substring(0, 200) || "";
+          await Answer.deleteOne({ answerId: updatedFlag.itemId }); // Delete the answer
+          console.log("Answer deleted:", answer.answerId);
+          //recalculate top answer
+          await FlagServices.recalculateTopAnswer(answer.questionId);
+        }
+      }
+      else if (updatedFlag.itemType === "question") {
+        console.log("Deleting question for flag:", updatedFlag.itemId);
+        const question = await Question.findOne({ questionId: updatedFlag.itemId });
+        if (question) {
+          contentOwnerId = question.askedBy;
+          flaggedContent = question.text?.substring(0, 200) || "";
+          await Question.deleteOne({ questionId: updatedFlag.itemId }); // Delete the question and all its answers
+          // Also delete all answers related to this question
+          await Answer.deleteMany({ questionId: updatedFlag.itemId });
+          console.log("Question deleted:", question.questionId);
+        }
+      }
+
+      // Notify the reporter about the resolution
+      const reporter = await User.findOne({ userId: updatedFlag.reportedBy });
+      console.log(" ✅Reporter found:", reporter);
+     if (reporter) {
+        await sendNotification({
+          userId: reporter.userId,
+          message: `Your report for flag(${flagId}) has been resolved.`,
+          title: "Flag Resolved ✅",
+          type: "flag_resolved",
+          data: {
+            flagId: flagId,
+               ...updatedFlag.toObject(),
+               flaggedContent,
+              reporterName: reporter.displayName || "Unknown Reporter",
+          },
+        });
+        console.log("Notification sent to reporter:", reporter.userId);
+        // Save notificationSentAt timestamp
+      await Flag.updateOne(
+        { flagId: flagId },
+        { notificationSentAt: new Date() }
+      );
+        console.log(`notificationSentAt set for flag: ${flagId}`);
+
+      }
+      //send the notification for the owner of the question or answer
+       if (contentOwnerId) {
+    const owner = await User.findOne({ userId: contentOwnerId });
+    
+    if (owner) {
+      await sendNotification({
+        userId: owner.userId,
+        message: `Your ${updatedFlag.itemType} has been removed due to a resolved flag & you can see the flag details below.`,
+        title: "Content Removed 🚫",
+        type: "flag_resolved",
+        data: {
+          flagId: flagId,
+               ...updatedFlag.toObject(),
+               flaggedContent,
+              reporterName: reporter.displayName || "Unknown Reporter",
+        },
+      });
+      console.log(`Notification sent to content owner: ${owner.userId}`);
+    }
+  }
+      
+
+      return updatedFlag;
+    }
+  }
+
+  static async RejectFlag(flagId) {
+    console.log("Rejecting flag:", flagId);
+    let flaggedContent = null;
+    let contentOwnerId = null; // Initialize contentOwnerId
+    if (!flagId) {
+      throw new Error("Missing required fields");
+    }
+    const updatedFlag = await Flag.findOneAndUpdate(
+      { flagId: flagId },
+      { status: "rejected" },
+      { new: true }
+    );
+    //isFlagged is false in the answer or question
+    if (updatedFlag.itemType === "answer") {
+      const answer = await Answer.findOne({ answerId: updatedFlag.itemId });
+      
+      if (answer) {
+        contentOwnerId = answer.answeredBy; // Get the owner of the answer
+        flaggedContent = answer.text?.substring(0, 200) || "";
+        answer.isFlagged = false; // Set isFlagged to false
+        await answer.save(); // Save the updated answer
+      }
+    }
+    else if (updatedFlag.itemType === "question") {
+      const question = await Question.findOne({ questionId: updatedFlag.itemId });
+      if (question) {
+        contentOwnerId = question.askedBy; // Get the owner of the question
+        flaggedContent = question.text?.substring(0, 200) || "";
+        question.isFlagged = false; // Set isFlagged to false
+        await question.save(); // Save the updated question
+      }
+    }
+
+    console.log("Updated flag:", updatedFlag);
+    if (!updatedFlag) {
+      throw new Error("Failed to reject flag");
+    } else {
+      console.log("Updated flag:", updatedFlag);
+      // Notify the reporter about the rejection
+     const reporter = await User.findOne({ userId: updatedFlag.reportedBy });
+      if (reporter) {
+        await sendNotification({
+          userId: reporter.userId,
+          message: `Your report for flag (${flagId}) has been rejected.`,
+          title: "Flag Rejected ❌",
+          type: "flag_rejected",
+          data: {
+             flagId: flagId,
+               ...updatedFlag.toObject(),
+               flaggedContent,
+              reporterName: reporter.displayName || "Unknown Reporter",
+          },
+        });
+         
+      }
+      // Save notificationSentAt timestamp
+      await Flag.updateOne(
+        { flagId: flagId },
+        { notificationSentAt: new Date() }
+      );
+     //Send notification to the owner of the content
+     if (contentOwnerId) {
+       const owner = await User.findOne({ userId: contentOwnerId });
+       if (owner) {
+         await sendNotification({
+           userId: owner.userId,
+           message: `Your ${updatedFlag.itemType} has been flagged but the flag has been rejected.`,
+           title: "Content Removed 🚫",
+           type: "flag_rejected",
+           data: {
+             flagId: flagId,
+             ...updatedFlag.toObject(),
+             flaggedContent,
+             reporterName: reporter.displayName || "Unknown Reporter",
+           },
+         });
+          // Save notificationSentAt timestamp
+         await Flag.updateOne(
+           { flagId: flagId },
+           { notificationSentAt: new Date() }
+         );
+         console.log(`Notification sent to content owner: ${owner.userId}`);
+       }
+     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      return updatedFlag;
+    }
+  }
+  
+  static async DismissFlag(flagId) {
+    console.log("Dismissing flag:", flagId);
+    if (!flagId) {
+      throw new Error("Missing required fields");
+    }
+    const updatedFlag = await Flag.findOneAndUpdate(
+      { flagId: flagId },
+      { status: "dismissed" , notificationSentAtDismissed: new Date() }, // Store the timestamp when notification is sent for dismissed flags
+      { new: true }
+    );
+    if (!updatedFlag) {
+      throw new Error("Failed to dismiss flag");
+    } else {
+      console.log("Updated flag:", updatedFlag);
+        let flaggedContent = null;
+      if (updatedFlag.itemType === "answer") {
+         const answer = await Answer.findOne({ answerId: updatedFlag.itemId });
+         if(answer){
+          flaggedContent = answer.text?.substring(0, 200) || "";
+         }
+
+      }
+      else if (updatedFlag.itemType === "question") {
+         const question = await Question.findOne({ questionId: updatedFlag.itemId });
+         if(question){
+           flaggedContent = question.text?.substring(0, 200) || "";
+         }
+
+       
+      }
+    //get the name of reporter
+    let reporterName = null;
+   const reporter = await User.findOne({ userId: updatedFlag.reportedBy });
+if (reporter) {
+  reporterName = reporter.displayName;
+}
+        //notify the admin
+        const admin = await User.findOne({ role: "admin" });
+        if (admin) {
+          await sendNotification({
+            userId: admin.userId,
+            message: `Flag ${flagId} has been dismissed.`,
+            title: "Flag Dismissed 🔕",
+            type: "flag_dismissed",
+            data: {
+              flagId: flagId,
+               ...updatedFlag.toObject(),
+               flaggedContent,
+              reporterName: reporterName || "Unknown Reporter",
+            },
+          });
+        }
+        // notify the reporter
+      /* if (reporter) {
+        await sendNotification({
+          userId: reporter.userId,
+          message: `Your report for flag ${flagId} has been dismissed.`,
+          title: "Flag Dismissed 🔕",
+          type: "flag_dismissed",
+          data: {
+           flagId: flagId,
+               ...updatedFlag.toObject(),
+               flaggedContent,
+             reporterName: reporterName || "Unknown Reporter",
+
+          },
+        });
+      }*/
+      return updatedFlag;
+    }
+  }
+
+
+
+
+
+
+    static async DeleteFlagByAdmin(flagId) {
+    console.log("Deleting flag:", flagId);
+    if (!flagId) {
+      throw new Error("Missing required fields");
+    }
+    const deletedFlag = await Flag.findOneAndDelete({ flagId: flagId });
+    if (!deletedFlag) {
+      throw new Error("Failed to delete flag");
+    }
+    console.log("Deleted flag:", deletedFlag);
+    return deletedFlag;
+  }
+
+
+
+
+
 }   
+// Schedule a cron job to delete flags older than 7 days, excluding pending / dismissed flags
+// This will run every hour
+cron.schedule("0 * * * *", async () => {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  try {
+    const result = await Flag.deleteMany({
+      notificationSentAt: { $lte: cutoff },
+      status: { $ne: "pending" , $ne: "dismissed" }, // exclude pending / dismissed flags
+    });
+    if (result.deletedCount > 0) {
+      console.log(`Deleted ${result.deletedCount} flags older than 48h (excluding pending / dismissed)`);
+    }
+  } catch (error) {
+    console.error("Error deleting old flags:", error);
+  }
+});
 
+//send the notification to the admin each hour about the dismissed flags
+cron.schedule("0 * * * *", async () => {
+  const tenMinutesAgo = new Date(Date.now() - 60 * 60 * 1000);
+  try {
+    const flagsToNotify = await Flag.find({
+      status: "dismissed", //dismissed
+      $or: [
+        { notificationSentAtDismissed: { $exists: false } },
+        { notificationSentAtDismissed: { $lte: tenMinutesAgo } },
+      ],
+    });
+    if (flagsToNotify.length === 0) {
+      console.log("No dismissed flags to notify.");
+      return;
+    }
+    console.log(`Notifying about ${flagsToNotify.length} dismissed flags...`);
+    for (const flag of flagsToNotify) {
+      const reporter = await User.findOne({ userId: flag.reportedBy });
+       //get the text of answer or question
+             let flaggedContent = null;
+      if (flag.itemType === "answer") {
+         const answer = await Answer.findOne({ answerId: flag.itemId });
+         if(answer){
+          flaggedContent = answer.text?.substring(0, 200) || "";
+         }
 
+      }
+      else if (flag.itemType === "question") {
+         const question = await Question.findOne({ questionId: flag.itemId });
+         if(question){
+           flaggedContent = question.text?.substring(0, 200) || "";
+         }
+       
+      }
+      //notify the admin each hour about the dismissed flags
+     const admin = await User.findOne({ role: "admin" });
+if (admin) {
+  await sendNotification({
+    userId: admin.userId,
+    message: `Flag with ID (${flag.flagId}) has been dismissed.`,
+    title: "Flag Dismissed 🔕",
+    type: "flag_dismissed",
+    data: {
+  flagId: flag.flagId,
+               ...flag.toObject(),
+               flaggedContent,
+             reporterName: reporter.displayName || "Unknown Reporter",
+    },
+  });
+    flag.notificationSentAtDismissed = new Date();
+        await flag.save();
+}
+     /* if (reporter) {
+        await sendNotification({
+          userId: reporter.userId,
+          message: `Your report for flag ${flag.flagId} is still dismissed.`,
+          title: "Flag Dismissed 🔕",
+          type: "flag_dismissed",
+          data: {
+           flagId: flag.flagId,
+               ...flag.toObject(),
+               flaggedContent,
+             reporterName: reporter.displayName || "Unknown Reporter",
+          },
+        });
 
+        
+        flag.notificationSentAtDismissed = new Date();
+        await flag.save();
+      }*/
+    }
+  } catch (err) {
+    console.error("Error sending dismissed flag notifications:", err);
+  }
+});
 
-
+ 
 
 
 

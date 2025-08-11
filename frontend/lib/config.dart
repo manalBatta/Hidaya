@@ -58,3 +58,5 @@ final adminHideAnswerUrl =
 final adminReviewAndUpdateAnswerUrl =
     url +
     "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId
+final adminDeleteFlagUrl =
+    url + "admin/flags/delete/"; // usage: adminDeleteFlagUrl + flagId

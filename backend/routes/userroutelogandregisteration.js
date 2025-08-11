@@ -65,6 +65,10 @@ import {
   flagQuestion,
   adminUpdateAnswer,
   hideanswer,
+  resolveFlag,
+  rejectFlag,
+  dismissFlag,
+  deleteFlagByAdmin,
 } from "../controller/AdminController.js";
 
 router.post("/register", register);
@@ -146,4 +150,10 @@ router.put("/admin/update-answer/:id", adminUpdateAnswer);
 router.put("/admin/hide-answer/:id", hideanswer);
 //review and update answer by the volunteer
 router.put("/review-and-update-answer/:id", reviewandupdateanswer);
+// flag actions by admin
+router.put("/admin/flags/resolve/:flagId", resolveFlag);
+router.put("/admin/flags/reject/:flagId", rejectFlag);
+router.put("/admin/flags/dismiss/:flagId", dismissFlag);
+router.delete("/admin/flags/delete/:flagId", deleteFlagByAdmin);
+
 export default router;
