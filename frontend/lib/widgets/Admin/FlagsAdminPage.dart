@@ -847,7 +847,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                 onPressed: () {
                                   Navigator.pop(context);
                                   _showSnackbar(
-                                    'Flag ${flag.flagId} has been dismissed.',
+                                    'Flag ${flag.flagId} has been dismissed for an hour.',
                                   );
                                 },
                                 icon: const Icon(Icons.close, size: 16),
@@ -857,9 +857,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                               ElevatedButton.icon(
                                 onPressed: () {
                                   Navigator.pop(context);
-                                  _showSnackbar(
-                                    'Content ${flag.itemId} has been removed and flag resolved.',
-                                  );
+                                  _showSnackbar('Flagged content is removed.');
                                 },
                                 icon: const Icon(Icons.delete, size: 16),
                                 label: const Text('Remove Content'),
@@ -875,7 +873,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                 onPressed: () {
                                   Navigator.pop(context);
                                   _showSnackbar(
-                                    'Flag ${flag.flagId} has been marked as resolved.',
+                                    'Flag is ignored and content is kept.',
                                   );
                                 },
                                 icon: const Icon(Icons.check, size: 16),

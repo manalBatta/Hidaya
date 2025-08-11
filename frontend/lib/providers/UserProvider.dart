@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/utils/auth_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config.dart';
 
 class UserProvider with ChangeNotifier {
   Map<String, dynamic>? _user;
@@ -31,6 +34,9 @@ class UserProvider with ChangeNotifier {
 
   String get userId => _user?['id']?.toString() ?? '';
 
+  String? get city => _user?['city'];
+  String? get country => _user?['country'];
+
   bool get isLoggedIn => _user != null;
 
   // Add this field to store chat messages globally
@@ -50,6 +56,35 @@ class UserProvider with ChangeNotifier {
   void clearMessages() {
     _messages.clear();
     notifyListeners();
+  }
+
+  // Update user city
+  Future<void> updateUserCity(BuildContext context, String city) async {
+    if (_user == null) return;
+    print("Updating city to: $city");
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+      final response = await http.put(
+        Uri.parse(updateCity),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'city': city}),
+      );
+      print("Response body to updatae city : ${response.body}");
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == true) {
+          _user!['city'] = city;
+          notifyListeners();
+          await _saveUserToPrefs(_user!);
+        }
+      }
+    } catch (e) {
+      print('Error updating city: $e');
+    }
   }
 
   // Set user after login or profile update

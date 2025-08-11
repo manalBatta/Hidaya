@@ -1,6 +1,7 @@
 // lib/widgets/responsive_layout.dart
 import 'package:flutter/material.dart';
 import 'package:frontend/utils/auth_utils.dart';
+import 'package:frontend/widgets/PrayerTimesWidget.dart';
 import 'package:frontend/widgets/Qustions.dart';
 import 'HomePage.dart';
 import 'LessonsPage.dart';
@@ -182,6 +183,10 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
                     left: 16,
                     child: _buildAdminFAB(),
                   ),
+
+                // Prayer Times Widget - Fixed at bottom right
+                if (_navigationItems[_selectedIndex].id != "home")
+                  const PrayerTimesWidget(),
               ],
             ),
             bottomNavigationBar: _buildBottomNavigation(),
@@ -196,50 +201,58 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
   Widget _buildDesktopLayout() {
     final navProvider = Provider.of<NavigationProvider>(context);
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.islamicGreen50,
-              AppColors.islamicCream,
-              AppColors.islamicGold50,
-            ],
-          ),
-        ),
-        child: Row(
-          children: [
-            // Side Navigation
-            _buildSideNavigation(),
-
-            // Main Content
-            Expanded(
-              child: Container(
-                padding: EdgeInsets.all(24),
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  },
-                  children:
-                      _navigationItems.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final item = entry.value;
-                        if (item.id == 'ask') {
-                          return Questions(
-                            initialTabIndex: navProvider.questionsTabIndex,
-                          );
-                        }
-                        return item.page;
-                      }).toList(),
-                ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.islamicGreen50,
+                  AppColors.islamicCream,
+                  AppColors.islamicGold50,
+                ],
               ),
             ),
-          ],
-        ),
+            child: Row(
+              children: [
+                // Side Navigation
+                _buildSideNavigation(),
+
+                // Main Content
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(24),
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      children:
+                          _navigationItems.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final item = entry.value;
+                            if (item.id == 'ask') {
+                              return Questions(
+                                initialTabIndex: navProvider.questionsTabIndex,
+                              );
+                            }
+                            return item.page;
+                          }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Prayer Times Widget - Fixed at bottom right for desktop
+          if (_navigationItems[_selectedIndex].id != "home")
+            const PrayerTimesWidget(),
+        ],
       ),
     );
   }

@@ -5,6 +5,7 @@ final url = 'http://localhost:5000/';
 final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
+final updateCity = url + "city"; //to update city
 final changePassword = url + "change-password"; //to change password
 final questions = url + "questions"; //to get all questions
 final publicQuestions = url + "public-questions"; //to get public questions
@@ -31,7 +32,7 @@ final storyUrl = url + "story";
 final addStoryUrl = url + "admin/addstory";
 final updateStoryUrl = url + "admin/updatestory";
 final saveStoryUrl = url + "story/savestory";
-final deleteStoryUrl=url+"admin/deletestory";
+final deleteStoryUrl = url + "admin/deletestory";
 final likeStoryUrl = url + "story/likestory";
 final userGrowth = url + "admin/user-growth";
 final gender = url + "admin/gender-distribution";
@@ -54,4 +55,6 @@ final adminUpdateAnswerUrl =
     url + "admin/update-answer"; // usage: adminUpdateAnswerUrl + answerId
 final adminHideAnswerUrl =
     url + "admin/hide-answer"; // usage: adminHideAnswerUrl + answerId
-final adminReviewAndUpdateAnswerUrl = url + "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId
+final adminReviewAndUpdateAnswerUrl =
+    url +
+    "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId

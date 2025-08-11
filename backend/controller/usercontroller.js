@@ -141,6 +141,36 @@ export async function login(req, res, next) {
     // Don't fail the login if notification fails
   } */
 }
+export async function updateCity(req, res, next) {
+  try {
+    const userId = req.userId; // coming from token middleware
+    const { city } = req.body;
+
+    if (!city) {
+      return res
+        .status(400)
+        .json({ status: false, message: "City is required in request body" });
+    }
+
+    const updateData = { city };
+    const updatedUser = await UserServices.updateUserById(userId, updateData);
+
+    const userToReturn = updatedUser.toObject
+      ? updatedUser.toObject()
+      : updatedUser;
+    delete userToReturn.password;
+
+    return res.status(200).json({
+      status: true,
+      success: "City updated successfully",
+      user: userToReturn,
+    });
+  } catch (err) {
+    console.log("---> err in updateCity -->", err);
+    next(err);
+  }
+}
+
 export async function updateprofile(req, res, next) {
   try {
     const userId = req.userId; // coming from token middleware
@@ -149,6 +179,7 @@ export async function updateprofile(req, res, next) {
       gender,
       email,
       country,
+      city,
       language,
       role,
       savedQuestions,
@@ -172,6 +203,7 @@ export async function updateprofile(req, res, next) {
       gender,
       email,
       country,
+      city,
       language,
       role,
     };
