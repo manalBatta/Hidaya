@@ -4,6 +4,7 @@ import {
   register,
   login,
   updateprofile,
+  updateCity,
   verifyEmail,
   changepassword,
   updateOneSignalId,
@@ -73,6 +74,7 @@ import {
 router.post("/register", register);
 router.post("/login", login);
 router.put("/profile", authMiddleware, updateprofile);
+router.put("/city", authMiddleware, updateCity);
 router.put("/onesignal-id", authMiddleware, updateOneSignalId);
 router.put("/change-password", authMiddleware, changePassword);
 router.delete("/delete-account", authMiddleware, deleteAccount);
