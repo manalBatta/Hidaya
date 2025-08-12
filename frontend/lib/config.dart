@@ -60,3 +60,11 @@ final adminReviewAndUpdateAnswerUrl =
     "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId
 final adminDeleteFlagUrl =
     url + "admin/flags/delete/"; // usage: adminDeleteFlagUrl + flagId
+
+
+final adminResolveFlagUrl =
+    url + "admin/flags/resolve/"; // usage: adminResolveFlagUrl + flagId
+final adminRejectFlagUrl =
+    url + "admin/flags/reject/"; // usage: adminRejectFlagUrl + flagId
+final adminDismissFlagUrl =   
+    url + "admin/flags/dismiss/"; // usage: adminDismissFlagUrl + flagId
