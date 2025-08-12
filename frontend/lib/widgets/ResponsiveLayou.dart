@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../providers/NavigationProvider.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/Stories/Story.dart';
+import 'NearbyMosquesPage.dart';
 
 class ResponsiveLayout extends StatefulWidget {
   final String userRole;
@@ -54,6 +55,13 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       icon: Icons.brightness_6_outlined,
       activeIcon: Icons.brightness_6,
       page: LessonsPage(),
+    ),
+    NavigationItem(
+      id: 'nearbyMosques',
+      label: 'Nearby Mosques',
+      icon: Icons.location_on_outlined,
+      activeIcon: Icons.location_on,
+      page: NearbyMosquesPage(),
     ),
     NavigationItem(
       id: 'profile',
@@ -165,7 +173,6 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
                   },
                   children:
                       _navigationItems.asMap().entries.map((entry) {
-                        final i = entry.key;
                         final item = entry.value;
                         if (item.id == 'ask') {
                           return Questions(
@@ -233,7 +240,6 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
                       },
                       children:
                           _navigationItems.asMap().entries.map((entry) {
-                            final i = entry.key;
                             final item = entry.value;
                             if (item.id == 'ask') {
                               return Questions(

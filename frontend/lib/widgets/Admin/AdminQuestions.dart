@@ -555,8 +555,7 @@ for (var q in data) {
     ),
   );
 }
-print("questions 🍔🍔🍔: $_questionslist");
-print("length: ${_questionslist.length}");
+
 return _questionslist;
 
   }
@@ -600,7 +599,6 @@ return _questionslist;
       ),);
    }
 
-    print("🦚🦚 $_answerslist");
 
     return _answerslist;
   }

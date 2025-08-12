@@ -1,27 +1,164 @@
+import 'dart:convert';
+import 'package:frontend/config.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 class FlagData {
+  final String? notificationSentAt;
+  final String? notificationSentAtDismissed;
+  final String id;
   final String flagId;
+  final String itemType;
   final String itemId;
-  final String itemType; // "question" or "answer"
   final String reportedBy;
   final String reason;
-  final String status; // "pending", "resolved", "dismissed"
+  String status;
   final DateTime createdAt;
-  final String? itemContent;
-  final String? itemAuthor;
+  final int v;
+  final bool sleepmode;
+  final Reporter reporter;
+  final ItemDetails itemDetails;
 
   FlagData({
+    required this.notificationSentAt,
+    required this.notificationSentAtDismissed,
+    required this.id,
     required this.flagId,
-    required this.itemId,
     required this.itemType,
+    required this.itemId,
     required this.reportedBy,
     required this.reason,
     required this.status,
     required this.createdAt,
-    this.itemContent,
-    this.itemAuthor,
+    required this.v,
+    required this.sleepmode,
+    required this.reporter,
+    required this.itemDetails,
   });
+
+  factory FlagData.fromJson(Map<String, dynamic> json) {
+    return FlagData(
+      notificationSentAt: json['notificationSentAt'],
+      notificationSentAtDismissed: json['notificationSentAtDismissed'],
+      id: json['_id'] ?? '',
+      flagId: json['flagId'] ?? '',
+      itemType: json['itemType'] ?? '',
+      itemId: json['itemId'] ?? '',
+      reportedBy: json['reportedBy'] ?? '',
+      reason: json['reason'] ?? '',
+      status: json['status'] ?? '',
+      createdAt: DateTime.parse(json['createdAt']),
+      v: json['__v'] ?? 0,
+      sleepmode: json['sleepmode'] ?? false,
+      reporter: Reporter.fromJson(json['reporter'] ?? {}),
+      itemDetails: ItemDetails.fromJson(json['itemDetails'] ?? {}),
+    );
+  }
+}
+
+class Reporter {
+  final String displayName;
+  final String email;
+  final String id;
+  final String gender;
+  final String role;
+  final String country;
+
+  Reporter({
+    required this.displayName,
+    required this.email,
+    required this.id,
+    required this.gender,
+    required this.role,
+    required this.country,
+  });
+
+  factory Reporter.fromJson(Map<String, dynamic> json) {
+    return Reporter(
+      displayName: json['displayName'] ?? '',
+      email: json['email'] ?? '',
+      id: json['id'] ?? '',
+      gender: json['gender'] ?? '',
+      role: json['role'] ?? '',
+      country: json['country'] ?? '',
+    );
+  }
+}
+
+class ItemDetails {
+  final String id;
+  final String answerId;
+  final String questionId;
+  final String text;
+  final AnsweredBy answeredBy;
+  final DateTime createdAt;
+  final String language;
+  final int upvotesCount;
+  final int v;
+  final bool isFlagged;
+  final bool isHidden;
+  final bool hiddenTemporary;
+
+  ItemDetails({
+    required this.id,
+    required this.answerId,
+    required this.questionId,
+    required this.text,
+    required this.answeredBy,
+    required this.createdAt,
+    required this.language,
+    required this.upvotesCount,
+    required this.v,
+    required this.isFlagged,
+    required this.isHidden,
+    required this.hiddenTemporary,
+  });
+
+  factory ItemDetails.fromJson(Map<String, dynamic> json) {
+    return ItemDetails(
+      id: json['_id'] ?? '',
+      answerId: json['answerId'] ?? '',
+      questionId: json['questionId'] ?? '',
+      text: json['text'] ?? '',
+      answeredBy: AnsweredBy.fromJson(json['answeredBy'] ?? {}),
+      createdAt: DateTime.parse(json['createdAt']),
+      language: json['language'] ?? '',
+      upvotesCount: json['upvotesCount'] ?? 0,
+      v: json['__v'] ?? 0,
+      isFlagged: json['isFlagged'] ?? false,
+      isHidden: json['isHidden'] ?? false,
+      hiddenTemporary: json['hiddenTemporary'] ?? false,
+    );
+  }
+}
+
+class AnsweredBy {
+  final String displayName;
+  final String email;
+  final String id;
+  final String gender;
+  final String role;
+  final String country;
+
+  AnsweredBy({
+    required this.displayName,
+    required this.email,
+    required this.id,
+    required this.gender,
+    required this.role,
+    required this.country,
+  });
+
+  factory AnsweredBy.fromJson(Map<String, dynamic> json) {
+    return AnsweredBy(
+      displayName: json['displayName'] ?? '',
+      email: json['email'] ?? '',
+      id: json['id'] ?? '',
+      gender: json['gender'] ?? '',
+      role: json['role'] ?? '',
+      country: json['country'] ?? '',
+    );
+  }
 }
 
 class FlagsAdminPage extends StatefulWidget {
@@ -38,6 +175,23 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
   String _selectedStatus = 'All Status';
   FlagData? _selectedFlag;
 
+  Future<void> _fetchFlags() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/admin/flags'),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          _flags = data.map((flag) => FlagData.fromJson(flag)).toList();
+        });
+        print("Fetched flags: ${_flags}");
+      }
+    } catch (e) {
+      // Handle error, optionally show a snackbar or log
+    }
+  }
+
   // Islamic Color Palette - Exact match from design
   static const Color islamicGreen50 = Color(0xFFF4FBF7);
   static const Color islamicGreen100 = Color(0xFFE6F4ED);
@@ -51,95 +205,14 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
   static const Color islamicGreen900 = Color(0xFF0C1C12);
   static const Color islamicCream = Color(0xFFFDF8F0);
 
+  List<FlagData> _flags = [];
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchFlags();
   }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  // Mock data for flags
-  final List<FlagData> _flags = [
-    FlagData(
-      flagId: "FLAG001",
-      itemId: "Q123",
-      itemType: "question",
-      reportedBy: "user@example.com",
-      reason:
-          "This question contains inappropriate language and offensive content that violates community guidelines.",
-      status: "pending",
-      createdAt: DateTime.parse("2024-06-20T10:30:00Z"),
-      itemContent:
-          "Is music haram in Islam? Some people say it's forbidden but I listen to music all the time.",
-      itemAuthor: "Omar Khan",
-    ),
-    FlagData(
-      flagId: "FLAG002",
-      itemId: "Q124",
-      itemType: "question",
-      reportedBy: "moderator@hidaya.com",
-      reason:
-          "Spam content - same question posted multiple times by the same user.",
-      status: "resolved",
-      createdAt: DateTime.parse("2024-06-19T15:45:00Z"),
-      itemContent: "How to perform wudu correctly?",
-      itemAuthor: "Ahmad Hassan",
-    ),
-    FlagData(
-      flagId: "FLAG003",
-      itemId: "Q125",
-      itemType: "question",
-      reportedBy: "volunteer@hidaya.com",
-      reason:
-          "Question contains misinformation about Islamic practices that could mislead users.",
-      status: "pending",
-      createdAt: DateTime.parse("2024-06-18T20:15:00Z"),
-      itemContent: "Can I pray while listening to music?",
-      itemAuthor: "Fatima Al-Zahra",
-    ),
-    FlagData(
-      flagId: "FLAG004",
-      itemId: "A001",
-      itemType: "answer",
-      reportedBy: "user2@example.com",
-      reason:
-          "Answer provides incorrect religious guidance that contradicts established Islamic teachings.",
-      status: "pending",
-      createdAt: DateTime.parse("2024-06-17T09:20:00Z"),
-      itemContent:
-          "Yes, you can pray while listening to music, it's completely fine and doesn't affect your prayer.",
-      itemAuthor: "Unknown Volunteer",
-    ),
-    FlagData(
-      flagId: "FLAG005",
-      itemId: "A002",
-      itemType: "answer",
-      reportedBy: "imam@mosque.org",
-      reason:
-          "Answer contains hate speech and discriminatory language against certain groups.",
-      status: "resolved",
-      createdAt: DateTime.parse("2024-06-16T14:10:00Z"),
-      itemContent: "The correct way to perform ablution is...",
-      itemAuthor: "Certified Imam",
-    ),
-    FlagData(
-      flagId: "FLAG006",
-      itemId: "A003",
-      itemType: "answer",
-      reportedBy: "admin@hidaya.com",
-      reason:
-          "Plagiarized content copied from external sources without attribution.",
-      status: "dismissed",
-      createdAt: DateTime.parse("2024-06-15T11:30:00Z"),
-      itemContent: "Prayer times vary by location and season...",
-      itemAuthor: "Scholar Ahmad",
-    ),
-  ];
 
   List<FlagData> get _filteredFlags {
     final currentType = _tabController.index == 0 ? "question" : "answer";
@@ -474,12 +547,11 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
   Widget _buildTableHeader() {
     return Row(
       children: [
-        Expanded(flex: 2, child: _buildHeaderCell('Flag ID')),
-        Expanded(flex: 2, child: _buildHeaderCell('Item ID')),
-        Expanded(flex: 3, child: _buildHeaderCell('Reported By')),
+        Expanded(flex: 2, child: _buildHeaderCell('Reported By')),
         Expanded(flex: 4, child: _buildHeaderCell('Reason')),
-        Expanded(flex: 2, child: _buildHeaderCell('Created At')),
-        const SizedBox(width: 40), // Actions column
+        Expanded(flex: 1, child: _buildHeaderCell('Status')),
+        Expanded(flex: 1, child: _buildHeaderCell('Created At')),
+        const SizedBox(width: 20), // Actions column
       ],
     );
   }
@@ -507,7 +579,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
         onTap: () => _showFlagDetails(flag),
         child: Row(
           children: [
-            // Flag ID Column
+            /*  // Flag ID Column
             Expanded(
               flex: 2,
               child: Text(
@@ -527,15 +599,40 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                 flag.itemId,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
               ),
-            ),
-
-            // Reported By Column
+            },
+ */
             Expanded(
-              flex: 3,
-              child: Text(
-                flag.reportedBy,
-                style: const TextStyle(fontSize: 14),
-                overflow: TextOverflow.ellipsis,
+              flex: 2,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: islamicGreen100,
+                    child: Text(
+                      // For Question Row
+                      flag.reportedBy
+                          .split(' ')
+                          .where((n) => n.isNotEmpty)
+                          .take(2)
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase(),
+                      style: TextStyle(
+                        color: islamicGreen600,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      flag.reporter.displayName,
+                      style: const TextStyle(fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -551,14 +648,15 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
             ),
 
             // Status Column
-            //Expanded(flex: 2, child: _buildStatusBadge(flag.status)),
+            Expanded(flex: 1, child: _buildStatusBadge(flag.status)),
             const SizedBox(width: 10),
             // Created At Column
             Expanded(
-              flex: 2,
+              flex: 1,
               child: Text(
                 _formatDate(flag.createdAt),
                 style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                textAlign: TextAlign.center,
               ),
             ),
 
@@ -591,7 +689,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
   Widget _buildStatusBadge(String status) {
     Color color;
     String displayText;
-
+    //"pending", "dismissed", "resolved", "rejected"
     switch (status) {
       case 'pending':
         color = Colors.orange;
@@ -602,8 +700,12 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
         displayText = 'resolved';
         break;
       case 'dismissed':
-        color = Colors.red;
+        color = Colors.blue;
         displayText = 'dismissed';
+        break;
+      case 'rejected':
+        color = Colors.red;
+        displayText = 'rejected';
         break;
       default:
         color = Colors.grey;
@@ -627,15 +729,29 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
     );
   }
 
-  void _handleFlagAction(String action, FlagData flag) {
+  void _handleFlagAction(String action, FlagData flag) async {
     switch (action) {
       case 'view':
         _showFlagDetails(flag);
         break;
       case 'resolve':
+        await http.put(Uri.parse('${adminResolveFlagUrl}${flag.flagId}'));
+        setState(() {
+          final idx = _flags.indexWhere((f) => f.flagId == flag.flagId);
+          if (idx != -1) {
+            _flags[idx].status = 'resolved';
+          }
+        });
         _showSnackbar('Flag ${flag.flagId} has been marked as resolved.');
         break;
       case 'dismiss':
+        await http.put(Uri.parse('${adminDismissFlagUrl}${flag.flagId}'));
+        setState(() {
+          final idx = _flags.indexWhere((f) => f.flagId == flag.flagId);
+          if (idx != -1) {
+            _flags[idx].status = 'dismissed';
+          }
+        });
         _showSnackbar('Flag ${flag.flagId} has been dismissed.');
         break;
     }
@@ -730,7 +846,11 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                           ),
                                           _buildDetailRow(
                                             'Reported By:',
-                                            flag.reportedBy,
+                                            flag.reporter.displayName,
+                                          ),
+                                          _buildDetailRow(
+                                            'Reporter Email:',
+                                            flag.reporter.email,
                                           ),
                                           _buildDetailRow(
                                             'Created:',
@@ -768,7 +888,14 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                         children: [
                                           _buildDetailRow(
                                             'Author:',
-                                            flag.itemAuthor ?? 'Unknown',
+                                            flag
+                                                .itemDetails
+                                                .answeredBy
+                                                .displayName,
+                                          ),
+                                          _buildDetailRow(
+                                            'Author Email:',
+                                            flag.itemDetails.answeredBy.email,
                                           ),
                                           const SizedBox(height: 8),
                                           const Text(
@@ -792,7 +919,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              flag.itemContent ??
+                                              flag.itemDetails.text ??
                                                   'No content available',
                                               style: const TextStyle(
                                                 fontSize: 14,
@@ -844,7 +971,20 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                             children: [
                               const SizedBox(width: 12),
                               OutlinedButton.icon(
-                                onPressed: () {
+                                onPressed: () async {
+                                  await http.put(
+                                    Uri.parse(
+                                      '${adminDismissFlagUrl}${flag.flagId}',
+                                    ),
+                                  );
+                                  setState(() {
+                                    final idx = _flags.indexWhere(
+                                      (f) => f.flagId == flag.flagId,
+                                    );
+                                    if (idx != -1) {
+                                      _flags[idx].status = 'dismissed';
+                                    }
+                                  });
                                   Navigator.pop(context);
                                   _showSnackbar(
                                     'Flag ${flag.flagId} has been dismissed for an hour.',
@@ -855,12 +995,26 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                               ),
                               const SizedBox(width: 12),
                               ElevatedButton.icon(
-                                onPressed: () {
+                                onPressed: () async {
+                                  //delete the flagged content
+                                  await http.put(
+                                    Uri.parse(
+                                      '${adminResolveFlagUrl}${flag.flagId}',
+                                    ),
+                                  );
+                                  setState(() {
+                                    final idx = _flags.indexWhere(
+                                      (f) => f.flagId == flag.flagId,
+                                    );
+                                    if (idx != -1) {
+                                      _flags[idx].status = 'resolved';
+                                    }
+                                  });
                                   Navigator.pop(context);
                                   _showSnackbar('Flagged content is removed.');
                                 },
                                 icon: const Icon(Icons.delete, size: 16),
-                                label: const Text('Remove Content'),
+                                label: const Text('Resolve'),
                                 style: ElevatedButton.styleFrom(
                                   iconColor: Colors.red,
                                   foregroundColor: Colors.red,
@@ -869,8 +1023,23 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                               ),
                               const SizedBox(width: 12),
                               ElevatedButton.icon(
-                                label: const Text('Keep Content'),
-                                onPressed: () {
+                                label: const Text('Reject'),
+
+                                onPressed: () async {
+                                  //ignore the flag and keep the content
+                                  await http.put(
+                                    Uri.parse(
+                                      '${adminRejectFlagUrl}${flag.flagId}',
+                                    ),
+                                  );
+                                  setState(() {
+                                    final idx = _flags.indexWhere(
+                                      (f) => f.flagId == flag.flagId,
+                                    );
+                                    if (idx != -1) {
+                                      _flags[idx].status = 'rejected';
+                                    }
+                                  });
                                   Navigator.pop(context);
                                   _showSnackbar(
                                     'Flag is ignored and content is kept.',

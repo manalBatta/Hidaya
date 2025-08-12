@@ -55,5 +55,16 @@ final adminUpdateAnswerUrl =
     url + "admin/update-answer"; // usage: adminUpdateAnswerUrl + answerId
 final adminHideAnswerUrl =
     url + "admin/hide-answer"; // usage: adminHideAnswerUrl + answerId
-final adminReviewAndUpdateAnswerUrl = url + "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId
-final adminDeleteFlagUrl = url + "admin/flags/delete/"; // usage: adminDeleteFlagUrl + flagId
+final adminReviewAndUpdateAnswerUrl =
+    url +
+    "review-and-update-answer/"; // usage: adminReviewAndUpdateAnswerUrl + answerId
+final adminDeleteFlagUrl =
+    url + "admin/flags/delete/"; // usage: adminDeleteFlagUrl + flagId
+
+
+final adminResolveFlagUrl =
+    url + "admin/flags/resolve/"; // usage: adminResolveFlagUrl + flagId
+final adminRejectFlagUrl =
+    url + "admin/flags/reject/"; // usage: adminRejectFlagUrl + flagId
+final adminDismissFlagUrl =   
+    url + "admin/flags/dismiss/"; // usage: adminDismissFlagUrl + flagId
