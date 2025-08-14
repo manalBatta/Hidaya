@@ -12,6 +12,10 @@ class MeetingRequestService {
     required String token,
   }) async {
     try {
+      print("createMeetingRequest");
+      print("volunteerId: $volunteerId");
+      print("preferredSlots: $preferredSlots");
+      print("token: $token");
       final response = await http.post(
         Uri.parse('$baseUrl/meeting-requests'),
         headers: {

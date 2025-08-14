@@ -1543,6 +1543,9 @@ class _QuestionCardState extends State<QuestionCard> {
   }
 
   void _showPublicProfileModal(Map<String, dynamic> user) {
+    // Extract the volunteer ID from the answeredBy object
+    final volunteerId = user['id']?.toString();
+
     showDialog(
       context: context,
       builder: (context) {
@@ -1555,7 +1558,11 @@ class _QuestionCardState extends State<QuestionCard> {
           ),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 520),
-            child: public_profile.PublicProfilePage(user: user, inDialog: true),
+            child: public_profile.PublicProfilePage(
+              user: user,
+              inDialog: true,
+              volunteerId: volunteerId, // Pass the volunteer ID
+            ),
           ),
         );
       },
