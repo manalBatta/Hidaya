@@ -555,7 +555,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
           // Handle flag resolved notification
          _handleFlagResolved(context, data, notification['message']);
          //delete the flag
-        _deleteThreadFlag(context, data);
+       _deleteThreadFlag(context, data);
           print('Notification: $notification');
         break;
 
@@ -776,7 +776,7 @@ void _handleFlagRejected(BuildContext context, Map<String, dynamic> data, String
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text("Flag Dismissed"),
+          title: Text("Flag Rejected"),
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,16 +857,32 @@ void _handleFlagDismissed(BuildContext context, Map<String, dynamic> data, Strin
             ),
             TextButton.icon(
               style: TextButton.styleFrom(foregroundColor: Colors.green),
-              onPressed: () {
+              onPressed: () async {
                 // Resolve action
+                await http.put(Uri.parse('${adminResolveFlagUrl}${flagId}'));
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Flagged content is removed.'),
+                    backgroundColor: AppColors.islamicGreen500,
+                  ),
+                                  );
               },
               icon: Icon(Icons.check),
               label: Text("Resolve"),
             ),
             TextButton.icon(
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () {
+              onPressed: () async {
                 // Reject action
+                await http.put(Uri.parse('${adminRejectFlagUrl}${flagId}'));
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Flag is ignored and content is kept.'),
+                    backgroundColor: AppColors.islamicGreen500,
+                  ),
+                );
               },
               icon: Icon(Icons.close),
               label: Text("Reject"),
@@ -899,14 +915,7 @@ void _deleteThreadFlag(BuildContext context, Map<String, dynamic> data) {
             backgroundColor: AppColors.islamicGreen500,
           ),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete flag'),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-      }
+      } 
     }).catchError((error) {
       print('Error deleting flag: $error');
       ScaffoldMessenger.of(context).showSnackBar(

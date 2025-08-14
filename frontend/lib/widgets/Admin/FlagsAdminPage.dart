@@ -91,6 +91,7 @@ class ItemDetails {
   final String questionId;
   final String text;
   final AnsweredBy answeredBy;
+  final AskedBy askedBy;
   final DateTime createdAt;
   final String language;
   final int upvotesCount;
@@ -105,6 +106,7 @@ class ItemDetails {
     required this.questionId,
     required this.text,
     required this.answeredBy,
+    required this.askedBy,
     required this.createdAt,
     required this.language,
     required this.upvotesCount,
@@ -121,6 +123,7 @@ class ItemDetails {
       questionId: json['questionId'] ?? '',
       text: json['text'] ?? '',
       answeredBy: AnsweredBy.fromJson(json['answeredBy'] ?? {}),
+      askedBy: AskedBy.fromJson(json['askedBy'] ?? {}),
       createdAt: DateTime.parse(json['createdAt']),
       language: json['language'] ?? '',
       upvotesCount: json['upvotesCount'] ?? 0,
@@ -160,6 +163,35 @@ class AnsweredBy {
     );
   }
 }
+class AskedBy {
+  final String displayName;
+  final String email;
+  final String id;
+  final String gender;
+  final String role;
+  final String country;
+
+  AskedBy({
+    required this.displayName,
+    required this.email,
+    required this.id,
+    required this.gender,
+    required this.role,
+    required this.country,
+  });
+
+  factory AskedBy.fromJson(Map<String, dynamic> json) {
+    return AskedBy(
+      displayName: json['displayName'] ?? '',
+      email: json['email'] ?? '',
+      id: json['id'] ?? '',
+      gender: json['gender'] ?? '',
+      role: json['role'] ?? '',
+      country: json['country'] ?? '',
+    );
+  }
+}
+
 
 class FlagsAdminPage extends StatefulWidget {
   const FlagsAdminPage({Key? key}) : super(key: key);
@@ -174,12 +206,14 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
   String _searchQuery = '';
   String _selectedStatus = 'All Status';
   FlagData? _selectedFlag;
+  
 
   Future<void> _fetchFlags() async {
     try {
       final response = await http.get(
         Uri.parse('http://localhost:5000/admin/flags'),
       );
+      print("🧕🧕🧕Response status: ${response.statusCode}");
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
@@ -205,7 +239,8 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
   static const Color islamicGreen900 = Color(0xFF0C1C12);
   static const Color islamicCream = Color(0xFFFDF8F0);
 
-  List<FlagData> _flags = [];
+ List<FlagData> _flags = [];
+
 
   @override
   void initState() {
@@ -213,6 +248,13 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
     _tabController = TabController(length: 2, vsync: this);
     _fetchFlags();
   }
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+
 
   List<FlagData> get _filteredFlags {
     final currentType = _tabController.index == 0 ? "question" : "answer";
@@ -518,12 +560,12 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
         ),
         const SizedBox(width: 16),
         // Status Filter
-        _buildFilterButton('All Status', Icons.filter_list),
+        _buildStatusFilter(),
       ],
     );
   }
 
-  Widget _buildFilterButton(String text, IconData icon) {
+  Widget _buildStatusFilterButton(String text, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -543,6 +585,81 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
       ),
     );
   }
+Widget _buildStatusFilter() {
+  final List<String> statuses = ['All Status','pending', 'dismissed', 'resolved', 'rejected'];
+
+  return PopupMenuButton<String>(
+    onSelected: (String value) {
+      setState(() {
+        _selectedStatus = value;
+      });
+    },
+    itemBuilder: (BuildContext context) => statuses.map((String status) {
+      return PopupMenuItem<String>(
+        value: status,
+        child: Row(
+          children: [
+            if (_selectedStatus == status)
+              Icon(Icons.check, size: 16, color: islamicGreen600),
+            if (_selectedStatus != status)
+              const SizedBox(width: 16),
+            Text(status[0].toUpperCase() + status.substring(1)),
+          ],
+        ),
+      );
+    }).toList(),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFD1D5DB)),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.filter_alt, size: 16, color: const Color(0xFF6B7280)),
+          const SizedBox(width: 8),
+          Text(
+            _selectedStatus[0].toUpperCase() + _selectedStatus.substring(1),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.arrow_drop_down,
+            size: 16,
+            color: const Color(0xFF6B7280),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   Widget _buildTableHeader() {
     return Row(
@@ -888,14 +1005,15 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                         children: [
                                           _buildDetailRow(
                                             'Author:',
-                                            flag
-                                                .itemDetails
-                                                .answeredBy
-                                                .displayName,
+                                            flag.itemType == 'question'
+                                                ? flag.itemDetails.askedBy.displayName
+                                                : flag.itemDetails.answeredBy.displayName,
                                           ),
                                           _buildDetailRow(
                                             'Author Email:',
-                                            flag.itemDetails.answeredBy.email,
+                                            flag.itemType == 'question'
+                                                ? flag.itemDetails.askedBy.email
+                                                : flag.itemDetails.answeredBy.email,
                                           ),
                                           const SizedBox(height: 8),
                                           const Text(

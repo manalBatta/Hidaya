@@ -1731,7 +1731,7 @@ class _QuestionCardState extends State<QuestionCard> {
                 // Edit button for owner
                 if (isOwner)
                   IconButton(
-                    icon: Icon(Icons.edit, color: Colors.blue),
+                    icon: Icon(Icons.edit, color: AppColors.islamicGreen500),
                     tooltip: 'Edit Answer',
                     onPressed: () async {
                       TextEditingController _editAnswerController =
@@ -2097,7 +2097,7 @@ class _QuestionCardState extends State<QuestionCard> {
                     ),
                   if (isOwner) // <-- Add edit button for owner
                     IconButton(
-                      icon: Icon(Icons.edit, color: Colors.blue),
+                      icon: Icon(Icons.edit, color: AppColors.islamicGreen500),
                       tooltip: 'Edit Answer',
                       onPressed: _showEditDialog,
                     ),

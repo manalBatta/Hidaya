@@ -9,6 +9,7 @@ import cron from "node-cron";
 
 import FlagServices from "./flagsservices.js";
 import { sendNotification } from "./notificationService.js";
+
 import e from "express";
 const timezone = "Asia/Palestine";
 
@@ -772,7 +773,7 @@ class AdminServices {
         if (owner) {
           await sendNotification({
             userId: owner.userId,
-            message: `Your ${updatedFlag.itemType} has been removed due to a resolved flag & you can see the flag details below.`,
+            message: `Your ${updatedFlag.itemType} has been removed due to a resolved flag & you can see the flag details when tab on this notification.`,
             title: "Content Removed 🚫",
             type: "flag_resolved",
             data: {
@@ -829,6 +830,18 @@ class AdminServices {
       throw new Error("Failed to reject flag");
     } else {
       console.log("Updated flag:", updatedFlag);
+      //recalculate the top Answer for the question if the flag of the answer rejected
+      if (updatedFlag.itemType === "answer") {
+        const answer = await Answer.findOne({ answerId: updatedFlag.itemId });
+        if (answer) {
+          const question = await Question.findOne({ questionId: answer.questionId });
+          if (question) {
+            // Recalculate the top answer for the question using recalculate function
+        await FlagServices.recalculateTopAnswer(question.questionId);
+            await question.save();
+          }
+        }
+      }
       // Notify the reporter about the rejection
       const reporter = await User.findOne({ userId: updatedFlag.reportedBy });
       if (reporter) {
@@ -852,6 +865,7 @@ class AdminServices {
       );
       //Send notification to the owner of the content
       if (contentOwnerId) {
+        console.log("🚫🚫🚫🚫Content owner ID:", contentOwnerId);
         const owner = await User.findOne({ userId: contentOwnerId });
         if (owner) {
           await sendNotification({
@@ -949,14 +963,18 @@ class AdminServices {
     }
   }
 
-  static async DeleteFlagByAdmin(flagId) {
+  static async DeleteFlagByAdmin(flagId) {//DeleteFlagByAdmin
     console.log("Deleting flag:", flagId);
     if (!flagId) {
       throw new Error("Missing required fields");
     }
+    //first find the flag
     const deletedFlag = await Flag.findOneAndDelete({ flagId: flagId });
     if (!deletedFlag) {
-      throw new Error("Failed to delete flag");
+    const error = new Error("Flag Already Deleted");
+    error.statusCode = 404;
+    throw error;
+
     }
     console.log("Deleted flag:", deletedFlag);
     return deletedFlag;

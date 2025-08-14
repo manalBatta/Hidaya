@@ -481,6 +481,9 @@ export const deleteFlagByAdmin = async (req, res) => {
 
     res.status(200).json({ success: true, message: "Flag deleted successfully", flag: deletedFlag });
   } catch (error) {
+       if (error.statusCode === 404) {
+      return res.status(404).json({ success: false, message: error.message });
+    }
     res.status(500).json({ success: false, message: "Deleting flag failed" });
   }
 };
