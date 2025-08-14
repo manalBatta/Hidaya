@@ -20,9 +20,12 @@ const authMiddleware = (req, res, next) => {
         .json({ status: false, message: "Invalid token payload!1!!!1" });
     }
 
-    req.userId = decoded._id; // UUID like "a48f938c-e414-4109-a3d8-28671dad0aa0"
+    // Standardized attachments
+    req.userId = decoded._id; // stable access to the authenticated user's id
     req.userEmail = decoded.email;
     req.userRole = decoded.role;
+    // Backwards compatibility for code expecting req.user._id
+    req.user = { _id: decoded._id, email: decoded.email, role: decoded.role };
 
     next();
   } catch (err) {
@@ -33,5 +36,8 @@ const authMiddleware = (req, res, next) => {
       .json({ status: false, message: "Invalid or expired token" });
   }
 };
+
+// Named export for consistency with existing imports
+export const verifyToken = authMiddleware;
 
 export default authMiddleware;

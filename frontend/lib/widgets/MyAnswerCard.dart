@@ -6,6 +6,7 @@ import '../constants/colors.dart';
 import 'package:provider/provider.dart';
 //import 'package:frontend/utils/AuthUtils.dart';
 import 'dart:convert';
+import 'PublicProfilePage.dart' as public_profile;
 
 class MyAnswerCard extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -160,13 +161,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
                 children: [
                   if (question['category'] != null)
                     _buildCategoryChip(question['category'].toString()),
-                  if (askedBy != null)
-                    _buildInfoChip(
-                      Icons.person,
-                      askedBy is Map
-                          ? askedBy['displayName']?.toString()
-                          : askedBy?.toString(),
-                    ),
+                  if (askedBy != null) _buildUserChip(askedBy),
                   if (question['createdAt'] != null)
                     _buildInfoChip(
                       Icons.access_time,
@@ -230,6 +225,68 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
           style: TextStyle(fontSize: 12, color: AppColors.askPageSubtitle),
         ),
       ],
+    );
+  }
+
+  Widget _buildUserChip(dynamic askedBy) {
+    String displayName;
+    Map<String, dynamic>? userMap;
+    if (askedBy is Map) {
+      userMap = askedBy.cast<String, dynamic>();
+      displayName = userMap['displayName']?.toString() ?? '';
+    } else {
+      displayName = askedBy?.toString() ?? '';
+    }
+    if (displayName.isEmpty) {
+      return _buildInfoChip(Icons.person, displayName);
+    }
+    return InkWell(
+      onTap: () {
+        final toShow = userMap ?? {'displayName': displayName};
+        _showPublicProfileModal(toShow);
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.person, size: 12, color: AppColors.askPageSubtitle),
+          SizedBox(width: 4),
+          Text(
+            displayName,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.askPageSubtitle,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPublicProfileModal(Map<String, dynamic> user) {
+    // Extract the volunteer ID from the user object
+    final volunteerId = user['id']?.toString();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          backgroundColor: AppColors.islamicWhite,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.islamicGreen200),
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 520),
+            child: public_profile.PublicProfilePage(
+              user: user,
+              inDialog: true,
+              volunteerId: volunteerId, // Pass the volunteer ID
+            ),
+          ),
+        );
+      },
     );
   }
 

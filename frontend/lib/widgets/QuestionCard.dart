@@ -10,6 +10,7 @@ import '../constants/colors.dart';
 import 'AIResponseCard.dart';
 import '../widgets/Qustions.dart' as questions_util;
 import '../widgets/ReportModal.dart';
+import 'PublicProfilePage.dart' as public_profile;
 
 class QuestionCard extends StatefulWidget {
   final Map<String, dynamic> question;
@@ -1064,12 +1065,9 @@ class _QuestionCardState extends State<QuestionCard> {
                   runSpacing: 4,
                   children: [
                     _buildCategoryChip(question['category']?.toString()),
-                    _buildInfoChip(
-                      Icons.person,
-                      (question['askedBy'] is Map &&
-                              question['askedBy']['displayName'] != null)
-                          ? question['askedBy']['displayName'].toString()
-                          : (question['askedBy']?.toString() ?? ''),
+                    _buildUserChip(
+                      icon: Icons.person,
+                      user: question['askedBy'],
                     ),
                     _buildInfoChip(
                       Icons.access_time,
@@ -1477,6 +1475,100 @@ class _QuestionCardState extends State<QuestionCard> {
     );
   }
 
+  Widget _buildUserChip({required IconData icon, required dynamic user}) {
+    String displayName;
+    Map<String, dynamic>? userMap;
+    if (user is Map) {
+      userMap = user.cast<String, dynamic>();
+      displayName = userMap['displayName']?.toString() ?? '';
+    } else {
+      displayName = user?.toString() ?? '';
+    }
+    if (displayName.isEmpty) {
+      return _buildInfoChip(icon, displayName);
+    }
+    return InkWell(
+      onTap: () {
+        final toShow = userMap ?? {'displayName': displayName};
+        _showPublicProfileModal(toShow);
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: _getResponsiveIconSize(12),
+            color: AppColors.askPageSubtitle,
+          ),
+          SizedBox(width: 4),
+          Text(
+            displayName,
+            style: TextStyle(
+              fontSize: _getResponsiveFontSize(12),
+              color: AppColors.askPageSubtitle,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClickableName(Map<String, dynamic>? answeredBy, String name) {
+    if (name.isEmpty) {
+      return Text(
+        name,
+        style: TextStyle(
+          fontSize: _getResponsiveFontSize(12),
+          fontWeight: FontWeight.w500,
+          color: AppColors.askPageTitle,
+        ),
+      );
+    }
+    return InkWell(
+      onTap: () {
+        final user = answeredBy ?? {'displayName': name};
+        _showPublicProfileModal(user);
+      },
+      child: Text(
+        name,
+        style: TextStyle(
+          fontSize: _getResponsiveFontSize(12),
+          fontWeight: FontWeight.w500,
+          color: AppColors.askPageTitle,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  void _showPublicProfileModal(Map<String, dynamic> user) {
+    // Extract the volunteer ID from the answeredBy object
+    final volunteerId = user['id']?.toString();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          backgroundColor: AppColors.islamicWhite,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.islamicGreen200),
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 520),
+            child: public_profile.PublicProfilePage(
+              user: user,
+              inDialog: true,
+              volunteerId: volunteerId, // Pass the volunteer ID
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildPrivacyChip(bool isPublic) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1628,14 +1720,7 @@ class _QuestionCardState extends State<QuestionCard> {
                   color: AppColors.islamicGreen500,
                 ),
                 SizedBox(width: 4),
-                Text(
-                  answererName,
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(12),
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.askPageTitle,
-                  ),
-                ),
+                _buildClickableName(answeredBy, answererName),
                 SizedBox(width: 4),
                 // Verified icon (only one)
                 Icon(
@@ -1941,14 +2026,7 @@ class _QuestionCardState extends State<QuestionCard> {
                         isCertified ? AppColors.islamicGreen500 : Colors.grey,
                   ),
                   SizedBox(width: 4),
-                  Text(
-                    answererName,
-                    style: TextStyle(
-                      fontSize: _getResponsiveFontSize(12),
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.askPageTitle,
-                    ),
-                  ),
+                  _buildClickableName(answeredBy, answererName),
                   SizedBox(width: 4),
                   Icon(
                     Icons.verified,

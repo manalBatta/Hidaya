@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import UserRoute from "./routes/userroutelogandregisteration.js";
 import ChatRoute from "./routes/chat.js";
+import MeetingRequestRoute from "./routes/meetingRequestRoutes.js";
 const app = express();
 import cors from "cors";
 import admin from "firebase-admin";
@@ -25,5 +26,6 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use("/", UserRoute);
 app.use("/chat", ChatRoute);
+app.use("/meeting-requests", MeetingRequestRoute);
 
 export default app;
