@@ -22,6 +22,7 @@ import 'firebase_options.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import 'package:frontend/widgets/Admin/AdminPanel.dart';
+import 'package:frontend/constants/colors.dart';
 
 Future<void> resetAppState() async {
   // Clear SharedPreferences
@@ -184,7 +185,7 @@ class _HidayaAppState extends State<HidayaApp> {
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
+        statusBarColor: AppColors.transparent,
         statusBarIconBrightness: Brightness.dark,
       ),
     );

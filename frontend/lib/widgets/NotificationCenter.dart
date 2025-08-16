@@ -543,28 +543,30 @@ class _NotificationCenterState extends State<NotificationCenter> {
           print('Navigate to new question: $questionId');
         }
         break;
-      case 'welcome':break;
-      case 'test': break;
+      case 'welcome':
+        break;
+      case 'test':
+        break;
       case 'question_updated': // I want to show the updated question with the answer of the volunteer to update his answer
         // No navigation needed
-              _handleQuestionUpdated(context, data, notification['message']);
+        _handleQuestionUpdated(context, data, notification['message']);
         print(' Notification: $notification');
 
         break;
-        case 'flag_resolved':
-          // Handle flag resolved notification
-         _handleFlagResolved(context, data, notification['message']);
-         //delete the flag
+      case 'flag_resolved':
+        // Handle flag resolved notification
+        _handleFlagResolved(context, data, notification['message']);
+        //delete the flag
         _deleteThreadFlag(context, data);
-          print('Notification: $notification');
+        print('Notification: $notification');
         break;
 
-        case 'flag_rejected':
-          // Handle flag rejected notification
-          _handleFlagRejected(context, data, notification['message']);
-          //delete the flag
-         _deleteThreadFlag(context, data);
-          print(' Notification: $notification');
+      case 'flag_rejected':
+        // Handle flag rejected notification
+        _handleFlagRejected(context, data, notification['message']);
+        //delete the flag
+        _deleteThreadFlag(context, data);
+        print(' Notification: $notification');
         break;
       case 'flag_dismissed':
         // Handle flag dismissed notification
@@ -578,14 +580,16 @@ class _NotificationCenterState extends State<NotificationCenter> {
     }
   }
 }
- 
- void _showAnswerDialogToPreviewAndEdit(
+
+void _showAnswerDialogToPreviewAndEdit(
   BuildContext context,
   String questionText,
   String initialAnswer,
   void Function(String updatedAnswer) onSave,
 ) {
-  TextEditingController _answerController = TextEditingController(text: initialAnswer);
+  TextEditingController _answerController = TextEditingController(
+    text: initialAnswer,
+  );
 
   showDialog(
     context: context,
@@ -596,20 +600,11 @@ class _NotificationCenterState extends State<NotificationCenter> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Question:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('Question:', style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: 4),
-            Text(
-              questionText,
-              style: TextStyle(color: Colors.black87),
-            ),
+            Text(questionText, style: TextStyle(color: Colors.black87)),
             SizedBox(height: 16),
-            Text(
-              'Your Answer:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('Your Answer:', style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: 4),
             TextField(
               controller: _answerController,
@@ -642,9 +637,11 @@ class _NotificationCenterState extends State<NotificationCenter> {
   );
 }
 
-
-
-void _handleQuestionUpdated(BuildContext context, Map<String, dynamic> data, String? message) {
+void _handleQuestionUpdated(
+  BuildContext context,
+  Map<String, dynamic> data,
+  String? message,
+) {
   final questionId = data['questionId'];
   final answerId = data['answerId'];
 
@@ -674,7 +671,7 @@ void _handleQuestionUpdated(BuildContext context, Map<String, dynamic> data, Str
                       headers: {"Content-Type": "application/json"},
                       body: jsonEncode({"answerText": updatedAnswer}),
                     );
-                    
+
                     if (response.statusCode == 200) {
                       scaffoldMessenger.showSnackBar(
                         SnackBar(
@@ -706,20 +703,25 @@ void _handleQuestionUpdated(BuildContext context, Map<String, dynamic> data, Str
   }
 }
 
-void _handleFlagResolved(BuildContext context, Map<String, dynamic> data, String? message) {
+void _handleFlagResolved(
+  BuildContext context,
+  Map<String, dynamic> data,
+  String? message,
+) {
   final flagId = data['flagId'];
-//  final questionId = data['questionId'];
+  //  final questionId = data['questionId'];
   final itemType = data['itemType'];
   final reason = data['reason'];
   final status = data['status'];
   final reportedBy = data['reporterName'] ?? 'Unknown Reporter';
-  final createdAt = data['createdAt'] != null
-    ? DateTime.parse(data['createdAt']).toLocal().toString()
-    : 'Unknown';
+  final createdAt =
+      data['createdAt'] != null
+          ? DateTime.parse(data['createdAt']).toLocal().toString()
+          : 'Unknown';
 
   final flaggedContent = data['flaggedContent'];
 
-  if (flagId != null ) {
+  if (flagId != null) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -758,20 +760,25 @@ void _handleFlagResolved(BuildContext context, Map<String, dynamic> data, String
   }
 }
 
-void _handleFlagRejected(BuildContext context, Map<String, dynamic> data, String? message) {
+void _handleFlagRejected(
+  BuildContext context,
+  Map<String, dynamic> data,
+  String? message,
+) {
   final flagId = data['flagId'];
-//  final questionId = data['questionId'];
+  //  final questionId = data['questionId'];
   final itemType = data['itemType'];
   final reason = data['reason'];
   final status = data['status'];
   final reportedBy = data['reporterName'] ?? 'Unknown Reporter';
-  final createdAt = data['createdAt'] != null
-    ? DateTime.parse(data['createdAt']).toLocal().toString()
-    : 'Unknown';
+  final createdAt =
+      data['createdAt'] != null
+          ? DateTime.parse(data['createdAt']).toLocal().toString()
+          : 'Unknown';
 
   final flaggedContent = data['flaggedContent'];
 
-  if (flagId != null ) {
+  if (flagId != null) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -810,20 +817,25 @@ void _handleFlagRejected(BuildContext context, Map<String, dynamic> data, String
   }
 }
 
-void _handleFlagDismissed(BuildContext context, Map<String, dynamic> data, String? message) {
+void _handleFlagDismissed(
+  BuildContext context,
+  Map<String, dynamic> data,
+  String? message,
+) {
   final flagId = data['flagId'];
-//  final questionId = data['questionId'];
+  //  final questionId = data['questionId'];
   final itemType = data['itemType'];
   final reason = data['reason'];
   final status = data['status'];
   final reportedBy = data['reporterName'] ?? 'Unknown Reporter';
-  final createdAt = data['createdAt'] != null
-    ? DateTime.parse(data['createdAt']).toLocal().toString()
-    : 'Unknown';
+  final createdAt =
+      data['createdAt'] != null
+          ? DateTime.parse(data['createdAt']).toLocal().toString()
+          : 'Unknown';
 
   final flaggedContent = data['flaggedContent'];
 
-  if (flagId != null ) {
+  if (flagId != null) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -878,43 +890,44 @@ void _handleFlagDismissed(BuildContext context, Map<String, dynamic> data, Strin
   }
 }
 
-
-
 void _deleteThreadFlag(BuildContext context, Map<String, dynamic> data) {
   final flagId = data['flagId'];
-//  final questionId = data['questionId'];
+  //  final questionId = data['questionId'];
 
-  if (flagId != null ) {
+  if (flagId != null) {
     print('✴️ Deleting flag: $flagId');
 
     // Call the API to delete the flag
-    http.delete(
-      Uri.parse('${adminDeleteFlagUrl}$flagId'),
-      headers: {"Content-Type": "application/json"},
-    ).then((response) {
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Flag deleted successfully'),
-            backgroundColor: AppColors.islamicGreen500,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete flag'),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-      }
-    }).catchError((error) {
-      print('Error deleting flag: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error deleting flag'),
-          backgroundColor: AppColors.errorRed,
-        ),
-      );
-    });
+    http
+        .delete(
+          Uri.parse('${adminDeleteFlagUrl}$flagId'),
+          headers: {"Content-Type": "application/json"},
+        )
+        .then((response) {
+          if (response.statusCode == 200) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Flag deleted successfully'),
+                backgroundColor: AppColors.islamicGreen500,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to delete flag'),
+                backgroundColor: AppColors.errorRed,
+              ),
+            );
+          }
+        })
+        .catchError((error) {
+          print('Error deleting flag: $error');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting flag'),
+              backgroundColor: AppColors.errorRed,
+            ),
+          );
+        });
   }
 }

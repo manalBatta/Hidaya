@@ -5,17 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 
-// Use the color constants from the AppColors class
-const Color islamicGreen50 = AppColors.islamicGreen50;
-const Color islamicGreen100 = AppColors.islamicGreen100;
-const Color islamicGreen200 = AppColors.islamicGreen200;
-const Color islamicGreen300 = AppColors.islamicGreen300;
-const Color islamicGreen400 = AppColors.islamicGreen400;
-const Color islamicGreen500 = AppColors.islamicGreen500;
-const Color islamicGreen600 = AppColors.islamicGreen600;
-const Color islamicGreen700 = AppColors.islamicGreen700;
-const Color islamicGreen800 = AppColors.islamicGreen800;
-
 class CitySelectionDialog extends StatefulWidget {
   final String country;
   final Function(String) onCitySelected;
@@ -110,7 +99,7 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: islamicGreen500,
+                    color: AppColors.islamicGreen500,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -129,14 +118,14 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: islamicGreen800,
+                          color: AppColors.islamicGreen800,
                         ),
                       ),
                       Text(
                         'Choose the nearest city in ${widget.country}',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: islamicGreen600,
+                          color: AppColors.islamicGreen600,
                         ),
                       ),
                     ],
@@ -144,7 +133,10 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: islamicGreen600),
+                  icon: const Icon(
+                    Icons.close,
+                    color: AppColors.islamicGreen600,
+                  ),
                 ),
               ],
             ),
@@ -154,16 +146,19 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
             // Search bar
             Container(
               decoration: BoxDecoration(
-                color: islamicGreen50,
+                color: AppColors.islamicGreen50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: islamicGreen200),
+                border: Border.all(color: AppColors.islamicGreen200),
               ),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search for a city...',
-                  hintStyle: TextStyle(color: islamicGreen400),
-                  prefixIcon: Icon(Icons.search, color: islamicGreen500),
+                  hintStyle: TextStyle(color: AppColors.islamicGreen400),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: AppColors.islamicGreen500,
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -181,7 +176,7 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                   isLoading
                       ? Center(
                         child: CircularProgressIndicator(
-                          color: islamicGreen500,
+                          color: AppColors.islamicGreen500,
                         ),
                       )
                       : allCities.isEmpty
@@ -192,14 +187,14 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                             Icon(
                               Icons.location_off,
                               size: 64,
-                              color: islamicGreen300,
+                              color: AppColors.islamicGreen300,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No cities found for ${widget.country}',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: islamicGreen600,
+                                color: AppColors.islamicGreen600,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -207,7 +202,7 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                               'Please contact support to add cities for your country',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: islamicGreen400,
+                                color: AppColors.islamicGreen400,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -238,14 +233,14 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                                   decoration: BoxDecoration(
                                     color:
                                         isSelected
-                                            ? islamicGreen100
+                                            ? AppColors.islamicGreen100
                                             : Colors.transparent,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color:
                                           isSelected
-                                              ? islamicGreen500
-                                              : islamicGreen200,
+                                              ? AppColors.islamicGreen500
+                                              : AppColors.islamicGreen200,
                                       width: isSelected ? 2 : 1,
                                     ),
                                   ),
@@ -255,8 +250,8 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                                         Icons.location_on,
                                         color:
                                             isSelected
-                                                ? islamicGreen600
-                                                : islamicGreen400,
+                                                ? AppColors.islamicGreen600
+                                                : AppColors.islamicGreen400,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 12),
@@ -271,15 +266,15 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                                                     : FontWeight.w500,
                                             color:
                                                 isSelected
-                                                    ? islamicGreen800
-                                                    : islamicGreen700,
+                                                    ? AppColors.islamicGreen800
+                                                    : AppColors.islamicGreen700,
                                           ),
                                         ),
                                       ),
                                       if (isSelected)
                                         Icon(
                                           Icons.check_circle,
-                                          color: islamicGreen600,
+                                          color: AppColors.islamicGreen600,
                                           size: 20,
                                         ),
                                     ],
@@ -306,7 +301,7 @@ class _CitySelectionDialogState extends State<CitySelectionDialog> {
                         }
                         : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: islamicGreen500,
+                  backgroundColor: AppColors.islamicGreen500,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

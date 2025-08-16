@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:frontend/constants/colors.dart';
 
 class WebPdfViewer extends StatelessWidget {
   final String fileUrl;
@@ -13,7 +14,7 @@ class WebPdfViewer extends StatelessWidget {
       width: double.infinity,
       height: 600,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: AppColors.grey300),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -22,7 +23,7 @@ class WebPdfViewer extends StatelessWidget {
           Icon(
             Icons.picture_as_pdf,
             size: 64,
-            color: Colors.red.shade400,
+            color: AppColors.errorRed,
           ),
           const SizedBox(height: 16),
           Text(
@@ -33,7 +34,7 @@ class WebPdfViewer extends StatelessWidget {
           Text(
             'Click the button below to view the PDF',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade600,
+              color: AppColors.grey600,
             ),
           ),
           const SizedBox(height: 24),
@@ -53,8 +54,8 @@ class WebPdfViewer extends StatelessWidget {
             icon: const Icon(Icons.open_in_new),
             label: const Text('Open PDF'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.errorRed,
+              foregroundColor: AppColors.islamicWhite,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),

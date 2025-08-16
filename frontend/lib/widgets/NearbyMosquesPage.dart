@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../constants/colors.dart';
 
 class NearbyMosquesPage extends StatefulWidget {
   const NearbyMosquesPage({Key? key}) : super(key: key);
@@ -27,17 +28,6 @@ class _NearbyMosquesPageState extends State<NearbyMosquesPage>
   late Animation<double> _fadeAnimation;
   ScrollController _scrollController = ScrollController();
   Mosque? _hoveredMosque;
-
-  // Islamic Color Palette matching Hidaya app
-  static const Color islamicGreen50 = Color(0xFFF4FBF7);
-  // Removed unused color to satisfy linter
-  static const Color islamicGreen200 = Color(0xFFCCE8D8);
-  static const Color islamicGreen500 = Color(0xFF2D7A47);
-  static const Color islamicGreen600 = Color(0xFF235831);
-  static const Color islamicGreen700 = Color(0xFF1A4025);
-  static const Color islamicGreen800 = Color(0xFF142E1C);
-  static const Color islamicWhite = Color(0xFFFFFFFF);
-  static const Color islamicCream = Color(0xFFFDF8F0);
 
   LatLng _currentLocation = const LatLng(21.4225, 39.8262); // Makkah default
   Set<Marker> _markers = {};
@@ -371,7 +361,7 @@ out;
               'Could not get your location. Using default location.',
             ),
             duration: Duration(seconds: 3),
-            backgroundColor: islamicGreen600,
+            backgroundColor: AppColors.islamicGreen600,
           ),
         );
       }
@@ -500,7 +490,11 @@ out;
         point: _currentLocation,
         width: 80,
         height: 80,
-        child: Icon(Icons.my_location, color: islamicGreen600, size: 40),
+        child: Icon(
+          Icons.my_location,
+          color: AppColors.islamicGreen600,
+          size: 40,
+        ),
       ),
     );
 
@@ -527,8 +521,8 @@ out;
                 Icons.location_on,
                 color:
                     _hoveredMosque?.id == mosque.id
-                        ? islamicGreen600
-                        : islamicGreen500,
+                        ? AppColors.islamicGreen600
+                        : AppColors.islamicGreen500,
                 size: _hoveredMosque?.id == mosque.id ? 45 : 40,
               ),
             ),
@@ -622,13 +616,13 @@ out;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: islamicCream,
+      backgroundColor: AppColors.islamicCream,
       /*   appBar: AppBar(
         title: const Text(
           'Nearby Mosques',
           style: TextStyle(fontWeight: FontWeight.bold, color: islamicWhite),
         ),
-        backgroundColor: islamicGreen600,
+        backgroundColor: AppColors.islamicGreen600,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: islamicWhite),
@@ -692,7 +686,7 @@ out;
                   padding: const EdgeInsets.all(8),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: islamicWhite.withOpacity(0.9),
+                    color: AppColors.islamicWhite.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -701,17 +695,23 @@ out;
                         'Mosques: ${_mosques.length}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: islamicGreen700,
+                          color: AppColors.islamicGreen700,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         'Lat: ${_currentLocation.latitude.toStringAsFixed(4)}',
-                        style: TextStyle(fontSize: 10, color: islamicGreen600),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.islamicGreen600,
+                        ),
                       ),
                       Text(
                         'Lon: ${_currentLocation.longitude.toStringAsFixed(4)}',
-                        style: TextStyle(fontSize: 10, color: islamicGreen600),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.islamicGreen600,
+                        ),
                       ),
                     ],
                   ),
@@ -724,7 +724,7 @@ out;
                       scale: _animationController.value,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: islamicWhite,
+                          color: AppColors.islamicWhite,
                           borderRadius: BorderRadius.circular(25),
                           boxShadow: [
                             BoxShadow(
@@ -748,7 +748,7 @@ out;
 
                               child: Icon(
                                 Icons.my_location,
-                                color: islamicGreen600,
+                                color: AppColors.islamicGreen600,
                                 size: 24,
                               ),
                             ),
@@ -770,7 +770,7 @@ out;
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: islamicWhite,
+                  color: AppColors.islamicWhite,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
@@ -789,13 +789,16 @@ out;
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: islamicGreen800,
+                        color: AppColors.islamicGreen800,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${_hoveredMosque!.distance.toStringAsFixed(1)} km away',
-                      style: TextStyle(fontSize: 12, color: islamicGreen600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.islamicGreen600,
+                      ),
                     ),
                   ],
                 ),
@@ -819,7 +822,7 @@ out;
                     child: Container(
                       height: MediaQuery.of(context).size.height * 0.4,
                       decoration: const BoxDecoration(
-                        color: islamicWhite,
+                        color: AppColors.islamicWhite,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(24),
                           topRight: Radius.circular(24),
@@ -842,7 +845,7 @@ out;
       ),
       /* floatingActionButton: FloatingActionButton(
         onPressed: _recenterMap,
-        backgroundColor: islamicGreen600,
+        backgroundColor: AppColors.islamicGreen600,
         child: Icon(Icons.my_location, color: islamicWhite),
         tooltip: 'Get Current Location',
       ), */
@@ -851,7 +854,7 @@ out;
 
   Widget _buildLoadingIndicator() {
     return Container(
-      color: islamicCream,
+      color: AppColors.islamicCream,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -859,28 +862,30 @@ out;
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: islamicGreen500,
+                color: AppColors.islamicGreen500,
                 borderRadius: BorderRadius.circular(50),
               ),
               child: const Text('🕌', style: TextStyle(fontSize: 32)),
             ),
             const SizedBox(height: 24),
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(islamicGreen500),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.islamicGreen500,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'Finding nearby mosques...',
               style: TextStyle(
                 fontSize: 16,
-                color: islamicGreen700,
+                color: AppColors.islamicGreen700,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Current Location: ${_currentLocation.latitude.toStringAsFixed(4)}, ${_currentLocation.longitude.toStringAsFixed(4)}',
-              style: TextStyle(fontSize: 12, color: islamicGreen600),
+              style: TextStyle(fontSize: 12, color: AppColors.islamicGreen600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -903,7 +908,7 @@ out;
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: islamicGreen200,
+                  color: AppColors.islamicGreen200,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -919,7 +924,7 @@ out;
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: islamicGreen500,
+                            color: AppColors.islamicGreen500,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
@@ -933,7 +938,7 @@ out;
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: islamicGreen800,
+                            color: AppColors.islamicGreen800,
                           ),
                         ),
                       ],
@@ -943,12 +948,12 @@ out;
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: islamicGreen50,
+                          color: AppColors.islamicGreen50,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
                           Icons.close,
-                          color: islamicGreen600,
+                          color: AppColors.islamicGreen600,
                           size: 20,
                         ),
                       ),
@@ -969,7 +974,7 @@ out;
                             children: [
                               CircularProgressIndicator(
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  islamicGreen500,
+                                  AppColors.islamicGreen500,
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -977,7 +982,7 @@ out;
                                 'Finding nearby mosques...',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: islamicGreen700,
+                                  color: AppColors.islamicGreen700,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1008,7 +1013,7 @@ out;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: islamicWhite,
+        color: AppColors.islamicWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1032,7 +1037,7 @@ out;
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: islamicGreen800,
+                      color: AppColors.islamicGreen800,
                     ),
                   ),
                 ),
@@ -1042,7 +1047,7 @@ out;
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: islamicGreen50,
+                    color: AppColors.islamicGreen50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1050,7 +1055,7 @@ out;
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: islamicGreen700,
+                      color: AppColors.islamicGreen700,
                     ),
                   ),
                 ),
@@ -1065,7 +1070,7 @@ out;
                 mosque.nameAr!,
                 style: TextStyle(
                   fontSize: 14,
-                  color: islamicGreen600,
+                  color: AppColors.islamicGreen600,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -1077,14 +1082,17 @@ out;
               children: [
                 Icon(
                   Icons.location_on_outlined,
-                  color: islamicGreen500,
+                  color: AppColors.islamicGreen500,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     mosque.address,
-                    style: TextStyle(fontSize: 14, color: islamicGreen600),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.islamicGreen600,
+                    ),
                   ),
                 ),
               ],
@@ -1103,8 +1111,8 @@ out;
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: islamicGreen600,
-                  foregroundColor: islamicWhite,
+                  backgroundColor: AppColors.islamicGreen600,
+                  foregroundColor: AppColors.islamicWhite,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

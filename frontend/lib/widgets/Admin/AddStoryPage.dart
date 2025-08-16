@@ -7,30 +7,10 @@ import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config.dart';
+import '../../constants/colors.dart';
 
 // Islamic Theme Colors
-class IslamicColors {
-  static const Color green50 = Color(0xFFF0FDF4);
-  static const Color green100 = Color(0xFFDCFCE7);
-  static const Color green200 = Color(0xFFBBF7D0);
-  static const Color green300 = Color(0xFF86EFAC);
-  static const Color green400 = Color(0xFF4ADE80);
-  static const Color green500 = Color(0xFF059669);
-  static const Color green600 = Color(0xFF047857);
-  static const Color green700 = Color(0xFF065F46);
-  static const Color green800 = Color(0xFF064E3B);
-  static const Color green900 = Color(0xFF022C22);
-
-  static const Color gold50 = Color(0xFFFFFBEB);
-  static const Color gold100 = Color(0xFFFEF3C7);
-  static const Color gold200 = Color(0xFFFDE68A);
-  static const Color gold300 = Color(0xFFFCD34D);
-  static const Color gold400 = Color(0xFFFBBF24);
-  static const Color gold500 = Color(0xFFF59E0B);
-
-  static const Color cream = Color(0xFFFAF9F6);
-  static const Color white = Color(0xFFFFFFFF);
-}
+class IslamicColors {}
 
 class AddStoryPage extends StatefulWidget {
   final VoidCallback? onBackToStories;
@@ -57,7 +37,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
 
   // Form state
   String _selectedType = 'image';
-  String _selectedLanguage = 'English';
+  // String _selectedLanguage = 'English';
   PlatformFile? _selectedFile;
   String? _uploadedFileUrl;
   bool _isUploading = false;
@@ -95,7 +75,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: IslamicColors.green800,
+                      color: AppColors.adminPanelGreen800,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -103,7 +83,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
                     'Create a new revert story to inspire others',
                     style: TextStyle(
                       fontSize: 16,
-                      color: IslamicColors.green600,
+                      color: AppColors.adminPanelGreen600,
                     ),
                   ),
                 ],
@@ -112,7 +92,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
                 onPressed:
                     widget.onBackToStories ?? () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: IslamicColors.green600,
+                  backgroundColor: AppColors.adminPanelGreen600,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -141,7 +121,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: IslamicColors.green100),
+              border: Border.all(color: AppColors.adminPanelGreen100),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -160,7 +140,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: IslamicColors.green800,
+                      color: AppColors.adminPanelGreen800,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -291,8 +271,10 @@ class _AddStoryPageState extends State<AddStoryPage> {
                             widget.onBackToStories ??
                             () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: IslamicColors.green700,
-                          side: const BorderSide(color: IslamicColors.green300),
+                          foregroundColor: AppColors.adminPanelGreen700,
+                          side: const BorderSide(
+                            color: AppColors.adminPanelGreen300,
+                          ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 12,
@@ -307,7 +289,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
                       ElevatedButton(
                         onPressed: _isSubmitting ? null : _handleSaveStory,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: IslamicColors.green600,
+                          backgroundColor: AppColors.adminPanelGreen600,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -358,7 +340,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: IslamicColors.green700,
+              color: AppColors.adminPanelGreen700,
             ),
             children:
                 required
@@ -379,15 +361,15 @@ class _AddStoryPageState extends State<AddStoryPage> {
             hintText: hint,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
+              borderSide: const BorderSide(color: AppColors.adminPanelGreen200),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
+              borderSide: const BorderSide(color: AppColors.adminPanelGreen200),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green500),
+              borderSide: const BorderSide(color: AppColors.adminPanelGreen500),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -426,7 +408,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: IslamicColors.green700,
+            color: AppColors.adminPanelGreen700,
           ),
         ),
         const SizedBox(height: 8),
@@ -436,15 +418,15 @@ class _AddStoryPageState extends State<AddStoryPage> {
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
+              borderSide: const BorderSide(color: AppColors.adminPanelGreen200),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green200),
+              borderSide: const BorderSide(color: AppColors.adminPanelGreen200),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: IslamicColors.green500),
+              borderSide: const BorderSide(color: AppColors.adminPanelGreen500),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
@@ -475,7 +457,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: IslamicColors.green700,
+              color: AppColors.adminPanelGreen700,
             ),
             children: const [
               TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
@@ -523,7 +505,7 @@ class _AddStoryPageState extends State<AddStoryPage> {
                       'Selected: ${_selectedFile!.name}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: IslamicColors.green600,
+                        color: AppColors.adminPanelGreen600,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -692,7 +674,10 @@ class _AddStoryPageState extends State<AddStoryPage> {
 
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: IslamicColors.green600),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.adminPanelGreen600,
+      ),
     );
   }
 }

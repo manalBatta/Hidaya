@@ -84,24 +84,6 @@ class Story {
   }
 }
 
-// Islamic Theme Colors
-class IslamicTheme {
-  static const Color primary = Color(0xFF16A085);
-  static const Color primaryLight = Color(0xFF48C9B0);
-  static const Color primaryDark = Color(0xFF138D75);
-  static const Color accent = Color(0xFF27AE60);
-  static const Color background = Color(0xFFF5FFFB);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color textPrimary = Color(0xFF161D1B);
-  static const Color textSecondary = Color(0xFF5A7269);
-  static const Color border = Color(0xFFD1E0DA);
-
-  static const List<Color> gradientColors = [
-    Color(0xFF16A085),
-    Color(0xFF27AE60),
-  ];
-}
-
 // Fetch stories from API
 Future<List<Story>> fetchStories() async {
   final response = await http.get(Uri.parse('$storyUrl?page=1&limit=5'));
@@ -704,9 +686,9 @@ class _StoriesPageState extends State<StoriesPage>
       child: Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: IslamicTheme.surface,
+          color: AppColors.storySurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: IslamicTheme.border),
+          border: Border.all(color: AppColors.storyBorder),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -1009,16 +991,20 @@ class _StoriesPageState extends State<StoriesPage>
     // Validate mediaUrl
     if (story.mediaUrl.isEmpty) {
       return Container(
-        color: IslamicTheme.primary.withOpacity(0.2),
+        color: AppColors.storyPrimary.withOpacity(0.2),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, color: IslamicTheme.primary, size: 48),
+              Icon(
+                Icons.error_outline,
+                color: AppColors.storyPrimary,
+                size: 48,
+              ),
               SizedBox(height: 8),
               Text(
                 'Invalid media URL',
-                style: TextStyle(color: IslamicTheme.primary, fontSize: 14),
+                style: TextStyle(color: AppColors.storyPrimary, fontSize: 14),
               ),
             ],
           ),
@@ -1131,21 +1117,21 @@ class _StoriesPageState extends State<StoriesPage>
                 );
               } else {
                 return Container(
-                  color: IslamicTheme.primary.withOpacity(0.2),
+                  color: AppColors.storyPrimary.withOpacity(0.2),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.error_outline,
-                          color: IslamicTheme.primary,
+                          color: AppColors.storyPrimary,
                           size: 48,
                         ),
                         SizedBox(height: 8),
                         Text(
                           'Failed to load video',
                           style: TextStyle(
-                            color: IslamicTheme.primary,
+                            color: AppColors.storyPrimary,
                             fontSize: 14,
                           ),
                         ),
@@ -1159,20 +1145,23 @@ class _StoriesPageState extends State<StoriesPage>
         } catch (e) {
           print('Error creating video controller: $e');
           return Container(
-            color: IslamicTheme.primary.withOpacity(0.2),
+            color: AppColors.storyPrimary.withOpacity(0.2),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.error_outline,
-                    color: IslamicTheme.primary,
+                    color: AppColors.storyPrimary,
                     size: 48,
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Invalid video URL',
-                    style: TextStyle(color: IslamicTheme.primary, fontSize: 14),
+                    style: TextStyle(
+                      color: AppColors.storyPrimary,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -1198,32 +1187,32 @@ class _StoriesPageState extends State<StoriesPage>
                         .contain, // This will always fit the image inside the box
                 placeholder:
                     (context, url) => Container(
-                      color: IslamicTheme.primary.withOpacity(0.2),
+                      color: AppColors.storyPrimary.withOpacity(0.2),
                       child: Center(
                         child: CircularProgressIndicator(
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            IslamicTheme.primary,
+                            AppColors.storyPrimary,
                           ),
                         ),
                       ),
                     ),
                 errorWidget:
                     (context, url, error) => Container(
-                      color: IslamicTheme.primary.withOpacity(0.2),
+                      color: AppColors.storyPrimary.withOpacity(0.2),
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.error_outline,
-                              color: IslamicTheme.primary,
+                              color: AppColors.storyPrimary,
                               size: 48,
                             ),
                             SizedBox(height: 8),
                             Text(
                               'Failed to load image',
                               style: TextStyle(
-                                color: IslamicTheme.primary,
+                                color: AppColors.storyPrimary,
                                 fontSize: 14,
                               ),
                             ),
@@ -1244,32 +1233,32 @@ class _StoriesPageState extends State<StoriesPage>
           height: double.infinity,
           placeholder:
               (context, url) => Container(
-                color: IslamicTheme.primary.withOpacity(0.2),
+                color: AppColors.storyPrimary.withOpacity(0.2),
                 child: Center(
                   child: CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      IslamicTheme.primary,
+                      AppColors.storyPrimary,
                     ),
                   ),
                 ),
               ),
           errorWidget:
               (context, url, error) => Container(
-                color: IslamicTheme.primary.withOpacity(0.2),
+                color: AppColors.storyPrimary.withOpacity(0.2),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.error_outline,
-                        color: IslamicTheme.primary,
+                        color: AppColors.storyPrimary,
                         size: 48,
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Failed to load image',
                         style: TextStyle(
-                          color: IslamicTheme.primary,
+                          color: AppColors.storyPrimary,
                           fontSize: 14,
                         ),
                       ),
@@ -1366,10 +1355,10 @@ class _StoriesPageState extends State<StoriesPage>
                         fit: BoxFit.cover,
                         errorBuilder:
                             (context, error, stackTrace) => Container(
-                              color: IslamicTheme.primary.withOpacity(0.2),
+                              color: AppColors.storyPrimary.withOpacity(0.2),
                               child: Icon(
                                 Icons.person,
-                                color: IslamicTheme.primary,
+                                color: AppColors.storyPrimary,
                                 size: 20,
                               ),
                             ),
@@ -1471,7 +1460,7 @@ class _StoriesPageState extends State<StoriesPage>
                 Text(
                   'Background',
                   style: TextStyle(
-                    color: IslamicTheme.primaryLight,
+                    color: AppColors.storyPrimaryLight,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1491,7 +1480,7 @@ class _StoriesPageState extends State<StoriesPage>
                 Text(
                   'Journey to Islam',
                   style: TextStyle(
-                    color: IslamicTheme.primaryLight,
+                    color: AppColors.storyPrimaryLight,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1510,7 +1499,7 @@ class _StoriesPageState extends State<StoriesPage>
                 Text(
                   'After Islam',
                   style: TextStyle(
-                    color: IslamicTheme.primaryLight,
+                    color: AppColors.storyPrimaryLight,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1536,13 +1525,13 @@ class _StoriesPageState extends State<StoriesPage>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: IslamicTheme.primary.withOpacity(0.3),
+                          color: AppColors.storyPrimary.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           '#$tag',
                           style: TextStyle(
-                            color: IslamicTheme.primaryLight,
+                            color: AppColors.storyPrimaryLight,
                             fontSize: 12,
                           ),
                         ),
@@ -1602,7 +1591,7 @@ class _StoriesPageState extends State<StoriesPage>
                     fit: BoxFit.cover,
                     errorBuilder:
                         (context, error, stackTrace) => Container(
-                          color: IslamicTheme.primary.withOpacity(0.2),
+                          color: AppColors.storyPrimary.withOpacity(0.2),
                           child: Icon(Icons.person, color: textColor, size: 20),
                         ),
                   ),
@@ -1699,7 +1688,7 @@ class _StoriesPageState extends State<StoriesPage>
                               : Icons.bookmark_border,
                           color:
                               _savedStories.contains(story.id)
-                                  ? IslamicTheme.primary
+                                  ? AppColors.storyPrimary
                                   : textColor,
                           size: 24,
                         ),
@@ -1782,7 +1771,7 @@ class _StoriesPageState extends State<StoriesPage>
                           : Icons.bookmark_border,
                       color:
                           _savedStories.contains(story.id)
-                              ? IslamicTheme.primary
+                              ? AppColors.storyPrimary
                               : Colors.white,
                       size: 24,
                     ),

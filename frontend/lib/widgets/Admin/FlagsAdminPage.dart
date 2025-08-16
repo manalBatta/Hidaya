@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:frontend/config.dart';
+import 'package:frontend/constants/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
@@ -192,18 +193,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
     }
   }
 
-  // Islamic Color Palette - Exact match from design
-  static const Color islamicGreen50 = Color(0xFFF4FBF7);
-  static const Color islamicGreen100 = Color(0xFFE6F4ED);
-  static const Color islamicGreen200 = Color(0xFFCCE8D8);
-  static const Color islamicGreen300 = Color(0xFFB3DCC3);
-  static const Color islamicGreen400 = Color(0xFF7AC09A);
-  static const Color islamicGreen500 = Color(0xFF2D7A47);
-  static const Color islamicGreen600 = Color(0xFF235831);
-  static const Color islamicGreen700 = Color(0xFF1A4025);
-  static const Color islamicGreen800 = Color(0xFF142E1C);
-  static const Color islamicGreen900 = Color(0xFF0C1C12);
-  static const Color islamicCream = Color(0xFFFDF8F0);
+  // Use centralized AppColors instead of local constants
 
   List<FlagData> _flags = [];
 
@@ -235,7 +225,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     return Scaffold(
-      backgroundColor: islamicCream,
+      backgroundColor: AppColors.islamicCream,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -254,13 +244,16 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                         style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          color: islamicGreen800,
+                          color: AppColors.adminGreen800,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Review and moderate user-reported content',
-                        style: TextStyle(fontSize: 16, color: islamicGreen600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.adminGreen600,
+                        ),
                       ),
                     ],
                   ),
@@ -328,7 +321,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: islamicGreen800,
+                              color: AppColors.adminGreen800,
                             ),
                           ),
                         ],
@@ -400,7 +393,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? islamicGreen600 : Colors.transparent,
+          color: isSelected ? AppColors.adminGreen600 : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
@@ -470,7 +463,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
-                    color: islamicGreen800,
+                    color: AppColors.adminGreen800,
                   ),
                 ),
               ],
@@ -505,7 +498,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: islamicGreen600),
+                borderSide: BorderSide(color: AppColors.adminGreen600),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -607,7 +600,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                 children: [
                   CircleAvatar(
                     radius: 12,
-                    backgroundColor: islamicGreen100,
+                    backgroundColor: AppColors.islamicGreen100,
                     child: Text(
                       // For Question Row
                       flag.reportedBy
@@ -618,7 +611,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                           .join('')
                           .toUpperCase(),
                       style: TextStyle(
-                        color: islamicGreen600,
+                        color: AppColors.adminGreen600,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -814,7 +807,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: islamicGreen800,
+                                        color: AppColors.adminGreen800,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -872,7 +865,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: islamicGreen800,
+                                        color: AppColors.adminGreen800,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -942,7 +935,7 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: islamicGreen800,
+                              color: AppColors.adminGreen800,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1098,7 +1091,10 @@ class _FlagsAdminPageState extends State<FlagsAdminPage>
 
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: islamicGreen600),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.adminGreen600,
+      ),
     );
   }
 

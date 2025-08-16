@@ -92,4 +92,98 @@ class AppColors {
 
   // Legacy color (keeping for backward compatibility)
   static const deleteRed = Color(0xFFD32F2F); // Material Red 700
+
+  // Additional colors found throughout the app
+  // Story colors
+  static const storyPrimary = Color(0xFF16A085);
+  static const storyPrimaryLight = Color(0xFF48C9B0);
+  static const storyPrimaryDark = Color(0xFF138D75);
+  static const storyAccent = Color(0xFF27AE60);
+  static const storyBackground = Color(0xFFF5FFFB);
+  static const storySurface = Color(0xFFFFFFFF);
+  static const storyTextPrimary = Color(0xFF161D1B);
+  static const storyTextSecondary = Color(0xFF5A7269);
+  static const storyBorder = Color(0xFFD1E0DA);
+
+  // SignIn/Register colors
+  static const signInBackground = Color(0xFFF4F0E7);
+
+  // HomePage colors
+  static const homeGreen = Color(0xFF10B981);
+  static const homeGreenDark = Color(0xFF059669);
+  static const homeGreenDarker = Color(0xFF064E3B);
+  static const homeDarkText = Color(0xFF111827);
+  static const homeDarkTextSecondary = Color(0xFF1F2937);
+  static const homeLightGreen = Color(0xFFF0FDF4);
+  static const homeLightYellow = Color(0xFFFFFBEB);
+  static const homeLightOrange = Color(0xFFFEFCE8);
+  static const homeLightGreenAccent = Color(0xFF6EE7B7);
+  static const homeLightGreenAccent2 = Color(0xFFA7F3D0);
+
+  // LessonsPage colors
+  static const lessonsBorder = Color(0xFFE6F3ED);
+  static const lessonsPrivateBorder = Color(0xFFF8EDCF);
+  static const lessonsErrorBorder = Color(0xFFFFE6E6);
+  static const lessonsGreyBorder = Color(0xFFE5E7EB);
+  static const lessonsUrgent = Color(0xFF165A3F);
+  static const lessonsPrivacyText = Color(0xFF7F7556);
+  static const lessonsError = Color(0xFFDC2626);
+  static const lessonsGrey = Color(0xFF6B7280);
+  static const lessonsTitle = Color(0xFF104C34);
+  static const lessonsSubtitle = Color(0xFF206F4F);
+  static const lessonsCategoryBackground = Color(0xFFBFE3D5);
+  static const lessonsSearchIcon = Color(0xFF45A376);
+  static const lessonsHumanBadge = Color(0xFF2D8662);
+  static const lessonsPrivacyBorder = Color(0xFF93C5AE);
+
+  // Admin colors
+  static const adminGreen50 = Color(0xFFF4FBF7);
+  static const adminGreen100 = Color(0xFFE6F4ED);
+  static const adminGreen200 = Color(0xFFCCE8D8);
+  static const adminGreen300 = Color(0xFFB3DCC3);
+  static const adminGreen400 = Color(0xFF7AC09A);
+  static const adminGreen500 = Color(0xFF2D7A47);
+  static const adminGreen600 = Color(0xFF235831);
+  static const adminGreen700 = Color(0xFF1A4025);
+  static const adminGreen800 = Color(0xFF142E1C);
+  static const adminGreen900 = Color(0xFF0C1C12);
+  static const adminCream = Color(0xFFFDF8F0);
+
+  // Admin Panel colors
+  static const adminPanelGreen50 = Color(0xFFF0FDF4);
+  static const adminPanelGreen100 = Color(0xFFDCFCE7);
+  static const adminPanelGreen200 = Color(0xFFBBF7D0);
+  static const adminPanelGreen300 = Color(0xFF86EFAC);
+  static const adminPanelGreen400 = Color(0xFF4ADE80);
+  static const adminPanelGreen500 = Color(0xFF059669);
+  static const adminPanelGreen600 = Color(0xFF047857);
+  static const adminPanelGreen700 = Color(0xFF065F46);
+  static const adminPanelGreen800 = Color(0xFF064E3B);
+  static const adminPanelGreen900 = Color(0xFF022C22);
+  static const adminPanelGold50 = Color(0xFFFFFBEB);
+  static const adminPanelGold100 = Color(0xFFFEF3C7);
+  static const adminPanelGold200 = Color(0xFFFDE68A);
+  static const adminPanelGold300 = Color(0xFFFCD34D);
+  static const adminPanelGold400 = Color(0xFFFBBF24);
+  static const adminPanelGold500 = Color(0xFFF59E0B);
+  static const adminPanelCream = Color(0xFFFAF9F6);
+
+  // UI Colors
+  static const uiGrey50 = Color(0xFFF9FAFB);
+  static const uiGrey100 = Color(0xFFF3F4F6);
+  static const uiGrey200 = Color(0xFFE5E7EB);
+  static const uiGrey300 = Color(0xFFD1D5DB);
+  static const uiGrey400 = Color(0xFF9CA3AF);
+  static const uiGrey500 = Color(0xFF6B7280);
+  static const uiGrey600 = Color(0xFF4B5563);
+  static const uiGrey700 = Color(0xFF374151);
+  static const uiGrey800 = Color(0xFF1F2937);
+  static const uiGrey900 = Color(0xFF111827);
+
+  // Blue colors
+  static const blue50 = Color(0xFFE3F2FD);
+  static const blue600 = Color(0xFF1565C0);
+
+  // Prayer times colors
+  static const prayerGreen = Color(0xFF2D7A47);
 }

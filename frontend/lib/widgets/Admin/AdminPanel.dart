@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/utils/auth_utils.dart';
+import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/Admin/AdminDashboard.dart';
 import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
@@ -8,30 +9,6 @@ import 'package:frontend/widgets/Admin/AdminStoriesPage.dart';
 import 'package:frontend/widgets/Admin/FlagsAdminPage.dart';
 import 'package:frontend/widgets/NotificationCenter.dart';
 import 'AddStoryPage.dart';
-
-// Islamic Theme Colors
-class IslamicColors {
-  static const Color green50 = Color(0xFFF0FDF4);
-  static const Color green100 = Color(0xFFDCFCE7);
-  static const Color green200 = Color(0xFFBBF7D0);
-  static const Color green300 = Color(0xFF86EFAC);
-  static const Color green400 = Color(0xFF4ADE80);
-  static const Color green500 = Color(0xFF059669);
-  static const Color green600 = Color(0xFF047857);
-  static const Color green700 = Color(0xFF065F46);
-  static const Color green800 = Color(0xFF064E3B);
-  static const Color green900 = Color(0xFF022C22);
-
-  static const Color gold50 = Color(0xFFFFFBEB);
-  static const Color gold100 = Color(0xFFFEF3C7);
-  static const Color gold200 = Color(0xFFFDE68A);
-  static const Color gold300 = Color(0xFFFCD34D);
-  static const Color gold400 = Color(0xFFFBBF24);
-  static const Color gold500 = Color(0xFFF59E0B);
-
-  static const Color cream = Color(0xFFFAF9F6);
-  static const Color white = Color(0xFFFFFFFF);
-}
 
 // Navigation Item Model
 class NavigationItem {
@@ -208,7 +185,7 @@ class _AdminPanelState extends State<AdminPanel> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: IslamicColors.green50,
+      backgroundColor: AppColors.islamicGreen50,
       drawer: _buildMobileDrawer(),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -231,9 +208,9 @@ class _AdminPanelState extends State<AdminPanel> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            IslamicColors.green50,
-            IslamicColors.cream,
-            IslamicColors.gold50,
+            AppColors.adminPanelGreen50,
+            AppColors.adminPanelCream,
+            AppColors.adminPanelGold50,
           ],
         ),
       ),
@@ -243,9 +220,12 @@ class _AdminPanelState extends State<AdminPanel> {
           Container(
             width: 320,
             decoration: BoxDecoration(
-              color: IslamicColors.white.withOpacity(0.95),
+              color: AppColors.islamicWhite.withOpacity(0.95),
               border: const Border(
-                right: BorderSide(color: IslamicColors.green200, width: 1),
+                right: BorderSide(
+                  color: AppColors.adminPanelGreen200,
+                  width: 1,
+                ),
               ),
               boxShadow: [
                 BoxShadow(
@@ -275,9 +255,9 @@ class _AdminPanelState extends State<AdminPanel> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            IslamicColors.green50,
-            IslamicColors.cream,
-            IslamicColors.gold50,
+            AppColors.adminPanelGreen50,
+            AppColors.adminPanelCream,
+            AppColors.adminPanelGold50,
           ],
         ),
       ),
@@ -295,7 +275,7 @@ class _AdminPanelState extends State<AdminPanel> {
           padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: IslamicColors.green200, width: 1),
+              bottom: BorderSide(color: AppColors.adminPanelGreen200, width: 1),
             ),
           ),
           child: Row(
@@ -305,12 +285,15 @@ class _AdminPanelState extends State<AdminPanel> {
                 height: 48,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [IslamicColors.green500, IslamicColors.green600],
+                    colors: [
+                      AppColors.adminPanelGreen500,
+                      AppColors.adminPanelGreen600,
+                    ],
                   ),
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                   boxShadow: [
                     BoxShadow(
-                      color: IslamicColors.green200,
+                      color: AppColors.adminPanelGreen200,
                       blurRadius: 8,
                       offset: Offset(0, 4),
                     ),
@@ -328,14 +311,14 @@ class _AdminPanelState extends State<AdminPanel> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: IslamicColors.green800,
+                        color: AppColors.adminPanelGreen800,
                       ),
                     ),
                     Text(
                       'Hidaya Management',
                       style: TextStyle(
                         fontSize: 14,
-                        color: IslamicColors.green600,
+                        color: AppColors.adminPanelGreen600,
                       ),
                     ),
                   ],
@@ -356,7 +339,7 @@ class _AdminPanelState extends State<AdminPanel> {
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
             border: Border(
-              top: BorderSide(color: IslamicColors.green200, width: 1),
+              top: BorderSide(color: AppColors.adminPanelGreen200, width: 1),
             ),
           ),
           child: _buildLogoutButton(),
@@ -367,7 +350,7 @@ class _AdminPanelState extends State<AdminPanel> {
 
   Widget _buildMobileDrawer() {
     return Drawer(
-      backgroundColor: IslamicColors.white,
+      backgroundColor: AppColors.islamicWhite,
       child: _buildSidebarContent(),
     );
   }
@@ -376,9 +359,9 @@ class _AdminPanelState extends State<AdminPanel> {
     return Container(
       height: 80,
       decoration: BoxDecoration(
-        color: IslamicColors.white.withOpacity(0.95),
+        color: AppColors.islamicWhite.withOpacity(0.95),
         border: const Border(
-          bottom: BorderSide(color: IslamicColors.green200, width: 1),
+          bottom: BorderSide(color: AppColors.adminPanelGreen200, width: 1),
         ),
         boxShadow: [
           BoxShadow(
@@ -396,7 +379,7 @@ class _AdminPanelState extends State<AdminPanel> {
             if (MediaQuery.of(context).size.width < 1024)
               IconButton(
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                icon: const Icon(Icons.menu, color: IslamicColors.green700),
+                icon: const Icon(Icons.menu, color: AppColors.islamicGreen700),
               ),
             const SizedBox(width: 16),
             const Text(
@@ -404,7 +387,7 @@ class _AdminPanelState extends State<AdminPanel> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
-                color: IslamicColors.green800,
+                color: AppColors.islamicGreen800,
               ),
             ),
             const Spacer(),
@@ -425,7 +408,7 @@ class _AdminPanelState extends State<AdminPanel> {
           onPressed: () => _navigateToRoute('/admin/notifications'),
           icon: const Icon(
             Icons.notifications_outlined,
-            color: IslamicColors.green700,
+            color: AppColors.islamicGreen700,
             size: 24,
           ),
           tooltip: 'Notifications',
@@ -462,7 +445,7 @@ class _AdminPanelState extends State<AdminPanel> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: IslamicColors.green500,
+              backgroundColor: AppColors.islamicGreen500,
               child: const Text(
                 'AD',
                 style: TextStyle(
@@ -476,14 +459,14 @@ class _AdminPanelState extends State<AdminPanel> {
             const Text(
               'Admin',
               style: TextStyle(
-                color: IslamicColors.green700,
+                color: AppColors.islamicGreen700,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 4),
             const Icon(
               Icons.keyboard_arrow_down,
-              color: IslamicColors.green600,
+              color: AppColors.islamicGreen600,
               size: 16,
             ),
           ],
@@ -536,9 +519,9 @@ class _AdminPanelState extends State<AdminPanel> {
                 borderRadius: BorderRadius.circular(12),
                 color:
                     isActive && !hasSubItems
-                        ? IslamicColors.green500
+                        ? AppColors.islamicGreen500
                         : isActive
-                        ? IslamicColors.green100
+                        ? AppColors.islamicGreen100
                         : Colors.transparent,
               ),
               child: Row(
@@ -550,8 +533,8 @@ class _AdminPanelState extends State<AdminPanel> {
                         isActive && !hasSubItems
                             ? Colors.white
                             : isActive
-                            ? IslamicColors.green800
-                            : IslamicColors.green700,
+                            ? AppColors.islamicGreen800
+                            : AppColors.islamicGreen700,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -564,8 +547,8 @@ class _AdminPanelState extends State<AdminPanel> {
                             isActive && !hasSubItems
                                 ? Colors.white
                                 : isActive
-                                ? IslamicColors.green800
-                                : IslamicColors.green700,
+                                ? AppColors.islamicGreen800
+                                : AppColors.islamicGreen700,
                       ),
                     ),
                   ),
@@ -578,7 +561,7 @@ class _AdminPanelState extends State<AdminPanel> {
                       color:
                           isActive && !hasSubItems
                               ? Colors.white
-                              : IslamicColors.green600,
+                              : AppColors.islamicGreen600,
                     ),
                   ],
                 ],
@@ -610,14 +593,14 @@ class _AdminPanelState extends State<AdminPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: isActive ? IslamicColors.green500 : Colors.transparent,
+              color: isActive ? AppColors.islamicGreen500 : Colors.transparent,
             ),
             child: Row(
               children: [
                 Icon(
                   item.icon,
                   size: 18,
-                  color: isActive ? Colors.white : IslamicColors.green700,
+                  color: isActive ? Colors.white : AppColors.islamicGreen700,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -626,7 +609,8 @@ class _AdminPanelState extends State<AdminPanel> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isActive ? Colors.white : IslamicColors.green700,
+                      color:
+                          isActive ? Colors.white : AppColors.islamicGreen700,
                     ),
                   ),
                 ),
@@ -719,13 +703,13 @@ class _AdminPanelState extends State<AdminPanel> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: IslamicColors.green100,
+              color: AppColors.islamicGreen100,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.construction,
               size: 48,
-              color: IslamicColors.green600,
+              color: AppColors.islamicGreen600,
             ),
           ),
           const SizedBox(height: 16),
@@ -734,7 +718,7 @@ class _AdminPanelState extends State<AdminPanel> {
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: IslamicColors.green800,
+              color: AppColors.islamicGreen800,
             ),
           ),
           const SizedBox(height: 8),
@@ -746,7 +730,7 @@ class _AdminPanelState extends State<AdminPanel> {
           ElevatedButton(
             onPressed: () => _navigateToRoute('/admin/dashboard'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: IslamicColors.green600,
+              backgroundColor: AppColors.islamicGreen600,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(

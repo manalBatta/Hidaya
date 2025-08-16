@@ -385,7 +385,7 @@ class _RegisterPageState extends State<RegisterPage> {
           gradient: LinearGradient(
             colors: [
               AppColors.islamicGreen50,
-              const Color(0xFFF4F0E7),
+              AppColors.signInBackground,
               AppColors.islamicGold500.withAlpha((255 * 0.2).toInt()),
             ],
             begin: Alignment.topLeft,

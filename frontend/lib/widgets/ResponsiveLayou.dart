@@ -52,8 +52,8 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
     NavigationItem(
       id: 'lessons',
       label: 'Lessons',
-      icon: Icons.brightness_6_outlined,
-      activeIcon: Icons.brightness_6,
+      icon: Icons.book_outlined,
+      activeIcon: Icons.book,
       page: LessonsPage(),
     ),
     NavigationItem(

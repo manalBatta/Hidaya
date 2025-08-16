@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/UserProvider.dart';
 import 'CitySelectionDialog.dart';
+import '../constants/colors.dart';
 
 class PrayerTimesWidget extends StatefulWidget {
   const PrayerTimesWidget({Key? key}) : super(key: key);
@@ -24,21 +25,6 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
   late Animation<double> _dropShapeAnimation;
 
   bool _isDropExpanding = false;
-
-  // Islamic Color Palette matching the app
-  static const Color islamicGreen50 = Color(0xFFF4FBF7);
-  static const Color islamicGreen100 = Color(0xFFE6F4ED);
-  static const Color islamicGreen200 = Color(0xFFCCE8D8);
-  static const Color islamicGreen300 = Color(0xFFB3DCC3);
-  static const Color islamicGreen400 = Color(0xFF7AC09A);
-  static const Color islamicGreen500 = Color(0xFF2D7A47);
-  static const Color islamicGreen600 = Color(0xFF235831);
-  static const Color islamicGreen700 = Color(0xFF1A4025);
-  static const Color islamicGreen800 = Color(0xFF142E1C);
-  static const Color islamicWhite = Color(0xFFFFFFFF);
-  static const Color islamicCream = Color(0xFFFDF8F0);
-  static const Color waterBlue = Color(0xFF4FC3F7);
-  static const Color waterBlueLight = Color(0xFF81D4FA);
 
   // Prayer times data (placeholder static values)
   List<PrayerTime> prayerTimes = [];
@@ -232,7 +218,11 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
             ),
             title: Row(
               children: [
-                Icon(Icons.location_off, color: islamicGreen600, size: 24),
+                Icon(
+                  Icons.location_off,
+                  color: AppColors.islamicGreen600,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 const Text(
                   'Location Required',
@@ -290,10 +280,10 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      islamicGreen600.withOpacity(
+                      AppColors.islamicGreen600.withOpacity(
                         0.8 * _dropOpacityAnimation.value,
                       ),
-                      islamicGreen400.withOpacity(
+                      AppColors.islamicGreen400.withOpacity(
                         0.6 * _dropOpacityAnimation.value,
                       ),
                       Colors.transparent,
@@ -302,7 +292,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: islamicGreen600.withOpacity(
+                      color: AppColors.islamicGreen600.withOpacity(
                         0.3 * _dropOpacityAnimation.value,
                       ),
                       blurRadius: 20 * _dropScaleAnimation.value,
@@ -313,7 +303,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                 child: CustomPaint(
                   painter: MosquePainter(
                     progress: _dropShapeAnimation.value,
-                    color: islamicGreen600.withOpacity(
+                    color: AppColors.islamicGreen600.withOpacity(
                       0.9 * _dropOpacityAnimation.value,
                     ),
                   ),
@@ -331,7 +321,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       decoration: const BoxDecoration(
-        color: islamicWhite,
+        color: AppColors.islamicWhite,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -353,7 +343,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: islamicGreen100, width: 1),
+                  bottom: BorderSide(color: AppColors.adminGreen100, width: 1),
                 ),
               ),
               child: Row(
@@ -367,7 +357,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: islamicGreen500,
+                              color: AppColors.prayerGreen,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
@@ -381,7 +371,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: islamicGreen800,
+                              color: AppColors.islamicGreen800,
                             ),
                           ),
                         ],
@@ -393,7 +383,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                             : 'Today • ${_getCurrentDate()}',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: islamicGreen600,
+                          color: AppColors.islamicGreen600,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -404,12 +394,12 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: islamicGreen50,
+                        color: AppColors.islamicGreen50,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Icon(
                         Icons.close,
-                        color: islamicGreen600,
+                        color: AppColors.islamicGreen600,
                         size: 20,
                       ),
                     ),
@@ -442,7 +432,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                           decoration: BoxDecoration(
                             color:
                                 isCurrentPrayer
-                                    ? islamicGreen50
+                                    ? AppColors.islamicGreen50
                                     : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -459,16 +449,16 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                                       decoration: BoxDecoration(
                                         color:
                                             isCurrentPrayer
-                                                ? islamicGreen500
-                                                : islamicGreen100,
+                                                ? AppColors.islamicGreen500
+                                                : AppColors.islamicGreen100,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Icon(
                                         _getPrayerIcon(prayer.name),
                                         color:
                                             isCurrentPrayer
-                                                ? islamicWhite
-                                                : islamicGreen600,
+                                                ? AppColors.islamicWhite
+                                                : AppColors.islamicGreen600,
                                         size: 20,
                                       ),
                                     ),
@@ -487,15 +477,15 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                                                     : FontWeight.w600,
                                             color:
                                                 isCurrentPrayer
-                                                    ? islamicGreen800
-                                                    : islamicGreen700,
+                                                    ? AppColors.islamicGreen800
+                                                    : AppColors.islamicGreen700,
                                           ),
                                         ),
                                         Text(
                                           prayer.arabic,
                                           style: const TextStyle(
                                             fontSize: 12,
-                                            color: islamicGreen500,
+                                            color: AppColors.islamicGreen500,
                                             fontFamily: 'Arabic',
                                           ),
                                         ),
@@ -514,8 +504,8 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                                 decoration: BoxDecoration(
                                   color:
                                       isCurrentPrayer
-                                          ? islamicGreen500
-                                          : islamicGreen50,
+                                          ? AppColors.islamicGreen500
+                                          : AppColors.islamicGreen50,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -525,8 +515,8 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                                     fontWeight: FontWeight.bold,
                                     color:
                                         isCurrentPrayer
-                                            ? islamicWhite
-                                            : islamicGreen700,
+                                            ? AppColors.islamicWhite
+                                            : AppColors.islamicGreen700,
                                   ),
                                 ),
                               ),
@@ -545,7 +535,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: islamicGreen100, width: 1),
+                  top: BorderSide(color: AppColors.islamicGreen100, width: 1),
                 ),
               ),
               child: Consumer<UserProvider>(
@@ -558,7 +548,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                     children: [
                       Icon(
                         Icons.location_on_outlined,
-                        color: islamicGreen500,
+                        color: AppColors.islamicGreen500,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
@@ -566,7 +556,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                         '$city, $country',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: islamicGreen600,
+                          color: AppColors.islamicGreen600,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -649,26 +639,30 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [islamicGreen500, islamicGreen600],
+                          colors: [
+                            AppColors.islamicGreen500,
+                            AppColors.islamicGreen600,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: islamicGreen500.withOpacity(0.3),
+                            color: AppColors.islamicGreen500.withOpacity(0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                           BoxShadow(
-                            color: islamicGreen600.withOpacity(0.2),
+                            color: AppColors.islamicGreen600.withOpacity(0.2),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: const Center(
-                        child: Text(
-                          '🕌',
-                          style: TextStyle(fontSize: 24, color: islamicWhite),
+                        child: Icon(
+                          Icons.mosque,
+                          size: 28,
+                          color: AppColors.islamicWhite,
                         ),
                       ),
                     ),
@@ -936,7 +930,7 @@ class HidayaAppWithPrayerTimes extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hidaya'),
-        backgroundColor: const Color(0xFF2D7A47), // islamicGreen500
+        backgroundColor: AppColors.prayerGreen, // AppColors.islamicGreen500
         foregroundColor: Colors.white,
       ),
       body: Stack(
@@ -948,9 +942,9 @@ class HidayaAppWithPrayerTimes extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFF4FBF7), // islamicGreen50
-                  Color(0xFFFDF8F0), // islamicCream
-                  Color(0xFFFEF9E6), // islamicGold50
+                  Color(0xFFF4FBF7), // AppColors.islamicGreen50
+                  Color(0xFFFDF8F0), // AppColors.islamicCream
+                  Color(0xFFFEF9E6), // AppColors.islamicGold50
                 ],
               ),
             ),

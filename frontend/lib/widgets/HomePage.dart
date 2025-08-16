@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/config.dart';
 import 'package:frontend/utils/auth_utils.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/constants/colors.dart';
 
 import 'dart:convert';
 import 'dart:math';
@@ -376,8 +377,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
             style: ElevatedButton.styleFrom(
               backgroundColor:
                   _isDarkMode
-                      ? Colors.green.shade700.withOpacity(0.9)
-                      : const Color(0xFF10B981),
+                              ? AppColors.islamicGreen700.withOpacity(0.9)
+        : AppColors.homeGreen,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
@@ -414,8 +415,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                 color:
                     isUser
                         ? (_isDarkMode
-                            ? Colors.green.shade600.withOpacity(0.8)
-                            : const Color(0xFF059669).withOpacity(0.9))
+                                    ? AppColors.islamicGreen600.withOpacity(0.8)
+        : AppColors.homeGreenDark.withOpacity(0.9))
                         : (_isDarkMode
                             ? Colors.grey.shade800.withOpacity(0.8)
                             : Colors.white.withOpacity(0.8)),
@@ -428,8 +429,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                         ? Border.all(
                           color:
                               _isDarkMode
-                                  ? Colors.green.shade600.withOpacity(0.3)
-                                  : const Color(0xFF059669).withOpacity(0.2),
+                                  ? AppColors.islamicGreen600.withOpacity(0.3)
+                                  : AppColors.homeGreenDark.withOpacity(0.2),
                           width: 1,
                         )
                         : null,
@@ -447,8 +448,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                           isUser
                               ? Colors.white
                               : (_isDarkMode
-                                  ? Colors.grey.shade100
-                                  : const Color(0xFF064E3B)),
+                                  ? AppColors.grey100
+                                  : AppColors.homeGreenDarker),
                       fontSize: 16,
                       height: 1.4,
                     ),
@@ -481,16 +482,16 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               decoration: BoxDecoration(
                 color:
                     _isDarkMode
-                        ? Colors.grey.shade800.withOpacity(0.8)
-                        : Colors.white.withOpacity(0.8),
+                        ? AppColors.grey800.withOpacity(0.8)
+                        : AppColors.islamicWhite.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(
                   24,
                 ).copyWith(bottomLeft: const Radius.circular(8)),
                 border: Border.all(
                   color:
                       _isDarkMode
-                          ? Colors.green.shade600.withOpacity(0.3)
-                          : const Color(0xFF059669).withOpacity(0.2),
+                          ? AppColors.islamicGreen600.withOpacity(0.3)
+                          : AppColors.homeGreenDark.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -502,8 +503,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                 style: TextStyle(
                   color:
                       _isDarkMode
-                          ? Colors.grey.shade100
-                          : const Color(0xFF064E3B),
+                          ? AppColors.grey100
+                          : AppColors.homeGreenDarker,
                   fontSize: 16,
                   height: 1.4,
                 ),
@@ -528,14 +529,14 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
             colors:
                 _isDarkMode
                     ? [
-                      const Color(0xFF111827),
-                      const Color(0xFF064E3B),
-                      const Color(0xFF1F2937),
+                      AppColors.homeDarkText,
+                      AppColors.homeGreenDarker,
+                      AppColors.homeDarkTextSecondary,
                     ]
                     : [
-                      const Color(0xFFF0FDF4),
-                      const Color(0xFFFFFBEB),
-                      const Color(0xFFFEFCE8),
+                      AppColors.homeLightGreen,
+                      AppColors.homeLightYellow,
+                      AppColors.homeLightOrange,
                     ],
           ),
         ),
@@ -558,8 +559,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                             fontWeight: FontWeight.bold,
                             color:
                                 _isDarkMode
-                                    ? Colors.white
-                                    : const Color(0xFF064E3B),
+                                    ? AppColors.islamicWhite
+                                    : AppColors.homeGreenDarker,
                           ),
                         ),
                         Container(
@@ -571,18 +572,18 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                           decoration: BoxDecoration(
                             color:
                                 _isDarkMode
-                                    ? Colors.green.shade800
-                                    : const Color(0xFF059669).withOpacity(0.1),
+                                    ? AppColors.islamicGreen800
+                                    : AppColors.homeGreenDark.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             'AI Islamic Guide',
                             style: TextStyle(
                               fontSize: 12,
-                              color:
-                                  _isDarkMode
-                                      ? Colors.green.shade100
-                                      : const Color(0xFF059669),
+                                                          color:
+                                _isDarkMode
+                                    ? AppColors.islamicGreen100
+                                    : AppColors.homeGreenDark,
                             ),
                           ),
                         ),
@@ -612,8 +613,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                         _isDarkMode ? Icons.light_mode : Icons.dark_mode,
                         color:
                             _isDarkMode
-                                ? Colors.white
-                                : const Color(0xFF059669),
+                                ? AppColors.islamicWhite
+                                : AppColors.homeGreenDark,
                       ),
                     ),
                     IconButton(
@@ -626,8 +627,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                         Icons.settings,
                         color:
                             _isDarkMode
-                                ? Colors.white
-                                : const Color(0xFF059669),
+                                ? AppColors.islamicWhite
+                                : AppColors.homeGreenDark,
                       ),
                     ), */
                     IconButton(
@@ -642,8 +643,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                         Icons.add_comment,
                         color:
                             _isDarkMode
-                                ? Colors.white
-                                : const Color(0xFF059669),
+                                ? AppColors.islamicWhite
+                                : AppColors.homeGreenDark,
                       ),
                       tooltip: 'New Chat',
                     ),
@@ -654,8 +655,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                           Icons.close,
                           color:
                               _isDarkMode
-                                  ? Colors.white
-                                  : const Color(0xFF059669),
+                                  ? AppColors.islamicWhite
+                                  : AppColors.homeGreenDark,
                         ),
                       ),
                   ],
@@ -678,7 +679,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF059669),
+                            color: AppColors.homeGreenDark,
                           ),
                         )
                       else if (_isTyping)
@@ -689,8 +690,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                             fontWeight: FontWeight.w500,
                             color:
                                 _isDarkMode
-                                    ? Colors.green.shade300
-                                    : const Color(0xFF059669),
+                                    ? AppColors.islamicGreen300
+                                    : AppColors.homeGreenDark,
                           ),
                         )
                       else if (messages.isEmpty)
@@ -704,8 +705,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                                 fontWeight: FontWeight.w500,
                                 color:
                                     _isDarkMode
-                                        ? Colors.white
-                                        : const Color(0xFF064E3B),
+                                        ? AppColors.islamicWhite
+                                        : AppColors.homeGreenDarker,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -716,8 +717,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                                 fontSize: 16,
                                 color:
                                     _isDarkMode
-                                        ? Colors.grey.shade300
-                                        : const Color(0xFF059669),
+                                        ? AppColors.grey300
+                                        : AppColors.homeGreenDark,
                               ),
                             ),
                           ],
@@ -730,7 +731,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: (_isDarkMode ? Colors.black : Colors.white)
+                    color: (_isDarkMode ? AppColors.grey900 : AppColors.islamicWhite)
                         .withOpacity(0.2),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
@@ -787,14 +788,14 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (_isDarkMode ? Colors.black : Colors.white)
+                  color: (_isDarkMode ? AppColors.grey900 : AppColors.islamicWhite)
                       .withOpacity(0.3),
                   border: Border(
                     top: BorderSide(
                       color:
                           _isDarkMode
-                              ? Colors.green.shade600.withOpacity(0.3)
-                              : const Color(0xFF059669).withOpacity(0.2),
+                              ? AppColors.islamicGreen600.withOpacity(0.3)
+                              : AppColors.homeGreenDark.withOpacity(0.2),
                     ),
                   ),
                 ),
@@ -804,15 +805,15 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                       child: Container(
                         decoration: BoxDecoration(
                           color: (_isDarkMode
-                                  ? Colors.grey.shade800
-                                  : Colors.white)
+                                  ? AppColors.grey800
+                                  : AppColors.islamicWhite)
                               .withOpacity(0.5),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                             color:
                                 _isDarkMode
-                                    ? Colors.green.shade600.withOpacity(0.3)
-                                    : const Color(0xFF059669).withOpacity(0.2),
+                                    ? AppColors.islamicGreen600.withOpacity(0.3)
+                                    : AppColors.homeGreenDark.withOpacity(0.2),
                           ),
                         ),
                         child: TextField(
@@ -822,8 +823,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                             hintStyle: TextStyle(
                               color:
                                   _isDarkMode
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade600,
+                                      ? AppColors.grey400
+                                      : AppColors.grey600,
                             ),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
@@ -834,8 +835,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                           style: TextStyle(
                             color:
                                 _isDarkMode
-                                    ? Colors.white
-                                    : const Color(0xFF064E3B),
+                                    ? AppColors.islamicWhite
+                                    : AppColors.homeGreenDarker,
                             fontSize: 16,
                           ),
                           enabled: !_isResponding,
@@ -852,8 +853,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                       decoration: BoxDecoration(
                         color:
                             _isDarkMode
-                                ? Colors.green.shade600
-                                : const Color(0xFF059669),
+                                ? AppColors.islamicGreen600
+                                : AppColors.homeGreenDark,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: IconButton(
@@ -862,7 +863,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                                     _isResponding
                                 ? null
                                 : _sendMessage,
-                        icon: const Icon(Icons.send, color: Colors.white),
+                        icon: const Icon(Icons.send, color: AppColors.islamicWhite),
                       ),
                     ),
                   ],
@@ -906,13 +907,13 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                       side: BorderSide(
                         color:
                             _isDarkMode
-                                ? Colors.green.shade600
-                                : const Color(0xFF059669).withOpacity(0.3),
+                                ? AppColors.islamicGreen600
+                                : AppColors.homeGreenDark.withOpacity(0.3),
                       ),
                       foregroundColor:
                           _isDarkMode
-                              ? Colors.green.shade100
-                              : const Color(0xFF059669),
+                              ? AppColors.islamicGreen100
+                              : AppColors.homeGreenDark,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -948,13 +949,13 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                     side: BorderSide(
                       color:
                           _isDarkMode
-                              ? Colors.green.shade600
-                              : const Color(0xFF059669).withOpacity(0.3),
+                              ? AppColors.islamicGreen600
+                              : AppColors.homeGreenDark.withOpacity(0.3),
                     ),
                     foregroundColor:
                         _isDarkMode
-                            ? Colors.green.shade100
-                            : const Color(0xFF059669),
+                            ? AppColors.islamicGreen100
+                            : AppColors.homeGreenDark,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -994,7 +995,7 @@ class WaveformPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // GLOW PAINT (drawn first, underneath)
     final glowColor =
-        isDarkMode ? Colors.green.shade400 : const Color(0xFF059669);
+        isDarkMode ? AppColors.islamicGreen400 : AppColors.homeGreenDark;
     final glowOpacity = 0.3;
     final glowBlur = 8.0;
     final glowStroke = 10.0;
@@ -1007,15 +1008,15 @@ class WaveformPainter extends CustomPainter {
 
     final paint =
         Paint()
-          ..color = isDarkMode ? Colors.green.shade400 : const Color(0xFF059669)
+          ..color = isDarkMode ? AppColors.islamicGreen400 : AppColors.homeGreenDark
           ..strokeWidth = 3
           ..style = PaintingStyle.stroke;
 
     final secondaryPaint =
         Paint()
           ..color = (isDarkMode
-                  ? Colors.green.shade300
-                  : const Color(0xFF6EE7B7))
+                  ? AppColors.islamicGreen300
+                  : AppColors.homeLightGreenAccent)
               .withOpacity(0.6)
           ..strokeWidth = 2
           ..style = PaintingStyle.stroke;
@@ -1023,8 +1024,8 @@ class WaveformPainter extends CustomPainter {
     final tertiaryPaint =
         Paint()
           ..color = (isDarkMode
-                  ? Colors.green.shade200
-                  : const Color(0xFFA7F3D0))
+                  ? AppColors.islamicGreen200
+                  : AppColors.homeLightGreenAccent2)
               .withOpacity(0.4)
           ..strokeWidth = 1
           ..style = PaintingStyle.stroke;
@@ -1084,15 +1085,15 @@ class WaveformPainter extends CustomPainter {
       final dotPaint =
           Paint()
             ..color =
-                isDarkMode ? Colors.green.shade400 : const Color(0xFF059669)
+                isDarkMode ? AppColors.islamicGreen400 : AppColors.homeGreenDark
             ..style = PaintingStyle.fill;
 
       final positions = [0.25, 0.5, 0.75];
       for (int i = 0; i < positions.length; i++) {
         final opacity = (sin(progress * 2 * pi + i * pi / 2) + 1) / 2;
         dotPaint.color = (isDarkMode
-                ? Colors.green.shade400
-                : const Color(0xFF059669))
+                ? AppColors.islamicGreen400
+                : AppColors.homeGreenDark)
             .withOpacity(opacity * 0.8);
         canvas.drawCircle(
           Offset(size.width * positions[i], centerY),
@@ -1160,7 +1161,7 @@ class _AnimatedRespondingDotsState extends State<AnimatedRespondingDots>
   @override
   Widget build(BuildContext context) {
     final color =
-        widget.isDarkMode ? Colors.green.shade300 : const Color(0xFF059669);
+        widget.isDarkMode ? AppColors.islamicGreen300 : AppColors.homeGreenDark;
     return SizedBox(
       height: 14,
       child: AnimatedBuilder(

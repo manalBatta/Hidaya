@@ -136,7 +136,7 @@ class _SignInPageState extends State<SignInPage> {
           gradient: LinearGradient(
             colors: [
               AppColors.islamicGreen50,
-              const Color(0xFFF4F0E7),
+              AppColors.signInBackground,
               AppColors.islamicGold500.withAlpha(51),
             ],
             begin: Alignment.topLeft,

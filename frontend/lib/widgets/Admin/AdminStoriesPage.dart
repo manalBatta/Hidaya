@@ -434,7 +434,7 @@ class _AdminStoriesPageState extends State<AdminStoriesPage> {
       {
         'title': 'Total Saves',
         'value': totalSaves.toString(),
-        'icon': Icons.brightness_6,
+        'icon': Icons.bookmark_outline,
         'color': Colors.orange,
       },
     ];

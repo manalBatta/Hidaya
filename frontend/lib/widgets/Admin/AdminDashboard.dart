@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:frontend/config.dart';
+import 'package:frontend/constants/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -11,28 +12,7 @@ import 'dart:convert';
 //   intl: ^0.19.0
 
 // Islamic Theme Colors
-class IslamicColors {
-  static const Color green50 = Color(0xFFF0FDF4);
-  static const Color green100 = Color(0xFFDCFCE7);
-  static const Color green200 = Color(0xFFBBF7D0);
-  static const Color green300 = Color(0xFF86EFAC);
-  static const Color green400 = Color(0xFF4ADE80);
-  static const Color green500 = Color(0xFF059669);
-  static const Color green600 = Color(0xFF047857);
-  static const Color green700 = Color(0xFF065F46);
-  static const Color green800 = Color(0xFF064E3B);
-  static const Color green900 = Color(0xFF022C22);
-
-  static const Color gold50 = Color(0xFFFFFBEB);
-  static const Color gold100 = Color(0xFFFEF3C7);
-  static const Color gold200 = Color(0xFFFDE68A);
-  static const Color gold300 = Color(0xFFFCD34D);
-  static const Color gold400 = Color(0xFFFBBF24);
-  static const Color gold500 = Color(0xFFF59E0B);
-
-  static const Color cream = Color(0xFFFAF9F6);
-  static const Color white = Color(0xFFFFFFFF);
-}
+class IslamicColors {}
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -294,16 +274,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: IslamicColors.green50,
+      backgroundColor: AppColors.adminPanelGreen50,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              IslamicColors.green50,
-              IslamicColors.cream,
-              IslamicColors.gold50,
+              AppColors.adminPanelGreen50,
+              AppColors.adminPanelCream,
+              AppColors.adminPanelGold50,
             ],
           ),
         ),
@@ -342,26 +322,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: IslamicColors.green800,
+                color: AppColors.adminPanelGreen800,
               ),
             ),
             SizedBox(height: 4),
             Text(
               'Welcome back! Here\'s what\'s happening with your platform.',
-              style: TextStyle(fontSize: 16, color: IslamicColors.green600),
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.adminPanelGreen600,
+              ),
             ),
           ],
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: IslamicColors.green300),
+            border: Border.all(color: AppColors.adminPanelGreen300),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
             style: const TextStyle(
-              color: IslamicColors.green700,
+              color: AppColors.adminPanelGreen700,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -397,7 +380,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           dashboardStats['monthlyincreaseinusers'] != null
               ? '${dashboardStats['monthlyincreaseinusers'] < 0 ? '' : '+'}${dashboardStats['monthlyincreaseinusers']} this month'
               : null,
-          IslamicColors.green600,
+          AppColors.adminPanelGreen600,
           dashboardStats['monthlyincreaseinusers'] != null,
         ),
         _buildStatCard(
@@ -409,7 +392,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           dashboardStats['weeklyincreaseincertifiedvolunteers'] != null
               ? '${dashboardStats['weeklyincreaseincertifiedvolunteers'] < 0 ? '' : '+'}${dashboardStats['weeklyincreaseincertifiedvolunteers']} this week'
               : null,
-          IslamicColors.green600,
+          AppColors.adminPanelGreen600,
           dashboardStats['weeklyincreaseincertifiedvolunteers'] != null,
         ),
         _buildStatCard(
@@ -433,7 +416,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           dashboardStats['dailyincreaseinquestions'] != null
               ? '${dashboardStats['dailyincreaseinquestions'] < 0 ? '' : '+'}${dashboardStats['dailyincreaseinquestions']} today'
               : null,
-          IslamicColors.green600,
+          AppColors.adminPanelGreen600,
           dashboardStats['dailyincreaseinquestions'] != null,
         ),
       ],
@@ -494,7 +477,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               : '${dashboardStats['totalstories'] ?? 0}',
           Icons.brightness_6_outlined,
           null,
-          IslamicColors.green600,
+          AppColors.adminPanelGreen600,
           false,
         ),
       ],
@@ -514,7 +497,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: IslamicColors.green100),
+        border: Border.all(color: AppColors.adminPanelGreen100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -550,7 +533,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: IslamicColors.green800,
+              color: AppColors.adminPanelGreen800,
               height: 1.2,
             ),
             overflow: TextOverflow.ellipsis,
@@ -613,7 +596,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: IslamicColors.green100),
+        border: Border.all(color: AppColors.adminPanelGreen100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -630,7 +613,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: IslamicColors.green800,
+              color: AppColors.adminPanelGreen800,
             ),
           ),
           const SizedBox(height: 24),
@@ -640,7 +623,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               LineChartData(
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpots) => IslamicColors.green600,
+                    getTooltipColor:
+                        (touchedSpots) => AppColors.adminPanelGreen600,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
                         return LineTooltipItem(
@@ -749,7 +733,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           );
                         }).toList(),
                     isCurved: true,
-                    color: IslamicColors.green600,
+                    color: AppColors.adminPanelGreen600,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -757,7 +741,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 4,
-                          color: IslamicColors.green600,
+                          color: AppColors.adminPanelGreen600,
                           strokeWidth: 2,
                           strokeColor: Colors.white,
                         );
@@ -765,7 +749,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: IslamicColors.green600.withOpacity(0.1),
+                      color: AppColors.adminPanelGreen600.withOpacity(0.1),
                     ),
                   ),
                 ],
@@ -789,7 +773,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: IslamicColors.green100),
+        border: Border.all(color: AppColors.adminPanelGreen100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -806,7 +790,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: IslamicColors.green800,
+              color: AppColors.adminPanelGreen800,
             ),
           ),
           const SizedBox(height: 24),
@@ -892,7 +876,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: IslamicColors.green100),
+        border: Border.all(color: AppColors.adminPanelGreen100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -909,7 +893,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: IslamicColors.green800,
+              color: AppColors.adminPanelGreen800,
             ),
           ),
           const SizedBox(height: 24),
@@ -992,7 +976,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         barRods: [
                           BarChartRodData(
                             toY: entry.value['count'].toDouble(),
-                            color: IslamicColors.green600,
+                            color: AppColors.adminPanelGreen600,
                             width: 40,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(4),
@@ -1047,7 +1031,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: IslamicColors.green100),
+        border: Border.all(color: AppColors.adminPanelGreen100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -1063,7 +1047,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               Icon(
                 Icons.calendar_today,
-                color: IslamicColors.green600,
+                color: AppColors.adminPanelGreen600,
                 size: 20,
               ),
               SizedBox(width: 8),
@@ -1072,7 +1056,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: IslamicColors.green800,
+                  color: AppColors.adminPanelGreen800,
                 ),
               ),
             ],
@@ -1111,7 +1095,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: isWarning ? Colors.red.shade100 : IslamicColors.green100,
+              color:
+                  isWarning
+                      ? Colors.red.shade100
+                      : AppColors.adminPanelGreen100,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -1119,7 +1106,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isWarning ? Colors.red.shade800 : IslamicColors.green800,
+                color:
+                    isWarning
+                        ? Colors.red.shade800
+                        : AppColors.adminPanelGreen800,
               ),
             ),
           ),
@@ -1140,7 +1130,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: IslamicColors.green100),
+        border: Border.all(color: AppColors.adminPanelGreen100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -1154,14 +1144,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           const Row(
             children: [
-              Icon(Icons.star, color: IslamicColors.green600, size: 20),
+              Icon(Icons.star, color: AppColors.adminPanelGreen600, size: 20),
               SizedBox(width: 8),
               Text(
                 'Top Content',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: IslamicColors.green800,
+                  color: AppColors.adminPanelGreen800,
                 ),
               ),
             ],
@@ -1184,7 +1174,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: IslamicColors.green700,
+                  color: AppColors.adminPanelGreen700,
                 ),
               ),
             ],
@@ -1207,7 +1197,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: IslamicColors.green700,
+                  color: AppColors.adminPanelGreen700,
                 ),
               ),
             ],
@@ -1230,7 +1220,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: IslamicColors.green700,
+                  color: AppColors.adminPanelGreen700,
                 ),
               ),
             ],

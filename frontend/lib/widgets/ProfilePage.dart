@@ -21,6 +21,7 @@ import 'package:frontend/providers/NavigationProvider.dart';
 import 'package:frontend/widgets/NotificationCenter.dart';
 import 'package:frontend/widgets/SignInPage.dart';
 import 'package:frontend/services/meeting_request_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -1382,9 +1383,10 @@ class _ProfilePageState extends State {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     if (constraints.maxWidth > 768) {
-                      // Center the profile card for pending volunteer or user
+                      // Desktop layout - align columns to the top
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(child: _buildLeftColumn()),
                           SizedBox(width: 24),
@@ -1397,6 +1399,7 @@ class _ProfilePageState extends State {
                       // Desktop layout for admin or certified_volunteer
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
+
                         children: [
                           Expanded(child: _buildLeftColumn()),
                           SizedBox(width: 24),
@@ -1474,6 +1477,7 @@ class _ProfilePageState extends State {
 
   Widget _buildRightColumn() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (userObj['role'] == 'volunteer_pending' ||
             userObj['role'] == 'user') ...[
@@ -2899,6 +2903,7 @@ class _MeetingRequestsSectionState extends State<_MeetingRequestsSection>
                   color: AppColors.islamicGreen200,
                   borderRadius: BorderRadius.circular(12),
                 ),
+                indicatorSize: TabBarIndicatorSize.tab,
                 tabs: [
                   Tab(icon: Icon(Icons.person), text: 'My Requests'),
                   if (widget.userRole.toLowerCase() == 'certified_volunteer')
@@ -3167,12 +3172,23 @@ class _MeetingRequestCardState extends State<_MeetingRequestCard> {
                   // Open zoom link
                   // You can use url_launcher package here
                 },
-                child: Text(
-                  zoomLink,
-                  style: TextStyle(
-                    color: AppColors.islamicGreen600,
-                    decoration: TextDecoration.underline,
-                    fontSize: 11,
+                child: GestureDetector(
+                  onTap: () async {
+                    // Open zoom link using url_launcher
+                    if (await canLaunchUrl(Uri.parse(zoomLink))) {
+                      await launchUrl(
+                        Uri.parse(zoomLink),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  child: Text(
+                    zoomLink,
+                    style: TextStyle(
+                      color: AppColors.islamicGreen600,
+                      decoration: TextDecoration.underline,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ),
