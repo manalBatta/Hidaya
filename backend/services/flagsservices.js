@@ -61,6 +61,7 @@ class FlagServices {
         questionId: questionId,
         isFlagged: { $ne: true },
         isHidden: { $ne: true }, // <-- ignore hidden answers
+        hiddenTemporary: { $ne: true } // <-- ignore temporarily hidden answers
       }).sort({ upvotesCount: -1 });
       
       const question = await QuestionModel.findOne({ questionId: questionId });

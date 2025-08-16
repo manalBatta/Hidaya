@@ -354,10 +354,9 @@ class AnswerServices {
       await answer.save();
           //recalculate the top answer
           const question = await QuestionModel.findOne({ questionId: answer.questionId });
-          if (question && question.topAnswerId === answerId) {
             console.log("🎻🎻🎻Recalculating top answer for question:", question.questionId);
             await FlagServices.recalculateTopAnswer(question.questionId);
-          }
+          
       return answer;
     } catch (err) {
       throw err;

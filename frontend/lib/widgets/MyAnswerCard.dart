@@ -99,7 +99,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
     final topAnswer = widget.item['topAnswer'];
     final volunteerAnswer = widget.item['volunteerAnswer'];
     final askedBy = widget.item['askedBy'];
-
+        
     // Determine if the volunteer has an answer to allow delete
     final Map<String, dynamic>? ownAnswer = volunteerAnswer ?? topAnswer;
     // Fix: Ensure ownAnswerId is properly converted to string
@@ -108,7 +108,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
             ? ownAnswer['answerId'].toString()
             : null;
     final bool canDelete = ownAnswer != null && ownAnswer['answeredBy'] != null;
-
+     
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       child: Card(
@@ -307,13 +307,30 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
     // Fix: Ensure answerId is properly converted to string
     final answerId =
         answer['answerId'] != null ? answer['answerId'].toString() : '';
+
+    final userId = Provider.of<UserProvider>(context, listen: false).userId;
+
+final isOwnAnswertoedit = (() {
+  if (answer['answeredBy'] == null) return false;
+
+  if (answer['answeredBy'] is Map) {
+    final answeredById = answer['answeredBy']?['id']?.toString()
+        ?? answer['answeredBy']?['userId']?.toString();
+    return answeredById == userId;
+  }
+
+  return answer['answeredBy']?.toString() == userId;
+})();
+
+print('userId: $userId');
+
     TextEditingController _editAnswerController = TextEditingController(
       text: answerText,
     );
 
-    void _showEditDialog() async {
+    void _showEditDialog(BuildContext parentContext) async {
       await showDialog(
-        context: context,
+        context: parentContext,
         builder: (context) {
           String errorText = '';
           return StatefulBuilder(
@@ -359,31 +376,40 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
                           headers: {'Content-Type': 'application/json'},
                           body: jsonEncode({'text': newText}),
                         );
+                     //   print('Response status: ${response.statusCode}');
+                        debugPrint('Hello world ${response.statusCode}');
+       if (response.statusCode == 200 || response.statusCode == 204) {
+  Map<String, dynamic>? updatedAnswer;
+  if (response.body.isNotEmpty) {
+    updatedAnswer = jsonDecode(response.body);
+  }
 
-                        if (response.statusCode == 200 ||
-                            response.statusCode == 204) {
-                          final updatedAnswer = jsonDecode(response.body);
-                          Navigator.of(context).pop();
-                          if (mounted) {
-                            // Update the answer in the UI using onEdit callback
-                            setState(() {
-                              answer['text'] = updatedAnswer['text'];
-                              answer['upvotesCount'] =
-                                  updatedAnswer['upvotesCount'];
-                              answer['createdAt'] = updatedAnswer['createdAt'];
-                            });
-                            widget.onEdit?.call(newText);
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Answer updated successfully!'),
-                            ),
-                          );
-                        } else {
-                          setState(() {
-                            errorText = 'Failed to update answer.';
-                          });
-                        }
+  if (mounted) {
+    setState(() {
+      if (updatedAnswer != null) {
+        answer['text'] = updatedAnswer['text'];
+        answer['upvotesCount'] = updatedAnswer['upvotesCount'];
+        answer['createdAt'] = updatedAnswer['createdAt'];
+        answer['topAnswer'] = updatedAnswer['topAnswer'];
+      } else {
+        answer['text'] = newText;
+      }
+    });
+
+    widget.onEdit?.call(newText);
+
+    ScaffoldMessenger.of(parentContext).showSnackBar(
+      SnackBar(content: Text('Answer updated successfully!')),
+    );
+  }
+
+  Navigator.of(context).pop();
+} else {
+  setState(() {
+    errorText = 'Failed to update answer.';
+  });
+}
+
                       } catch (e) {
                         setState(() {
                           errorText = 'Error: $e';
@@ -465,6 +491,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
               Spacer(),
               Row(
                 children: [
+                  if (isOwnAnswertoedit)
                   IconButton(
                     icon: Icon(
                       Icons.edit,
@@ -473,7 +500,7 @@ class _MyAnswerCardState extends State<MyAnswerCard> {
                     ),
 
                     tooltip: 'Edit Answer',
-                    onPressed: _showEditDialog,
+                    onPressed: () => _showEditDialog(context),
                   ),
                   Icon(
                     Icons.thumb_up,

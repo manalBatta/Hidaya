@@ -2278,16 +2278,20 @@ Question: "$questionText"
                       });
                     },
                     onEdit: (text) {
+                      print('Editing answer at index $index with text: $text');
                       // Handle edit action
                       //edit the answer after edit it in the data base
                       setState(() {
                         print('New text: $text');
                         _myAnswers[index]['volunteerAnswer']['text'] = text;
-                        _myAnswers[index]['topAnswer']['text'] = text;
+                       _myAnswers[index]['topAnswer']['text'] = text;
                         //make sure to update upvotesCount
-                        _myAnswers[index]['volunteerAnswer']['upvotesCount'] =
+                       _myAnswers[index]['volunteerAnswer']['upvotesCount'] =
                             0;
+
+
                       });
+                      _refreshQuestion(index);
                     },
                   );
                 },
@@ -2387,6 +2391,22 @@ Question: "$questionText"
       }
     }
   }
+  Future<void> _refreshQuestion(int index) async {
+  final questionId = _myAnswers[index]['question']['questionId'];
+  final response = await http.get(
+    Uri.parse('$questions/$questionId'),
+    headers: {'Content-Type': 'application/json'},
+  );
+  print('Response body: ${response.body}');
+  if (response.statusCode == 200) {
+    final updatedQuestion = jsonDecode(response.body);
+    setState(() {
+      //_myAnswers[index]['question'] = updatedQuestion;
+      _myAnswers[index]['topAnswer'] = updatedQuestion['topAnswer'];
+    });
+  }
+}
+
 }
 
 Future<String?> generateAIAnswerGemini(String questionText) async {
