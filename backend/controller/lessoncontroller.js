@@ -17,3 +17,71 @@ export async function getalllesson(req, res, next) {
     });
   }
 }
+
+export async function getlessonbyid(req, res, next) {
+  try {
+    const lessonId = req.params.id;
+    const lesson = await LessonServices.GetLessonById(lessonId);
+    if (!lesson) {
+      return res.status(404).json({
+        status: false,
+        message: "Lesson not found",
+      });
+    }
+    res.status(200).json({
+      status: true,
+      success: "Getting lesson successfully",
+      lesson: lesson,
+    });
+  } catch (err) {
+    console.error("Error fetching lesson:", err);
+    res.status(500).json({
+      status: false,
+      message: "Failed to fetch lesson",
+      error: err.message,
+    });
+  }
+}
+
+export async function updateLessonProgressInUser(req, res, next) {
+  try {
+    const userId = req.userId; // take the userId from the token
+    const lessonId = req.params.id;
+    const { currentStep } = req.body;
+
+    // Validate progress
+    if (typeof currentStep !== "number" || currentStep < 0 || currentStep > 100) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid progress value. Progress must be a number between 0 and 100.",
+      });
+    }
+    console.log("Updating lesson progress:", {
+      userId,
+      lessonId,
+      currentStep
+    });
+
+    // Call service to update lesson progress
+    const result = await LessonServices.UpdateLessonProgressInUser(userId, lessonId, currentStep);
+    if (!result) {
+      return res.status(404).json({
+        status: false,
+        message: "Lesson not found or user not enrolled in lesson.",
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      success: "Lesson progress updated successfully.",
+      result: result,
+    });
+  } catch (err) {
+    console.error("Error updating lesson progress:", err);
+    res.status(500).json({
+      status: false,
+      message: "Failed to update lesson progress",
+      error: err.message,
+    });
+  }
+}

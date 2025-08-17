@@ -34,7 +34,7 @@ import {
   reviewandupdateanswer,
 } from "../controller/answercontroller.js";
 import { reportquestion } from "../controller/flagcontroller.js";
-import { getalllesson } from "../controller/lessoncontroller.js";
+import { getalllesson ,getlessonbyid ,updateLessonProgressInUser} from "../controller/lessoncontroller.js";
 import notificationRoutes from "./notificationroutes.js";
 import {
   getallstories,
@@ -91,7 +91,6 @@ router.get("/my-questions", authMiddleware, getquestionsofaspecificuser);
 router.post("/saveQuestion", authMiddleware, savequestion);
 router.get("/myAnwers", authMiddleware, getanswersofvolunteer);
 router.get("/upvotedAnswer", authMiddleware, getanswerupvotedbyvolunteer);
-router.get("/api/lessons", getalllesson);
 router.delete("/deletequestions/:id", authMiddleware, deletequestion);
 router.put("/updatequestions/:id", authMiddleware, updatequestion);
 router.patch("/questions/:id/ai-answer", authMiddleware, updateAIAnswer);
@@ -155,5 +154,10 @@ router.put("/admin/flags/resolve/:flagId", resolveFlag);
 router.put("/admin/flags/reject/:flagId", rejectFlag);
 router.put("/admin/flags/dismiss/:flagId", dismissFlag);
 router.delete("/admin/flags/delete/:flagId", deleteFlagByAdmin);
+//Lesson Steps Routes
+router.get("/api/lessons", getalllesson);
+//get lesson by id
+router.get("/lesson/:id", getlessonbyid);
+router.patch("/lesson/:id/progress", authMiddleware, updateLessonProgressInUser);
 
 export default router;
