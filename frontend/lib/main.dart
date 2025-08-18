@@ -36,12 +36,12 @@ Future<void> main() async {
   // ------------------------------
   // 1. Load env variables
   // ------------------------------
-  try {
-    // Try to load .env file, but don't fail if it doesn't exist
-    await dotenv.load(fileName: '.env');
-  } catch (e) {
-    // .env file not found or can't be loaded, continue with environment variables
-    print('Could not load .env file: $e');
+  if (!kIsWeb) {
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      print('Could not load .env file: $e');
+    }
   }
   // Supabase
   final supabaseUrl =
