@@ -2,6 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'LessonsPlayer.dart';
+import 'package:frontend/config.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:provider/provider.dart';
+import 'package:frontend/providers/UserProvider.dart';
+import 'package:frontend/utils/auth_utils.dart';
 
 class LessonsPage extends StatefulWidget {
   @override
@@ -14,6 +20,8 @@ class _LessonsPageState extends State {
   String _selectedLevel = 'all';
   bool _isLessonPlayerOpen = false;
   LessonData? _selectedLessonData;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   final List<Map<String, String>> _categories = [
     {'id': 'all', 'name': 'All Categories'},
@@ -34,162 +42,105 @@ class _LessonsPageState extends State {
     {'id': 'advanced', 'name': 'Advanced'},
   ];
 
-  // Sample lesson data structure - this would come from your server
-  final Map<String, LessonData> _sampleLessonData = {
-    'Understanding Salah (Prayer)': LessonData(
-      lessonTitle: 'Understanding Salah (Prayer)',
-      steps: [
-        LessonStep(
-          title: 'Step 1: Facing the Qibla',
-          description:
-              'Stand upright facing the direction of the Kaaba (Qibla). This is the first requirement for prayer and ensures we are oriented towards the sacred direction.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Step+1:+Facing+the+Qibla',
-        ),
-        LessonStep(
-          title: 'Step 2: Making the Niyyah',
-          description:
-              'Internally intend which prayer you are going to perform. No need to say it aloud. This intention is made in your heart and is essential for the validity of the prayer.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Step+2:+Making+the+Niyyah',
-        ),
-        LessonStep(
-          title: 'Step 3: Raising Hands (Takbeer)',
-          description:
-              'Raise your hands to shoulder level and say \'Allahu Akbar\' to begin the prayer. This marks the official start of your connection with Allah.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Step+3:+Raising+Hands+(Takbeer)',
-        ),
-        LessonStep(
-          title: 'Step 4: Reciting Al-Fatiha',
-          description:
-              'Recite the opening chapter of the Quran, Al-Fatiha, which is required in every unit of prayer.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Step+4:+Reciting+Al-Fatiha',
-        ),
-      ],
-    ),
-    'The Five Pillars of Islam': LessonData(
-      lessonTitle: 'The Five Pillars of Islam',
-      steps: [
-        LessonStep(
-          title: 'The Importance of the Five Pillars',
-          description:
-              'Learn why the Five Pillars are the foundation of Islamic faith and practice, and how they guide a Muslim\'s spiritual journey.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=The+Importance+of+the+Five+Pillars',
-        ),
-        LessonStep(
-          title: 'Shahada - Declaration of Faith',
-          description:
-              'Understanding the first pillar: bearing witness that there is no god but Allah and Muhammad is His messenger.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Shahada+-+Declaration+of+Faith',
-        ),
-        LessonStep(
-          title: 'Salah - Prayer',
-          description:
-              'The second pillar: performing the five daily prayers as a means of connection with Allah.',
-          mediaType: 'image',
-          mediaUrl:
-              'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Salah+-+Prayer',
-        ),
-      ],
-    ),
-  };
+  final List<Map<String, dynamic>> _lessons = [];
 
-  final List<Map<String, dynamic>> _lessons = [
-    {
-      'id': 1,
-      'title': 'The Five Pillars of Islam',
-      'description':
-          'A comprehensive guide to the fundamental pillars of Islamic faith and practice.',
-      'category': 'Islamic Fundamentals',
-      'level': 'Beginner',
-      'duration': '25 min',
-      'rating': 4.9,
-      'students': 1247,
-      'instructor': 'Sheikh Ahmad Ali',
-      'isBookmarked': false,
-      'image': '🕌',
-    },
-    {
-      'id': 2,
-      'title': 'Understanding Salah (Prayer)',
-      'description':
-          'Learn the proper way to perform the five daily prayers with detailed explanations.',
-      'category': 'Worship & Prayer',
-      'level': 'Beginner',
-      'duration': '18 min',
-      'rating': 4.8,
-      'students': 892,
-      'instructor': 'Sister Aisha Rahman',
-      'isBookmarked': true,
-      'image': '🤲',
-    },
-    {
-      'id': 3,
-      'title': 'Quranic Arabic Basics',
-      'description':
-          'Start your journey in understanding the Quran in its original language.',
-      'category': 'Quran Studies',
-      'level': 'Intermediate',
-      'duration': '32 min',
-      'rating': 4.7,
-      'students': 654,
-      'instructor': 'Dr. Mohamed Hassan',
-      'isBookmarked': false,
-      'image': '📖',
-    },
-    {
-      'id': 4,
-      'title': 'Islamic Ethics in Business',
-      'description':
-          'Apply Islamic principles in modern business and financial dealings.',
-      'category': 'Islamic Ethics',
-      'level': 'Advanced',
-      'duration': '28 min',
-      'rating': 4.6,
-      'students': 423,
-      'instructor': 'Prof. Omar Malik',
-      'isBookmarked': true,
-      'image': '💼',
-    },
-    {
-      'id': 5,
-      'title': 'History of the Prophet (PBUH)',
-      'description':
-          'Explore the life and teachings of Prophet Muhammad (Peace Be Upon Him).',
-      'category': 'Islamic History',
-      'level': 'Intermediate',
-      'duration': '45 min',
-      'rating': 4.9,
-      'students': 1456,
-      'instructor': 'Dr. Fatima Al-Zahra',
-      'isBookmarked': false,
-      'image': '🌟',
-    },
-    {
-      'id': 6,
-      'title': 'Islamic Marriage and Family',
-      'description':
-          'Understanding the Islamic perspective on marriage, family, and relationships.',
-      'category': 'Family & Marriage',
-      'level': 'Beginner',
-      'duration': '22 min',
-      'rating': 4.8,
-      'students': 789,
-      'instructor': 'Sister Khadija Ibrahim',
-      'isBookmarked': false,
-      'image': '👨‍👩‍👧‍👦',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchLessons();
+  }
+
+  Future<void> _fetchLessons() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await http.get(Uri.parse(getalllesson));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body) as Map<String, dynamic>;
+        if (decoded['status'] == true && decoded['lesson'] is List) {
+          final List lessons = decoded['lesson'] as List;
+          final userProvider = Provider.of<UserProvider>(
+            context,
+            listen: false,
+          );
+          final List progressList = userProvider.lessonsProgress;
+          final mapped =
+              lessons.map<Map<String, dynamic>>((item) {
+                final Map<String, dynamic> m = item as Map<String, dynamic>;
+                final dynamic id =
+                    m['_id'] ?? m['lessonId'] ?? UniqueKey().toString();
+                final String title = (m['title'] ?? '').toString();
+                final String description = (m['description'] ?? '').toString();
+                final String category = (m['category'] ?? '').toString();
+                final String level = (m['level'] ?? '').toString();
+                final String icon = (m['icon'] ?? '📘').toString();
+                final int estimatedTime =
+                    (m['estimatedTime'] is int)
+                        ? m['estimatedTime'] as int
+                        : int.tryParse(
+                              (m['estimatedTime'] ?? '0').toString(),
+                            ) ??
+                            0;
+                final String lessonId = (m['lessonId'] ?? id).toString();
+                Map? progress;
+                for (final e in progressList) {
+                  if (e is Map &&
+                      (e['lessonId']?.toString() ?? '') == lessonId) {
+                    progress = e;
+                    break;
+                  }
+                }
+                final int currentStep =
+                    int.tryParse((progress?['currentStep'] ?? 0).toString()) ??
+                    0;
+                final bool completed = (progress?['completed'] == true);
+                return {
+                  'id': id,
+                  'lessonId': lessonId,
+                  'title': title,
+                  'description': description,
+                  'category': category,
+                  'level': level,
+                  'duration': '${estimatedTime} min',
+                  'image': icon,
+                  'progress': {
+                    'currentStep': currentStep,
+                    'completed': completed,
+                  },
+                };
+              }).toList();
+          if (!mounted) return;
+          setState(() {
+            _lessons
+              ..clear()
+              ..addAll(mapped);
+            _isLoading = false;
+          });
+        } else {
+          if (!mounted) return;
+          setState(() {
+            _errorMessage = 'Unexpected response structure.';
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = 'Failed to load lessons (${response.statusCode}).';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load lessons.';
+        _isLoading = false;
+      });
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredLessons {
     return _lessons.where((lesson) {
@@ -237,15 +188,6 @@ class _LessonsPageState extends State {
     }
   }
 
-  void _toggleBookmark(int lessonId) {
-    setState(() {
-      final index = _lessons.indexWhere((lesson) => lesson['id'] == lessonId);
-      if (index != -1) {
-        _lessons[index]['isBookmarked'] = !_lessons[index]['isBookmarked'];
-      }
-    });
-  }
-
   void _clearFilters() {
     setState(() {
       _searchController.clear();
@@ -254,26 +196,83 @@ class _LessonsPageState extends State {
     });
   }
 
-  void _handleStartLesson(String lessonTitle) {
-    final lessonData = _sampleLessonData[lessonTitle];
-    if (lessonData != null) {
-      setState(() {
-        _selectedLessonData = lessonData;
-        _isLessonPlayerOpen = true;
-      });
-    } else {
-      // Fallback lesson data
+  Future<void> _handleStartLesson(Map<String, dynamic> lessonSummary) async {
+    final String? lessonId =
+        (lessonSummary['lessonId'] ?? lessonSummary['id'])?.toString();
+    if (lessonId == null || lessonId.isEmpty) {
+      return;
+    }
+    try {
+      final response = await http.get(Uri.parse(getlessonbyid + lessonId));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = json.decode(response.body);
+        if (decoded['status'] == true &&
+            decoded['lesson'] is Map<String, dynamic>) {
+          final Map<String, dynamic> l =
+              decoded['lesson'] as Map<String, dynamic>;
+          final String title =
+              (l['title'] ?? lessonSummary['title'] ?? '').toString();
+          final List steps =
+              (l['steps'] is List) ? (l['steps'] as List) : <dynamic>[];
+          // Sort by stepNumber ascending if available
+          steps.sort((a, b) {
+            final int sa =
+                int.tryParse(((a as Map)['stepNumber'] ?? 0).toString()) ?? 0;
+            final int sb =
+                int.tryParse(((b as Map)['stepNumber'] ?? 0).toString()) ?? 0;
+            return sa.compareTo(sb);
+          });
+          final parsedSteps =
+              steps.map<LessonStep>((s) {
+                final Map<String, dynamic> m = s as Map<String, dynamic>;
+                final String mediaType = (m['mediaType'] ?? '').toString();
+                final String mediaUrl = (m['mediaUrl'] ?? '').toString();
+                return LessonStep(
+                  title: (m['title'] ?? '').toString(),
+                  description: (m['description'] ?? '').toString(),
+                  mediaType: mediaType,
+                  mediaUrl: mediaUrl,
+                );
+              }).toList();
+          if (!mounted) return;
+          setState(() {
+            _selectedLessonData = LessonData(
+              lessonTitle: title,
+              steps: parsedSteps,
+            );
+            _isLessonPlayerOpen = true;
+          });
+          return;
+        }
+      }
+      if (!mounted) return;
       setState(() {
         _selectedLessonData = LessonData(
-          lessonTitle: lessonTitle,
+          lessonTitle: (lessonSummary['title'] ?? 'Lesson'),
           steps: [
             LessonStep(
-              title: 'Introduction',
-              description:
-                  'Welcome to this Islamic lesson. This is a demo of the interactive lesson player.',
+              title: 'Unable to load',
+              description: 'Could not fetch lesson details. Please try again.',
               mediaType: 'image',
               mediaUrl:
-                  'https://via.placeholder.com/800x450/2E7D32/FFFFFF?text=Introduction',
+                  'https://via.placeholder.com/800x450/cccccc/000000?text=Error',
+            ),
+          ],
+        );
+        _isLessonPlayerOpen = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _selectedLessonData = LessonData(
+          lessonTitle: (lessonSummary['title'] ?? 'Lesson'),
+          steps: [
+            LessonStep(
+              title: 'Unable to load',
+              description: 'Could not fetch lesson details. Please try again.',
+              mediaType: 'image',
+              mediaUrl:
+                  'https://via.placeholder.com/800x450/cccccc/000000?text=Error',
             ),
           ],
         );
@@ -290,6 +289,13 @@ class _LessonsPageState extends State {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return Center(child: Text(_errorMessage!));
+    }
+
     final filteredLessons = _filteredLessons;
 
     return Stack(
@@ -552,23 +558,6 @@ class _LessonsPageState extends State {
                                                   ),
                                                 ),
                                               ),
-                                              IconButton(
-                                                onPressed:
-                                                    () => _toggleBookmark(
-                                                      lesson['id'],
-                                                    ),
-                                                icon: Icon(
-                                                  lesson['isBookmarked']
-                                                      ? Icons.bookmark
-                                                      : Icons.bookmark_border,
-                                                  color:
-                                                      lesson['isBookmarked']
-                                                          ? AppColors
-                                                              .askPagePrivateIcon
-                                                          : AppColors
-                                                              .lessonsSearchIcon,
-                                                ),
-                                              ),
                                             ],
                                           ),
 
@@ -662,67 +651,84 @@ class _LessonsPageState extends State {
                                                   ),
                                                 ],
                                               ),
-                                              /*  Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.star,
-                                                size: 16,
-                                                color:
-                                                    AppColors
-                                                        .askPagePrivateIcon,
-                                              ),
-                                              SizedBox(width: 4),
-                                              Text(
-                                                lesson['rating'].toString(),
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color:
-                                                      AppColors.lessonsSubtitle,
-                                                ),
-                                              ),
-                                            ],
-                                          ), */
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.people,
-                                                    size: 16,
-                                                    color:
-                                                        AppColors
-                                                            .lessonsSubtitle,
-                                                  ),
-                                                  SizedBox(width: 4),
-                                                  Text(
-                                                    lesson['students']
-                                                        .toString(),
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color:
-                                                          AppColors
-                                                              .lessonsSubtitle,
-                                                    ),
-                                                  ),
-                                                ],
+                                              Consumer<UserProvider>(
+                                                builder: (
+                                                  context,
+                                                  userProvider,
+                                                  _,
+                                                ) {
+                                                  final List p =
+                                                      userProvider
+                                                          .lessonsProgress;
+                                                  final String lessonId =
+                                                      (lesson['lessonId'] ??
+                                                              lesson['id'])
+                                                          .toString();
+                                                  Map? entry;
+                                                  for (final e in p) {
+                                                    if (e is Map &&
+                                                        (e['lessonId']
+                                                                    ?.toString() ??
+                                                                '') ==
+                                                            lessonId) {
+                                                      entry = e;
+                                                      break;
+                                                    }
+                                                  }
+                                                  final int cs =
+                                                      int.tryParse(
+                                                        (entry?['currentStep'] ??
+                                                                0)
+                                                            .toString(),
+                                                      ) ??
+                                                      0;
+                                                  final bool done =
+                                                      entry?['completed'] ==
+                                                      true;
+                                                  if (cs <= 0 && !done)
+                                                    return SizedBox.shrink();
+                                                  return Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        done
+                                                            ? Icons.check_circle
+                                                            : Icons
+                                                                .play_circle_fill,
+                                                        size: 16,
+                                                        color:
+                                                            done
+                                                                ? AppColors
+                                                                    .askPagePrivateIcon
+                                                                : AppColors
+                                                                    .lessonsSubtitle,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        done
+                                                            ? 'Completed'
+                                                            : 'Progress: Step ' +
+                                                                cs.toString(),
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color:
+                                                              AppColors
+                                                                  .lessonsSubtitle,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
                                           SizedBox(height: 8),
 
-                                          /* Text(
-                                            'By ${lesson['instructor']}',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.lessonsSubtitle,
-                                            ),
-                                          ),
-                                          SizedBox(height: 16), */
                                           ElevatedButton(
                                             onPressed:
-                                                () => _handleStartLesson(
-                                                  lesson['title'],
-                                                ),
+                                                () =>
+                                                    _handleStartLesson(lesson),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
                                                   AppColors.lessonsHumanBadge,
@@ -745,7 +751,15 @@ class _LessonsPageState extends State {
                                                   size: 16,
                                                 ),
                                                 SizedBox(width: 4),
-                                                Text('Start Lesson'),
+                                                Text(
+                                                  ((lesson['progress']?['currentStep'] ??
+                                                                  0) >
+                                                              0 &&
+                                                          (lesson['progress']?['completed'] !=
+                                                              true))
+                                                      ? 'Continue Lesson'
+                                                      : 'Start Lesson',
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -819,15 +833,89 @@ class _LessonsPageState extends State {
           LessonPlayer(
             isOpen: _isLessonPlayerOpen,
             onClose: () {
+              if (!mounted) return;
               setState(() {
                 _isLessonPlayerOpen = false;
                 _selectedLessonData = null;
               });
             },
+            onCloseWithProgress: (currentStep, completed) async {
+              try {
+                // Determine lesson id
+                final String? lessonId =
+                    _lessons
+                        .firstWhere(
+                          (l) => l['title'] == _selectedLessonData?.lessonTitle,
+                          orElse: () => {},
+                        )['lessonId']
+                        ?.toString();
+                if (lessonId == null || lessonId.isEmpty) return;
+                // Auth header
+                // Token retrieval via AuthUtils is handled in provider functions usually, but here we call directly
+                // Using SharedPreferences to read token
+                // Keep UI snappy: update provider first, then fire request
+                final userProvider = Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                );
+                userProvider.upsertLessonProgress(
+                  lessonId: lessonId,
+                  currentStep: currentStep,
+                  completed: completed,
+                );
+
+                // Also reflect progress in the in-memory lessons list for instant UI consistency
+                if (mounted) {
+                  setState(() {
+                    final int idx = _lessons.indexWhere(
+                      (l) => (l['lessonId']?.toString() ?? '') == lessonId,
+                    );
+                    if (idx >= 0) {
+                      final Map<String, dynamic> item =
+                          Map<String, dynamic>.from(_lessons[idx]);
+                      final Map<String, dynamic> progress =
+                          Map<String, dynamic>.from(item['progress'] ?? {});
+                      progress['currentStep'] = currentStep;
+                      progress['completed'] = completed;
+                      item['progress'] = progress;
+                      _lessons[idx] = item;
+                    }
+                  });
+                }
+
+                final uri = Uri.parse(updateLessonProgress + lessonId);
+                // Build auth header
+                // We will fetch token via SharedPreferences to avoid circular deps
+                // ignore: use_build_context_synchronously
+                final token = await AuthUtils.getValidToken(context);
+                if (token == null) return;
+                await http.patch(
+                  uri,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                  },
+                  body: json.encode({'currentStep': currentStep}),
+                );
+              } catch (_) {}
+            },
             lessonData: _selectedLessonData!,
+            initialStepIndex:
+                (() {
+                  final match = _lessons.firstWhere(
+                    (l) => l['title'] == _selectedLessonData?.lessonTitle,
+                    orElse: () => {},
+                  );
+                  final int cs =
+                      int.tryParse(
+                        (match['progress']?['currentStep'] ?? 0).toString(),
+                      ) ??
+                      0;
+                  // currentStep is 1-based in persistence; convert to 0-based index
+                  return cs > 0 ? cs - 1 : 0;
+                })(),
           ),
       ],
     );
   }
-  
 }

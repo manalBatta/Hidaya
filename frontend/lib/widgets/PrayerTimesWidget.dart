@@ -103,6 +103,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
         final hijri = data['data']['date']['hijri']['date'];
         final gregorian = data['data']['date']['gregorian']['date'];
 
+        if (!mounted) return;
         setState(() {
           prayerTimes = [
             PrayerTime(name: 'Fajr', time: timings['Fajr'], arabic: 'الفجر'),
@@ -119,6 +120,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
           gregorianDate = gregorian;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           prayerTimes = [
             PrayerTime(name: 'Fajr', time: '05:12 AM', arabic: 'الفجر'),
@@ -132,6 +134,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         prayerTimes = [
           PrayerTime(name: 'Fajr', time: '05:12 AM', arabic: 'الفجر'),
@@ -177,12 +180,14 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
     _animationController.stop();
     _animationController.reset();
 
+    if (!mounted) return;
     setState(() {
       _isDropExpanding = true;
     });
 
     // Start the water drop animation
     _dropAnimationController.forward().then((_) {
+      if (!mounted) return;
       // Show the modal after the drop animation completes
       _showModal();
     });
@@ -251,6 +256,7 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
       backgroundColor: Colors.transparent,
       builder: (context) => _buildPrayerTimesModal(),
     ).then((_) {
+      if (!mounted) return;
       // Reset drop animation when modal closes
       _dropAnimationController.reset();
       setState(() {

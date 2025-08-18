@@ -111,6 +111,7 @@ export async function login(req, res, next) {
       onesignalId: user.onesignalId,
       savedStories: user.savedStories,
       notifications: user.notifications,
+      lessonsProgress: user.lessonsProgress,
     },
   });
 

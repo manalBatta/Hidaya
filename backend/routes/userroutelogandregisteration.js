@@ -34,7 +34,11 @@ import {
   reviewandupdateanswer,
 } from "../controller/answercontroller.js";
 import { reportquestion } from "../controller/flagcontroller.js";
-import { getalllesson ,getlessonbyid ,updateLessonProgressInUser} from "../controller/lessoncontroller.js";
+import {
+  getalllesson,
+  getlessonbyid,
+  updateLessonProgressInUser,
+} from "../controller/lessoncontroller.js";
 import notificationRoutes from "./notificationroutes.js";
 import {
   getallstories,
@@ -155,9 +159,13 @@ router.put("/admin/flags/reject/:flagId", rejectFlag);
 router.put("/admin/flags/dismiss/:flagId", dismissFlag);
 router.delete("/admin/flags/delete/:flagId", deleteFlagByAdmin);
 //Lesson Steps Routes
-router.get("/api/lessons", getalllesson);
+router.get("/lessons", getalllesson);
 //get lesson by id
 router.get("/lesson/:id", getlessonbyid);
-router.patch("/lesson/:id/progress", authMiddleware, updateLessonProgressInUser);
+router.patch(
+  "/lesson/progress/:id",
+  authMiddleware,
+  updateLessonProgressInUser
+);
 
 export default router;

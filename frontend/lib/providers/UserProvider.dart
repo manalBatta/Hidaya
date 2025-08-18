@@ -22,6 +22,33 @@ class UserProvider with ChangeNotifier {
   }
 
   Map<String, dynamic>? get user => _user;
+  List<dynamic> get lessonsProgress =>
+      List<dynamic>.from(_user?['lessonsProgress'] ?? []);
+  void upsertLessonProgress({
+    required String lessonId,
+    required int currentStep,
+    required bool completed,
+  }) {
+    if (_user == null) return;
+    _user!['lessonsProgress'] ??= [];
+    final List progress = _user!['lessonsProgress'] as List;
+    final int index = progress.indexWhere(
+      (p) => (p['lessonId']?.toString() ?? '') == lessonId,
+    );
+    final Map<String, dynamic> newEntry = {
+      'lessonId': lessonId,
+      'currentStep': currentStep,
+      'completed': completed,
+    };
+    if (index >= 0) {
+      progress[index] = {...progress[index], ...newEntry};
+    } else {
+      progress.add(newEntry);
+    }
+    notifyListeners();
+    _saveUserToPrefs(_user!);
+  }
+
   void addSavedStory(String storyId) {
     if (_user != null) {
       _user!["savedStories"].add(storyId);
