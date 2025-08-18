@@ -26,6 +26,20 @@ const notificationSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const lessonProgressSchema = new Schema({
+  lessonId: { type: String, required: true },
+  currentStep: { type: Number, default: 0 },
+  completed: { type: Boolean, default: false }
+});
+
+
+
+
+
+
+
+
+
 const userSchema = new Schema({
   userId: { type: String, required: true },
   displayName: String,
@@ -59,6 +73,8 @@ const userSchema = new Schema({
   isEmailVerified: { type: Boolean, default: false },
   verificationToken: { type: String },
   verificationTokenExpires: { type: Date },
+    lessonsProgress: [lessonProgressSchema],
+
 });
 
 userSchema.pre("save", async function () {
