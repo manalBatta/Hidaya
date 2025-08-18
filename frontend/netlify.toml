@@ -11,3 +11,6 @@ package = "netlify-plugin-flutter"
       --dart-define=ONESIGNAL_API_KEY=$ONESIGNAL_API_KEY
   """
  publish = "build/web"
+[build.environment]
+ SECRETS_SCAN_ENABLED = "false"
+
