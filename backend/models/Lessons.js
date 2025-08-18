@@ -6,6 +6,11 @@ const stepSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   mediaUrl: { type: String, required: true },
+  mediaType: {
+    type: String,
+    required: true,
+    enum: ["image", "video"],
+  },
 });
 
 const lessonSchema = new Schema({
