@@ -20,7 +20,7 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
 import 'package:frontend/widgets/Admin/AdminPanel.dart';
 import 'package:frontend/constants/colors.dart';
 
@@ -30,104 +30,107 @@ Future<void> resetAppState() async {
   await prefs.clear();
 }
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: 'assets/.env');
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
 
+  // ------------------------------
+  // 1. Load env variables
+  // ------------------------------
+  try {
+    // Try to load .env file, but don't fail if it doesn't exist
+    await dotenv.load(fileName: 'assets/.env');
+  } catch (e) {
+    // .env file not found or can't be loaded, continue with environment variables
+    print('Could not load .env file: $e');
+  }
+  // Supabase
+  final supabaseUrl =
+      dotenv.env['SUPABASE_URL'] ??
+      const String.fromEnvironment('SUPABASE_URL');
+  final supabaseAnonKey =
+      dotenv.env['SUPABASE_ANON_KEY'] ??
+      const String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  await Supabase.initialize(url: supabaseUrl!, anonKey: supabaseAnonKey!);
+
+  // User provider
   final userProvider = UserProvider();
   await userProvider.loadUserFromPrefs();
-  Gemini.init(apiKey: dotenv.env['GEMINI_API_KEY']!);
 
-  // Check token expiration on app startup
+  // Gemini
+  final geminiApiKey =
+      dotenv.env['GEMINI_API_KEY'] ??
+      const String.fromEnvironment('GEMINI_API_KEY');
+  Gemini.init(apiKey: geminiApiKey!);
+
+  // ------------------------------
+  // 2. Check token expiration
+  // ------------------------------
   if (userProvider.isLoggedIn) {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
       if (token != null && AuthUtils.isTokenExpired(token)) {
-        print('Token is expired on app startup, logging out user');
+        print('Token expired on startup, logging out user');
         await userProvider.logout();
       }
     } catch (e) {
-      print('Error checking token on startup: $e');
+      print('Error checking token: $e');
       await userProvider.logout();
     }
   }
 
-  //firbase init
+  // ------------------------------
+  // 3. Firebase initialization
+  // ------------------------------
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Guard OneSignal initialization for mobile only
+  // ------------------------------
+  // 4. OneSignal (mobile only)
+  // ------------------------------
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    // Enable verbose logging for debugging (remove in production)
     OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-    // Initialize with your OneSignal App ID
     OneSignal.initialize("b068d3f0-99d0-487c-a233-fde4b91a5b8c");
-    // Use this method to prompt for push notifications.
-    // We recommend removing this method after testing and instead use In-App Messages to prompt for notification permission.
     OneSignal.Notifications.requestPermission(true);
 
-    // Handle notification clicks
     OneSignal.Notifications.addClickListener((event) {
-      print('Notification clicked: ${event.notification.jsonRepresentation()}');
-
-      // Handle different notification types
       final data = event.notification.additionalData;
       if (data != null) {
         switch (data['type']) {
           case 'question_answered':
-            // Navigate to the answered question
-            final questionId = data['questionId'];
-            final answerId = data['answerId'];
-            print('Navigate to question: $questionId, answer: $answerId');
-            // You can implement navigation logic here
+            print(
+              'Navigate to question: ${data['questionId']}, answer: ${data['answerId']}',
+            );
             break;
-
           case 'answer_upvoted':
-            // Navigate to the upvoted answer
-            final questionId = data['questionId'];
-            final answerId = data['answerId'];
-            final upvotesCount = data['upvotesCount'];
             print(
-              'Navigate to upvoted answer: $answerId with $upvotesCount upvotes',
+              'Navigate to upvoted answer: ${data['answerId']} with ${data['upvotesCount']} upvotes',
             );
-            // You can implement navigation logic here
             break;
-
           case 'new_question_for_volunteers':
-            // Navigate to the new question for volunteers
-            final questionId = data['questionId'];
-            final category = data['category'];
             print(
-              'Navigate to new question: $questionId in category: $category',
+              'Navigate to new question: ${data['questionId']} in category: ${data['category']}',
             );
-            // You can implement navigation logic here
             break;
-
           case 'welcome':
-            // Welcome notification - no navigation needed
             print('Welcome notification clicked');
             break;
-
           case 'test':
-            // Test notification - no navigation needed
             print('Test notification clicked');
             break;
-
           case 'missed_questions_summary':
-            // Navigate to questions page to see missed questions
-            final count = data['count'];
-            print('Navigate to questions page - $count missed questions');
-            // You can implement navigation logic here
+            print(
+              'Navigate to questions page - ${data['count']} missed questions',
+            );
             break;
         }
       }
     });
   }
 
+  // ------------------------------
+  // 5. Run App
+  // ------------------------------
   runApp(
     MultiProvider(
       providers: [
