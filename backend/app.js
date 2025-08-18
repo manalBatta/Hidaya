@@ -8,13 +8,24 @@ import cors from "cors";
 import admin from "firebase-admin";
 import CronService from "./services/cronService.js";
 import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 
+import { fileURLToPath } from "url";
+
+// Needed to get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from current directory
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+
+// Load .env from parent directory (override variables if needed)
+dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
+
 // Firebase Admin SDK initialization
-const serviceAccount = JSON.parse(
-  fs.readFileSync(new URL("./serviceAccountKey.json", import.meta.url), "utf-8")
-);
+const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
