@@ -710,15 +710,14 @@ class _LessonsPageState extends State {
                                           ),
                                           SizedBox(height: 8),
 
-                                          Text(
+                                          /* Text(
                                             'By ${lesson['instructor']}',
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: AppColors.lessonsSubtitle,
                                             ),
                                           ),
-                                          SizedBox(height: 16),
-
+                                          SizedBox(height: 16), */
                                           ElevatedButton(
                                             onPressed:
                                                 () => _handleStartLesson(
