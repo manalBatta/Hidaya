@@ -3,5 +3,11 @@ package = "netlify-plugin-flutter"
    [plugins.inputs]
     channel = "stable"
 [build]
-command = "flutter build web --release"
-publish = "build/web"
+ command = """
+    flutter build web --release --no-wasm-dry-run \
+      --dart-define=SUPABASE_URL=$SUPABASE_URL \
+      --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+      --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
+      --dart-define=ONESIGNAL_API_KEY=$ONESIGNAL_API_KEY
+  """
+ publish = "build/web"
