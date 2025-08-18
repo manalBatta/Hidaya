@@ -1,7 +1,13 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 
 //final url = 'http://192.168.100.189:5000/';
-final url = 'http://localhost:5000/';
+//final url = 'http://localhost:5000/';
+// Try localhost first, fallback to production if not working
+final String url =
+    bool.hasEnvironment('USE_LOCALHOST') &&
+            const bool.fromEnvironment('USE_LOCALHOST')
+        ? "http://localhost:5000/"
+        : "https://hidaya-vq2k.onrender.com";
 final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
@@ -61,12 +67,11 @@ final adminReviewAndUpdateAnswerUrl =
 final adminDeleteFlagUrl =
     url + "admin/flags/delete/"; // usage: adminDeleteFlagUrl + flagId
 
-
 final adminResolveFlagUrl =
     url + "admin/flags/resolve/"; // usage: adminResolveFlagUrl + flagId
 final adminRejectFlagUrl =
     url + "admin/flags/reject/"; // usage: adminRejectFlagUrl + flagId
-final adminDismissFlagUrl =   
+final adminDismissFlagUrl =
     url + "admin/flags/dismiss/"; // usage: adminDismissFlagUrl + flagId
 
 /* router.get("/lessons", getalllesson);
@@ -75,12 +80,6 @@ router.get("/lesson/:id", getlessonbyid);
 router.patch("/lesson/:id/progress", authMiddleware, updateLessonProgressInUser);
  */
 
- final getalllesson=url+"lessons";
- final getlessonbyid=url+"lesson/";
- final updateLessonProgress=url+"lesson/progress/";
-
-
-
-
-
-
+final getalllesson = url + "lessons";
+final getlessonbyid = url + "lesson/";
+final updateLessonProgress = url + "lesson/progress/";
