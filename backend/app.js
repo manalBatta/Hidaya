@@ -10,19 +10,9 @@ import CronService from "./services/cronService.js";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+
+// Load .env from the root directory (Hidaya)
 dotenv.config();
-
-import { fileURLToPath } from "url";
-
-// Needed to get __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load .env from current directory
-dotenv.config({ path: path.resolve(__dirname, ".env") });
-
-// Load .env from parent directory (override variables if needed)
-dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
 // Firebase Admin SDK initialization
 const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
@@ -30,6 +20,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+console.log("process.env.GOOGLE_API_KEY", process.env.GOOGLE_API_KEY);
 // Initialize simple cron service
 new CronService();
 

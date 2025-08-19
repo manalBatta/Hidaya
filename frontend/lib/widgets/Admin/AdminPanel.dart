@@ -9,6 +9,8 @@ import 'package:frontend/widgets/Admin/AdminStoriesPage.dart';
 import 'package:frontend/widgets/Admin/FlagsAdminPage.dart';
 import 'package:frontend/widgets/NotificationCenter.dart';
 import 'AddStoryPage.dart';
+import 'package:frontend/widgets/Admin/AdminLessons/AdminLessonsPage.dart';
+import 'package:frontend/widgets/Admin/AdminLessons/AddLessonPage.dart';
 
 // Navigation Item Model
 class NavigationItem {
@@ -105,11 +107,31 @@ class _AdminPanelState extends State<AdminPanel> {
       route: '/admin/mosques',
     ), */
     NavigationItem(
+      id: 'lessons',
+      label: 'Lessons ',
+      icon: Icons.book,
+      subItems: [
+        NavigationItem(
+          id: 'all-lessons',
+          label: 'All Lessons',
+          icon: Icons.book,
+          route: '/admin/lessons',
+        ),
+        NavigationItem(
+          id: 'add-lesson',
+          label: 'Add New',
+          icon: Icons.add,
+          route: '/admin/lessons/add',
+        ),
+      ],
+    ),
+    NavigationItem(
       id: 'flags',
       label: 'Flags / Reports',
       icon: Icons.flag_outlined,
       route: '/admin/flags',
     ),
+
     NavigationItem(
       id: 'notifications',
       label: 'Notifications',
@@ -667,7 +689,9 @@ class _AdminPanelState extends State<AdminPanel> {
       case '/admin/questions':
         return AdminQuestions();
       case '/admin/lessons':
-        return _buildLessonsPage();
+        return AdminLessonsPage();
+      case '/admin/lessons/add':
+        return AddLessonPage();
       case '/admin/stories':
         return AdminStoriesPage(
           onNavigateToAddStory: () => _navigateToRoute('/admin/stories/add'),
@@ -683,14 +707,6 @@ class _AdminPanelState extends State<AdminPanel> {
       default:
         return _buildPlaceholderPage(route);
     }
-  }
-
-  Widget _buildLessonsPage() {
-    return _buildPlaceholderPage('/admin/lessons');
-  }
-
-  Widget _buildStoriesPage() {
-    return _buildPlaceholderPage('/admin/stories');
   }
 
   Widget _buildPlaceholderPage(String route) {
