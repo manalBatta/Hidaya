@@ -33,7 +33,21 @@ admin.initializeApp({
 // Initialize simple cron service
 new CronService();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://hidayaapp.netlify.app", // your Netlify frontend
+      "http://localhost:5000", // local dev (if needed)
+      "http://localhost:3000", // if you test React or Flutter web locally
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+// Explicitly handle preflight
+app.options("*", cors());
 app.use(bodyParser.json());
 app.use("/", UserRoute);
 app.use("/chat", ChatRoute);
