@@ -7,7 +7,7 @@ final String url =
     bool.hasEnvironment('USE_LOCALHOST') &&
             const bool.fromEnvironment('USE_LOCALHOST')
         ? "http://localhost:5000/"
-        : "https://hidaya-vq2k.onrender.com";
+        : "https://hidaya-vq2k.onrender.com/";
 final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
