@@ -104,7 +104,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
     super.initState();
     _initializeAnimations();
     //here to stop chat when not needed
-    // _initializeChatSession();
+    _initializeChatSession();
     _inputController.addListener(() {
       setState(() {}); // Rebuilds the widget when the input changes
     });
@@ -377,8 +377,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
             style: ElevatedButton.styleFrom(
               backgroundColor:
                   _isDarkMode
-                              ? AppColors.islamicGreen700.withOpacity(0.9)
-        : AppColors.homeGreen,
+                      ? AppColors.islamicGreen700.withOpacity(0.9)
+                      : AppColors.homeGreen,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
@@ -415,8 +415,8 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                 color:
                     isUser
                         ? (_isDarkMode
-                                    ? AppColors.islamicGreen600.withOpacity(0.8)
-        : AppColors.homeGreenDark.withOpacity(0.9))
+                            ? AppColors.islamicGreen600.withOpacity(0.8)
+                            : AppColors.homeGreenDark.withOpacity(0.9))
                         : (_isDarkMode
                             ? Colors.grey.shade800.withOpacity(0.8)
                             : Colors.white.withOpacity(0.8)),
@@ -580,10 +580,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                             'AI Islamic Guide',
                             style: TextStyle(
                               fontSize: 12,
-                                                          color:
-                                _isDarkMode
-                                    ? AppColors.islamicGreen100
-                                    : AppColors.homeGreenDark,
+                              color:
+                                  _isDarkMode
+                                      ? AppColors.islamicGreen100
+                                      : AppColors.homeGreenDark,
                             ),
                           ),
                         ),
@@ -731,7 +731,9 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: (_isDarkMode ? AppColors.grey900 : AppColors.islamicWhite)
+                    color: (_isDarkMode
+                            ? AppColors.grey900
+                            : AppColors.islamicWhite)
                         .withOpacity(0.2),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
@@ -788,7 +790,9 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (_isDarkMode ? AppColors.grey900 : AppColors.islamicWhite)
+                  color: (_isDarkMode
+                          ? AppColors.grey900
+                          : AppColors.islamicWhite)
                       .withOpacity(0.3),
                   border: Border(
                     top: BorderSide(
@@ -863,7 +867,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
                                     _isResponding
                                 ? null
                                 : _sendMessage,
-                        icon: const Icon(Icons.send, color: AppColors.islamicWhite),
+                        icon: const Icon(
+                          Icons.send,
+                          color: AppColors.islamicWhite,
+                        ),
                       ),
                     ),
                   ],
@@ -1008,7 +1015,8 @@ class WaveformPainter extends CustomPainter {
 
     final paint =
         Paint()
-          ..color = isDarkMode ? AppColors.islamicGreen400 : AppColors.homeGreenDark
+          ..color =
+              isDarkMode ? AppColors.islamicGreen400 : AppColors.homeGreenDark
           ..strokeWidth = 3
           ..style = PaintingStyle.stroke;
 
