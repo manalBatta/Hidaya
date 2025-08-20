@@ -74,10 +74,49 @@ class LessonServices {
       throw err;
     }
   }
-
+  static async AddLesson(lessonData) {
+    console.log("Adding new lesson:", lessonData);
+    try {
+      const newLesson = new LessonModel(lessonData);
+      await newLesson.save();
+      console.log("New lesson added successfully");
+      return newLesson;
+    } catch (err) {
+      console.error("Error in AddLesson:", err);
+      throw err;
+    }
+  }
+  static async UpdateLesson(lessonId, updateData) {
+    console.log(`Updating lesson with ID ${lessonId}`, updateData);
+    try {
+      const updatedLesson = await LessonModel.findOneAndUpdate(
+        { lessonId: lessonId },
+        updateData,
+        { new: true }
+      );
+      if (!updatedLesson) {
+        console.log("Lesson not found for update");
+        return null;
+      }
+      console.log("Lesson updated successfully");
+      return updatedLesson;
+    } catch (err) {
+      console.error("Error in UpdateLesson:", err);
+      throw err;
+    }
+  }
+  
+  static async DeleteLesson(lessonId) {
+    console.log(`Deleting lesson with ID ${lessonId}`);
+    try {
+      const result = await LessonModel.deleteOne({ lessonId: lessonId });
+      return result.deletedCount > 0;
+    } catch (err) {
+      console.error("Error in DeleteLesson:", err);
+      throw err;
+    }
+  }
 }
-
-
 
 
 export default LessonServices;

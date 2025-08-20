@@ -38,6 +38,9 @@ import {
   getalllesson,
   getlessonbyid,
   updateLessonProgressInUser,
+  addlesson,
+  updatelesson,
+  deletelesson
 } from "../controller/lessoncontroller.js";
 import notificationRoutes from "./notificationroutes.js";
 import {
@@ -167,5 +170,10 @@ router.patch(
   authMiddleware,
   updateLessonProgressInUser
 );
-
+//Add lesson By admin
+router.post("/admin/addlesson", addlesson);
+//update lesson by admin
+router.put("/admin/updatelesson/:id", updatelesson);
+//delete lesson by admin
+router.delete("/admin/deletelesson/:id", deletelesson);
 export default router;

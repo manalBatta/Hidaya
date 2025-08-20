@@ -85,3 +85,71 @@ export async function updateLessonProgressInUser(req, res, next) {
     });
   }
 }
+
+export async function addlesson(req, res, next) {
+  try {
+    const lessonData = req.body;
+    const newLesson = await LessonServices.AddLesson(lessonData);
+    res.status(201).json({
+      status: true,
+      success: "Lesson added successfully",
+      lesson: newLesson,
+    });
+  } catch (err) {
+    console.error("Error adding lesson:", err);
+    res.status(500).json({
+      status: false,
+      message: "Failed to add lesson",
+      error: err.message,
+    });
+  }
+}
+export async function updatelesson(req, res, next) {
+  try {
+    const lessonId = req.params.id;
+    const lessonData = req.body;
+    const updatedLesson = await LessonServices.UpdateLesson(lessonId, lessonData);
+    if (!updatedLesson) {
+      return res.status(404).json({
+        status: false,
+        message: "Lesson not found",
+      });
+    }
+    res.status(200).json({
+      status: true,
+      success: "Lesson updated successfully",
+      lesson: updatedLesson,
+    });
+  } catch (err) {
+    console.error("Error updating lesson:", err);
+    res.status(500).json({
+      status: false,
+      message: "Failed to update lesson",
+      error: err.message,
+    });
+  }
+}
+
+export async function deletelesson(req, res, next) {
+       const lessonId = req.params.id;
+  try {
+    const result = await LessonServices.DeleteLesson(lessonId);
+    if (!result) {
+      return res.status(404).json({
+        status: false,
+        message: "Lesson not found",
+      });
+    }
+    res.status(200).json({
+      status: true,
+      success: "Lesson deleted successfully",
+    });
+  } catch (err) {
+    console.error("Error deleting lesson:", err);
+    res.status(500).json({
+      status: false,
+      message: "Failed to delete lesson",
+      error: err.message,
+    });
+  }
+}
