@@ -1,10 +1,14 @@
 // lib/pages/admin/add_lesson_page.dart
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/constants/colors.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:frontend/config.dart';
 
 class AddLessonPage extends StatefulWidget {
   @override
@@ -17,7 +21,6 @@ class _AddLessonPageState extends State<AddLessonPage> {
   String? _uploadingStep;
 
   // Form data
-  final _lessonIdController = TextEditingController();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _iconController = TextEditingController();
@@ -26,6 +29,9 @@ class _AddLessonPageState extends State<AddLessonPage> {
   String _selectedCategory = '';
   String _selectedLevel = '';
   List<LessonStep> _steps = [];
+
+  // Controllers for step fields
+  final Map<String, Map<String, TextEditingController>> _stepControllers = {};
 
   // Validation errors
   Map<String, String> _errors = {};
@@ -49,18 +55,39 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
   void _addStep() {
     setState(() {
+      final stepId = _generateStepId();
       _steps.add(
         LessonStep(
-          id: _generateStepId(),
+          id: stepId,
           stepNumber: _steps.length + 1,
           title: '',
           description: '',
+          mediaType: 'image',
           mediaFile: null,
           mediaUrl: '',
           mediaPreview: '',
         ),
       );
+
+      // Initialize controllers for the new step
+      _stepControllers[stepId] = {
+        'stepNumber': TextEditingController(text: (_steps.length).toString()),
+        'title': TextEditingController(),
+        'description': TextEditingController(),
+      };
     });
+  }
+
+  // Initialize controllers for existing steps if they don't have them
+  void _ensureStepControllers(String stepId) {
+    if (!_stepControllers.containsKey(stepId)) {
+      final step = _steps.firstWhere((s) => s.id == stepId);
+      _stepControllers[stepId] = {
+        'stepNumber': TextEditingController(text: step.stepNumber.toString()),
+        'title': TextEditingController(text: step.title),
+        'description': TextEditingController(text: step.description),
+      };
+    }
   }
 
   void _removeStep(String stepId) {
@@ -69,6 +96,19 @@ class _AddLessonPageState extends State<AddLessonPage> {
       // Reorder step numbers
       for (int i = 0; i < _steps.length; i++) {
         _steps[i].stepNumber = i + 1;
+        // Update the controller text for the reordered step
+        if (_stepControllers.containsKey(_steps[i].id)) {
+          _stepControllers[_steps[i].id]!['stepNumber']!.text =
+              (i + 1).toString();
+        }
+      }
+
+      // Dispose controllers for the removed step
+      if (_stepControllers.containsKey(stepId)) {
+        _stepControllers[stepId]!.values.forEach(
+          (controller) => controller.dispose(),
+        );
+        _stepControllers.remove(stepId);
       }
     });
   }
@@ -91,11 +131,27 @@ class _AddLessonPageState extends State<AddLessonPage> {
           case 'mediaFile':
             step.mediaFile = value;
             break;
+          case 'mediaBytes':
+            step.mediaBytes = value;
+            break;
           case 'mediaUrl':
             step.mediaUrl = value;
             break;
           case 'mediaPreview':
             step.mediaPreview = value;
+            break;
+          case 'mediaFileName':
+            step.mediaFileName = value;
+            break;
+          case 'mediaType':
+            step.mediaType = value;
+            // Clear media data when switching types
+            if (value == 'video') {
+              step.mediaFile = null;
+              step.mediaBytes = null;
+              step.mediaFileName = null;
+              step.mediaPreview = '';
+            }
             break;
         }
       }
@@ -103,70 +159,133 @@ class _AddLessonPageState extends State<AddLessonPage> {
   }
 
   Future<void> _handleFileUpload(String stepId) async {
+    print('[DEBUG] _handleFileUpload called for stepId: $stepId');
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['png', 'jpg', 'jpeg', 'gif'],
         allowMultiple: false,
-        withData: false,
+        withData: kIsWeb,
       );
 
-      if (result == null || result.files.isEmpty) return;
-
-      final picked = result.files.first;
-      if (picked.path == null) {
-        _showErrorSnackBar(
-          'Selected file path is unavailable on this platform.',
-        );
+      if (result == null || result.files.isEmpty) {
+        print('[DEBUG] No file selected or result.files is empty');
         return;
       }
 
-      final file = File(picked.path!);
-      final fileSize = await file.length();
+      final picked = result.files.first;
+      print('[DEBUG] Picked file: ${picked.name}');
 
-      // Validate file size (max 10MB)
-      if (fileSize > 10 * 1024 * 1024) {
-        _showErrorSnackBar(
-          'File too large. Please upload an image smaller than 10MB.',
-        );
-        return;
+      File? file;
+      int fileSize;
+      if (kIsWeb) {
+        if (picked.bytes == null) {
+          print('[DEBUG] Picked bytes are null on web');
+          _showErrorSnackBar('Failed to read selected file');
+          return;
+        }
+        fileSize = picked.size;
+        print('[DEBUG] Picked file size (web): $fileSize bytes');
+        if (fileSize > 10 * 1024 * 1024) {
+          print('[DEBUG] File too large: $fileSize bytes');
+          _showErrorSnackBar(
+            'File too large. Please upload an image smaller than 10MB.',
+          );
+          return;
+        }
+      } else {
+        if (picked.path == null) {
+          print('[DEBUG] Picked file path is null');
+          _showErrorSnackBar(
+            'Selected file path is unavailable on this platform.',
+          );
+          return;
+        }
+        print('[DEBUG] Picked file before file');
+        file = File(picked.path!);
+        print('[DEBUG] Picked file after file');
+        fileSize = await file.length();
+        print('[DEBUG] Picked file size: $fileSize bytes');
+        if (fileSize > 10 * 1024 * 1024) {
+          print('[DEBUG] File too large: $fileSize bytes');
+          _showErrorSnackBar(
+            'File too large. Please upload an image smaller than 10MB.',
+          );
+          return;
+        }
       }
 
       setState(() {
         _uploadingStep = stepId;
       });
+      print('[DEBUG] Set _uploadingStep to $stepId');
 
-      // Update step with file and preview
-      _updateStep(stepId, 'mediaFile', file);
-      _updateStep(stepId, 'mediaPreview', file.path);
+      // Update step with chosen media
+      if (kIsWeb) {
+        _updateStep(stepId, 'mediaBytes', picked.bytes);
+        _updateStep(stepId, 'mediaFileName', picked.name);
+        print('[DEBUG] Updated step $stepId with mediaBytes');
+      } else {
+        _updateStep(stepId, 'mediaFile', file);
+        print('[DEBUG] Updated step $stepId with mediaFile');
+        _updateStep(stepId, 'mediaPreview', file!.path);
+        print('[DEBUG] Updated step $stepId with mediaPreview');
+      }
 
       _showSuccessSnackBar('Image preview created successfully');
     } catch (error) {
-      print('File upload error: $error');
+      print('[DEBUG] File upload error: $error');
       _showErrorSnackBar('Failed to process the uploaded file');
     } finally {
       setState(() {
         _uploadingStep = null;
       });
+      print('[DEBUG] Reset _uploadingStep to null');
     }
   }
 
   Future<String> _uploadMediaFile(File file) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('/api/lessons/upload'),
-    );
-    request.files.add(await http.MultipartFile.fromPath('media', file.path));
-
-    final response = await request.send();
-
-    if (response.statusCode != 200) {
+    final fileName =
+        'lesson_${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+    final bytes = await file.readAsBytes();
+    final response = await Supabase.instance.client.storage
+        .from('Lessons')
+        .uploadBinary(
+          fileName,
+          bytes,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+    if (response.isEmpty) {
       throw Exception('Failed to upload media file');
     }
+    final publicUrl = Supabase.instance.client.storage
+        .from('Lessons')
+        .getPublicUrl(fileName);
+    return publicUrl;
+  }
 
-    final responseData = await response.stream.bytesToString();
-    final result = json.decode(responseData);
-    return result['mediaUrl'];
+  Future<String> _uploadBytesToSupabase(
+    Uint8List bytes,
+    String originalName,
+  ) async {
+    final sanitizedName =
+        originalName.trim().isEmpty
+            ? 'lesson_${DateTime.now().millisecondsSinceEpoch}.png'
+            : 'lesson_${DateTime.now().millisecondsSinceEpoch}_$originalName';
+    final response = await Supabase.instance.client.storage
+        .from('Lessons')
+        .uploadBinary(
+          sanitizedName,
+          bytes,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+    if (response.isEmpty) {
+      throw Exception('Failed to upload media file');
+    }
+    final publicUrl = Supabase.instance.client.storage
+        .from('Lessons')
+        .getPublicUrl(sanitizedName);
+    return publicUrl;
   }
 
   bool _validateForm() {
@@ -174,9 +293,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
       _errors.clear();
     });
 
-    if (_lessonIdController.text.trim().isEmpty) {
-      _errors['lessonId'] = 'Lesson ID is required';
-    }
+    // lessonId is generated on the backend
 
     if (_titleController.text.trim().isEmpty) {
       _errors['title'] = 'Title is required';
@@ -236,9 +353,18 @@ class _AddLessonPageState extends State<AddLessonPage> {
       for (final step in _steps) {
         String mediaUrl = step.mediaUrl;
 
-        if (step.mediaFile != null) {
+        // Only upload if it's an image type with actual file data
+        if (step.mediaType == 'image' &&
+            (step.mediaBytes != null || step.mediaFile != null)) {
           try {
-            mediaUrl = await _uploadMediaFile(step.mediaFile!);
+            if (step.mediaBytes != null) {
+              mediaUrl = await _uploadBytesToSupabase(
+                step.mediaBytes!,
+                step.mediaFileName ?? 'upload.png',
+              );
+            } else if (step.mediaFile != null) {
+              mediaUrl = await _uploadMediaFile(step.mediaFile!);
+            }
           } catch (error) {
             print('Failed to upload media for step: ${step.id}, $error');
             _showErrorSnackBar(
@@ -247,35 +373,32 @@ class _AddLessonPageState extends State<AddLessonPage> {
             return;
           }
         }
+        // For video type, mediaUrl is already set from the text field
 
         stepsWithMedia.add({
           'stepNumber': step.stepNumber,
           'title': step.title,
           'description': step.description,
           'mediaUrl': mediaUrl,
-          'mediaType': step.mediaFile != null ? 'image' : 'text',
+          'mediaType': step.mediaType,
         });
       }
 
-      // Prepare lesson data
+      // Prepare lesson data per backend schema
       final lessonData = {
-        'lessonId': _lessonIdController.text,
         'title': _titleController.text,
         'description': _descriptionController.text,
         'category': _selectedCategory,
         'level': _selectedLevel,
         'icon': _iconController.text,
         'estimatedTime': int.parse(_estimatedTimeController.text),
+        // createdAt is optional; backend defaults to now if omitted
         'steps': stepsWithMedia,
-        'status': 'draft',
-        'author': 'Current User', // This would come from authentication
-        'language': 'English',
-        'mediaType': stepsWithMedia.isNotEmpty ? 'image' : 'text',
       };
 
-      // Submit to API
+      // Submit to backend
       final response = await http.post(
-        Uri.parse('/api/lessons'),
+        Uri.parse(addLessonUrl),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(lessonData),
       );
@@ -287,9 +410,6 @@ class _AddLessonPageState extends State<AddLessonPage> {
       _showSuccessSnackBar(
         'Lesson "${_titleController.text}" has been created with ${_steps.length} steps',
       );
-
-      // Navigate back to lessons list
-      Navigator.of(context).pop();
     } catch (error) {
       print('Submit error: $error');
       _showErrorSnackBar(
@@ -320,18 +440,25 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
   @override
   void dispose() {
-    _lessonIdController.dispose();
+    // Dispose all step controllers
+    _stepControllers.values.forEach((controllers) {
+      controllers.values.forEach((controller) => controller.dispose());
+    });
+    _stepControllers.clear();
+
+    // Dispose main form controllers
     _titleController.dispose();
     _descriptionController.dispose();
     _iconController.dispose();
     _estimatedTimeController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.islamicCream,
+      backgroundColor: AppColors.islamicGreen50,
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24),
         child: Form(
@@ -342,7 +469,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
               // Header
               Row(
                 children: [
-                  OutlinedButton.icon(
+                  /*  OutlinedButton.icon(
                     onPressed: _handleCancel,
                     icon: Icon(Icons.arrow_back, size: 16),
                     label: Text('Back to Lessons'),
@@ -355,7 +482,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 16),
+                  SizedBox(width: 16), */
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +513,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
               // Lesson Info Card
               Card(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: AppColors.lessonsBorder),
@@ -417,72 +544,9 @@ class _AddLessonPageState extends State<AddLessonPage> {
                       ),
                       SizedBox(height: 24),
 
-                      // Lesson ID and Title Row
+                      // Title Row
                       Row(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Lesson ID *',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.lessonsTitle,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                TextField(
-                                  controller: _lessonIdController,
-                                  decoration: InputDecoration(
-                                    hintText: 'e.g. lesson-001',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color:
-                                            _errors.containsKey('lessonId')
-                                                ? Colors.red
-                                                : Colors.grey.shade300,
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color:
-                                            _errors.containsKey('lessonId')
-                                                ? Colors.red
-                                                : Colors.grey.shade300,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: AppColors.lessonsHumanBadge,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                ),
-                                if (_errors.containsKey('lessonId'))
-                                  Padding(
-                                    padding: EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      _errors['lessonId']!,
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 24),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,7 +968,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
               // Steps Card
               Card(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: AppColors.lessonsBorder),
@@ -1003,8 +1067,10 @@ class _AddLessonPageState extends State<AddLessonPage> {
               SizedBox(height: 24),
 
               // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 16,
+                runSpacing: 8,
                 children: [
                   OutlinedButton(
                     onPressed: _isSubmitting ? null : _handleCancel,
@@ -1018,9 +1084,8 @@ class _AddLessonPageState extends State<AddLessonPage> {
                     ),
                     child: Text('Cancel'),
                   ),
-                  SizedBox(width: 16),
                   SizedBox(
-                    width: 140,
+                    width: 200,
                     child: ElevatedButton(
                       onPressed: _isSubmitting ? null : _handleSubmit,
                       style: ElevatedButton.styleFrom(
@@ -1073,6 +1138,9 @@ class _AddLessonPageState extends State<AddLessonPage> {
   }
 
   Widget _buildStepCard(LessonStep step, int index) {
+    // Ensure controllers exist for this step
+    _ensureStepControllers(step.id);
+
     return Card(
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -1080,6 +1148,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       elevation: 1,
+
       child: Padding(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -1133,9 +1202,11 @@ class _AddLessonPageState extends State<AddLessonPage> {
                             vertical: 12,
                           ),
                         ),
-                        controller: TextEditingController(
-                          text: step.stepNumber.toString(),
-                        ),
+                        controller:
+                            _stepControllers[step.id]?['stepNumber'] ??
+                            TextEditingController(
+                              text: step.stepNumber.toString(),
+                            ),
                         onChanged: (value) {
                           _updateStep(
                             step.id,
@@ -1194,7 +1265,9 @@ class _AddLessonPageState extends State<AddLessonPage> {
                             vertical: 12,
                           ),
                         ),
-                        controller: TextEditingController(text: step.title),
+                        controller:
+                            _stepControllers[step.id]?['title'] ??
+                            TextEditingController(text: step.title),
                         onChanged: (value) {
                           _updateStep(step.id, 'title', value);
                         },
@@ -1262,7 +1335,9 @@ class _AddLessonPageState extends State<AddLessonPage> {
                       vertical: 12,
                     ),
                   ),
-                  controller: TextEditingController(text: step.description),
+                  controller:
+                      _stepControllers[step.id]?['description'] ??
+                      TextEditingController(text: step.description),
                   onChanged: (value) {
                     _updateStep(step.id, 'description', value);
                   },
@@ -1280,12 +1355,12 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
             SizedBox(height: 16),
 
-            // Media Upload
+            // Media Type and Upload
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Media Upload',
+                  'Media Type',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -1293,105 +1368,175 @@ class _AddLessonPageState extends State<AddLessonPage> {
                   ),
                 ),
                 SizedBox(height: 8),
-                if (step.mediaPreview.isEmpty)
-                  GestureDetector(
-                    onTap: () => _handleFileUpload(step.id),
-                    child: Container(
-                      width: double.infinity,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          style: BorderStyle.solid,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.cloud_upload,
-                            size: 32,
-                            color: Colors.grey.shade400,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            _uploadingStep == step.id
-                                ? 'Processing...'
-                                : 'Click to upload or drag and drop',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Supports PNG, JPG, GIF up to 10MB',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
+                DropdownButtonFormField<String>(
+                  value: step.mediaType,
+                  decoration: InputDecoration(
+                    hintText: 'Select media type',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  )
-                else
-                  Stack(
-                    children: [
-                      Container(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: 'image', child: Text('Image')),
+                    DropdownMenuItem(value: 'video', child: Text('Video')),
+                  ],
+                  onChanged: (value) {
+                    _updateStep(step.id, 'mediaType', value ?? 'image');
+                  },
+                ),
+                SizedBox(height: 16),
+
+                // Conditional Media Input based on type
+                if (step.mediaType == 'image') ...[
+                  Text(
+                    'Image Upload',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.lessonsTitle,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  if (step.mediaPreview.isEmpty)
+                    GestureDetector(
+                      onTap: () => _handleFileUpload(step.id),
+                      child: Container(
                         width: double.infinity,
-                        height: 200,
+                        height: 150,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(step.mediaPreview),
-                            fit: BoxFit.cover,
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            style: BorderStyle.solid,
+                            width: 2,
                           ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Row(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ElevatedButton.icon(
-                              onPressed: () => _handleFileUpload(step.id),
-                              icon: Icon(Icons.cloud_upload, size: 16),
-                              label: Text('Change'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey.shade600,
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
+                            Icon(
+                              Icons.cloud_upload,
+                              size: 32,
+                              color: Colors.grey.shade400,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              _uploadingStep == step.id
+                                  ? 'Processing...'
+                                  : 'Click to upload or drag and drop',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
                               ),
                             ),
-                            SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                _updateStep(step.id, 'mediaFile', null);
-                                _updateStep(step.id, 'mediaPreview', '');
-                                _updateStep(step.id, 'mediaUrl', '');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.all(8),
-                                minimumSize: Size(40, 40),
+                            SizedBox(height: 4),
+                            Text(
+                              'Supports PNG, JPG, GIF up to 10MB',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
                               ),
-                              child: Icon(Icons.close, size: 16),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    )
+                  else
+                    Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(step.mediaPreview),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Row(
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () => _handleFileUpload(step.id),
+                                icon: Icon(Icons.cloud_upload, size: 16),
+                                label: Text('Change'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  _updateStep(step.id, 'mediaFile', null);
+                                  _updateStep(step.id, 'mediaBytes', null);
+                                  _updateStep(step.id, 'mediaFileName', null);
+                                  _updateStep(step.id, 'mediaPreview', '');
+                                  _updateStep(step.id, 'mediaUrl', '');
+                                  _updateStep(step.id, 'mediaType', 'image');
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.all(8),
+                                  minimumSize: Size(40, 40),
+                                ),
+                                child: Icon(Icons.close, size: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                ] else ...[
+                  Text(
+                    'Video Link',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.lessonsTitle,
+                    ),
                   ),
+                  SizedBox(height: 8),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Enter video URL (YouTube, Vimeo, etc.)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      _updateStep(step.id, 'mediaUrl', value);
+                    },
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Enter a valid video URL from supported platforms',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.lessonsSubtitle,
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -1406,7 +1551,10 @@ class LessonStep {
   int stepNumber;
   String title;
   String description;
+  String mediaType; // "video" or "image"
   File? mediaFile;
+  Uint8List? mediaBytes;
+  String? mediaFileName;
   String mediaUrl;
   String mediaPreview;
 
@@ -1415,7 +1563,10 @@ class LessonStep {
     required this.stepNumber,
     required this.title,
     required this.description,
-    required this.mediaFile,
+    this.mediaType = 'image',
+    this.mediaFile,
+    this.mediaBytes,
+    this.mediaFileName,
     required this.mediaUrl,
     required this.mediaPreview,
   });
