@@ -14,7 +14,15 @@ const stepSchema = new Schema({
 });
 
 const lessonSchema = new Schema({
-  lessonId: { type: String, required: true, unique: true },
+  lessonId: {
+    type: String,
+    required: true,
+    unique: true,
+    default: function () {
+      const randomFiveDigits = Math.floor(10000 + Math.random() * 90000);
+      return `L${randomFiveDigits}`;
+    },
+  },
   title: { type: String, required: true },
   description: { type: String, required: true },
   category: { type: String, required: true },

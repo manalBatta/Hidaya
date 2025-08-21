@@ -69,6 +69,11 @@ final adminRejectFlagUrl =
 final adminDismissFlagUrl =
     url + "admin/flags/dismiss/"; // usage: adminDismissFlagUrl + flagId
 
+// Admin endpoints for lessons
+final addLessonUrl = url + "admin/addlesson";
+final deleteLessonUrl = url + "admin/deletelesson/";
+final updateLessonUrl = url + "admin/updatelesson/";
+
 /* router.get("/lessons", getalllesson);
 //get lesson by id
 router.get("/lesson/:id", getlessonbyid);

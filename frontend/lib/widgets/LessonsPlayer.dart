@@ -432,18 +432,7 @@ class _LessonPlayerState extends State<LessonPlayer> {
                                       textAlign: TextAlign.center,
                                     ),
                                     SizedBox(height: 24),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: List.generate(
-                                        5,
-                                        (index) => Icon(
-                                          Icons.star,
-                                          color: AppColors.askPagePrivateIcon,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    ),
+                                    SizedBox.shrink(),
                                     SizedBox(height: 32),
                                     Row(
                                       mainAxisAlignment:

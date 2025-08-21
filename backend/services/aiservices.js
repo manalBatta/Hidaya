@@ -1,5 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 import cld3 from "cld3-asm";
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Ensure environment variables are loaded before using them
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "..", "..");
+const rootEnvPath = path.join(projectRoot, ".env");
+if (fs.existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+} else {
+  dotenv.config();
+}
 
 let cldFactory = null;
 let identifier = null;
