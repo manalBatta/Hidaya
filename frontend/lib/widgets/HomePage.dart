@@ -132,16 +132,13 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
   }
 
   Future<void> _initializeChatSession() async {
+    print("=== INITIALIZE CHAT SESSION DEBUG ===");
+    print("initializing chat session");
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    if (userProvider.chatInitialized) {
-      _scrollToBottom();
-      print("chat is already initialized");
-      return;
-    }
 
     if (!mounted) {
       print("chat not mounted so I returned");
+      print("=== END INITIALIZE CHAT SESSION DEBUG ===");
       return;
     }
     try {
@@ -160,20 +157,41 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        userProvider.setSessionId(data['sessionId']);
-        _scrollToBottom();
-        final dynamic greetingData = data['greeting'];
-        String greetingText;
-        print("ai response $data");
-        if (greetingData is List) {
-          greetingText = "No response";
-        } else {
-          greetingText =
-              greetingData?.toString() ??
-              'Welcome! How can I assist you with Islam today?';
+        print("=== FRONTEND CHAT START DEBUG ===");
+        print("Response data: $data");
+        print("Session ID: ${data['sessionId']}");
+        print("AI Session ID: ${data['ai_session_id']}");
+        print("Is New Session: ${data['isNewSession']}");
+        print("Greeting: ${data['greeting']}");
+
+        userProvider.setAiSessionId(data['ai_session_id']);
+        // If this is a new session, set the permanent ai_session_id
+        if (data['ai_session_id'] != null) {
+          userProvider.setAiSessionId(data['ai_session_id']);
+          print("Set AI Session ID: ${data['ai_session_id']}");
         }
-        await _typeAIResponse(greetingText);
+
         _scrollToBottom();
+
+        // Only show greeting for new sessions
+        if (data['greeting'] != null) {
+          print("Showing greeting for new session");
+          final dynamic greetingData = data['greeting'];
+          String greetingText;
+          if (greetingData is List) {
+            greetingText = "No response";
+          } else {
+            greetingText =
+                greetingData?.toString() ??
+                'Welcome! How can I assist you with Islam today?';
+          }
+          await _typeAIResponse(greetingText);
+          _scrollToBottom();
+        } else {
+          print("No greeting - resuming existing session");
+        }
+
+        print("=== END FRONTEND CHAT START DEBUG ===");
       } else {
         // handle failure, display error from response if available
         final errorMsg = data['error'] ?? 'Failed to start session';
@@ -191,17 +209,22 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
 
-    userProvider.setChatInitialized(true);
+    print("Chat initialization completed");
+    print("=== END INITIALIZE CHAT SESSION DEBUG ===");
   }
 
   Future<void> _sendMessage([String? message]) async {
+    print("=== FRONTEND SEND MESSAGE DEBUG ===");
     print("sending message $message");
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final sessionId = userProvider.sessionId;
+    final aiSessionId = userProvider.aiSessionId;
 
-    if ((message == null && _inputController.text.trim().isEmpty) ||
-        sessionId == null) {
-      print("returned from send $sessionId");
+    print("UserProvider aiSessionId: $aiSessionId");
+    print("UserProvider userId: ${userProvider.userId}");
+
+    if ((message == null && _inputController.text.trim().isEmpty)) {
+      print("returned from send - sessionId: $aiSessionId");
+      print("=== END FRONTEND SEND MESSAGE DEBUG ===");
       return;
     }
     final content = message ?? _inputController.text.trim();
@@ -232,7 +255,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         },
         body: jsonEncode({
           'userId': userProvider.userId,
-          "sessionId": sessionId,
+          "ai_session_id": aiSessionId,
           "message": content,
         }),
       );
@@ -269,6 +292,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
         _waveAmplitude = 0.3;
         _waveFrequency = 1.0;
       });
+      print("=== END FRONTEND SEND MESSAGE DEBUG ===");
     }
   }
 
@@ -545,7 +569,10 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 5.0,
+                  horizontal: 16.0,
+                ),
 
                 child: Row(
                   children: [
@@ -665,68 +692,67 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
 
               // Main Content
               // Animation and status area
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildAnimatedWaveform(),
-                      const SizedBox(height: 32),
-                      if (_isResponding)
-                        Text(
-                          'AI is responding...',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.homeGreenDark,
-                          ),
-                        )
-                      else if (_isTyping)
-                        Text(
-                          'Typing response...',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            color:
-                                _isDarkMode
-                                    ? AppColors.islamicGreen300
-                                    : AppColors.homeGreenDark,
-                          ),
-                        )
-                      else if (messages.isEmpty)
-                        Column(
-                          children: [
-                            Text(
-                              'Welcome to the immersive Islamic AI experience',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                color:
-                                    _isDarkMode
-                                        ? AppColors.islamicWhite
-                                        : AppColors.homeGreenDarker,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Ask me anything about Islam, and I\'ll guide you with wisdom from the Quran and Sunnah',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                    _isDarkMode
-                                        ? AppColors.grey300
-                                        : AppColors.homeGreenDark,
-                              ),
-                            ),
-                          ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildAnimatedWaveform(),
+                    const SizedBox(height: 32),
+                    if (_isResponding)
+                      Text(
+                        'AI is responding...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.homeGreenDark,
                         ),
-                    ],
-                  ),
+                      )
+                    else if (_isTyping)
+                      Text(
+                        'Typing response...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              _isDarkMode
+                                  ? AppColors.islamicGreen300
+                                  : AppColors.homeGreenDark,
+                        ),
+                      )
+                    else if (messages.isEmpty)
+                      Column(
+                        children: [
+                          Text(
+                            'Welcome to the immersive Islamic AI experience',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              color:
+                                  _isDarkMode
+                                      ? AppColors.islamicWhite
+                                      : AppColors.homeGreenDarker,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Ask me anything about Islam, and I\'ll guide you with wisdom from the Quran and Sunnah',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color:
+                                  _isDarkMode
+                                      ? AppColors.grey300
+                                      : AppColors.homeGreenDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
               ),
+
               // Chat Section
               Expanded(
                 child: Container(

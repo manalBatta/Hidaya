@@ -40,7 +40,7 @@ import {
   updateLessonProgressInUser,
   addlesson,
   updatelesson,
-  deletelesson
+  deletelesson,
 } from "../controller/lessoncontroller.js";
 import notificationRoutes from "./notificationroutes.js";
 import {
@@ -81,6 +81,7 @@ import {
 router.post("/register", register);
 router.post("/login", login);
 router.put("/profile", authMiddleware, updateprofile);
+
 router.put("/city", authMiddleware, updateCity);
 router.put("/onesignal-id", authMiddleware, updateOneSignalId);
 router.put("/change-password", authMiddleware, changePassword);

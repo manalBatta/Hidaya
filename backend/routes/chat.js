@@ -1,7 +1,10 @@
 import express from "express";
 const router = express.Router();
 import User from "../models/User.js";
-import { askGeminiWithLangchain } from "../services/langchainGemini.js";
+import {
+  askGeminiWithLangchain,
+  askGeminiWithLangGraph,
+} from "../services/langchainGemini.js";
 
 import {
   getLastSession,
@@ -15,13 +18,25 @@ router.post("/start", async (req, res) => {
   const { userId } = req.body;
 
   try {
+    console.log("=== CHAT START ROUTE DEBUG ===");
+    console.log("User ID:", userId);
+
     const user = await User.findOne({ userId });
+    console.log("User found:", user ? "Yes" : "No");
+    console.log("User ai_session_id:", user?.ai_session_id);
+
     let session = await getLastSession(userId);
+    console.log("Last session found:", session ? "Yes" : "No");
+    console.log("Session ID:", session?.id);
+
     let greetingMessage;
+    let isNewSession = false;
 
     if (!session) {
+      console.log("Creating new session...");
       session = await createNewSupabaseSession(userId);
       await User.updateOne({ userId: userId }, { ai_session_id: session.id });
+      isNewSession = true;
 
       // Use LangChain to generate welcome
       greetingMessage = await askGeminiWithLangchain({
@@ -32,64 +47,70 @@ router.post("/start", async (req, res) => {
 
       // Save greeting to Supabase
       await saveChatMessage(session.id, "ai", greetingMessage);
+      console.log("New session greeting saved:", greetingMessage);
     } else {
+      console.log("Resuming existing session...");
       const recentMessages = await fetchRecentMessages(session.id);
+      console.log("Recent messages count:", recentMessages.length);
+
       const lastUserMessage =
         recentMessages.filter((m) => m.sender === "user").slice(-1)[0]
-          ?.message || "";
+          ?.message || "Asalamualaikum";
+      console.log("Last user message:", lastUserMessage);
+
       //detect lang
-      const language = detectLanguage(lastUserMessage);
+      //const language = detectLanguage(lastUserMessage);
       greetingMessage = await askGeminiWithLangchain({
         user,
         history: recentMessages,
         message: "__resume__", // Special marker
-        /*         language,
-         */ lastUserMessage,
+        //         language,
+        lastUserMessage,
       });
 
       await saveChatMessage(session.id, "ai", greetingMessage);
+      console.log("Resume message saved:", greetingMessage);
     }
-    res.json({ sessionId: session.id, greeting: greetingMessage });
+
+    // If this is a new session, also return the ai_session_id so frontend can set it
+    const responseData = {
+      ai_session_id: session.id,
+      greeting: greetingMessage, // Only send greeting for new sessions
+      isNewSession: isNewSession,
+    };
+
+    if (!user.ai_session_id) {
+      responseData.ai_session_id = session.id;
+      console.log("Setting new ai_session_id:", session.id);
+    }
+
+    console.log("Response data:", responseData);
+    console.log("=== END CHAT START ROUTE DEBUG ===");
+
+    res.json(responseData);
   } catch (error) {
+    console.error("Error in chat start route:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 router.post("/send", async (req, res) => {
-  const { userId, sessionId, message } = req.body;
+  const { userId, message, ai_session_id } = req.body;
 
-  console.log("Received /send request:", { userId, sessionId, message });
+  console.log("=== CHAT SEND ROUTE DEBUG ===");
+  console.log("Received /send request:", { userId, message, ai_session_id });
 
   try {
-    // Save user message to Supabase
-    await saveChatMessage(sessionId, "user", message);
-    console.log("Saved user message to Supabase");
-
-    // Fetch previous messages for context (optional)
-    const history = await fetchRecentMessages(sessionId);
-    console.log("Fetched chat history:", history);
-
     // Get user profile from MongoDB
     const user = await User.findOne({ userId });
-    console.log("Fetched user profile:", user);
+    console.log("Fetched user profile:", user ? "Yes" : "No");
+    console.log("User ai_session_id:", user?.ai_session_id);
 
-    //detect lang
-    const language = detectLanguage(message);
-    console.log("Detected language:", language);
-
-    // Call Gemini API
-    const aiReply = await askGeminiWithLangchain({
-      user,
-      history,
-      message,
-      language,
-    });
+    // Call Gemini API with integrated short-term + long-term memory
+    const aiReply = await askGeminiWithLangGraph({ user, message });
     console.log("AI reply from Gemini:", aiReply);
 
-    // Save AI message to Supabase
-    await saveChatMessage(sessionId, "ai", aiReply);
-    console.log("Saved AI reply to Supabase");
-
+    console.log("=== END CHAT SEND ROUTE DEBUG ===");
     res.json({ reply: aiReply });
   } catch (error) {
     console.error("Error in /send route:", error);

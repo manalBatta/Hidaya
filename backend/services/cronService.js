@@ -2,6 +2,10 @@ import cron from "node-cron";
 import AnswerModel from "../models/Answers.js";
 import UserModel from "../models/User.js";
 import { sendNotification } from "./notificationService.js";
+import { createClient } from "@supabase/supabase-js";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { saveLongTermMemory } from "./aiservices.js";
 
 class CronService {
   constructor() {
@@ -48,12 +52,26 @@ class CronService {
       }
     );
 
+    // Nightly memory compaction (every day at 02:00 AM UTC)
+    cron.schedule(
+      "0 2 * * *",
+      async () => {
+        console.log("Running nightly long-term memory compaction job...");
+        await this.compactLongTermMemories();
+      },
+      {
+        scheduled: true,
+        timezone: "UTC",
+      }
+    );
+
     console.log("Cron jobs initialized:");
     console.log("- Weekly volunteer summary: Sundays at 9:00 AM UTC");
     console.log(
       "- Bi-weekly Islamic reminders: Every 2 weeks on Sunday at 10:00 AM UTC"
     );
     console.log("- Jumu'ah notifications: Every Friday at 9:00 AM UTC");
+    console.log("- Nightly memory compaction: Daily at 02:00 AM UTC");
   }
 
   async sendWeeklyVolunteerSummary() {
@@ -194,6 +212,105 @@ class CronService {
       );
     } catch (error) {
       console.error("Error in sendWeeklyVolunteerSummary:", error);
+    }
+  }
+
+  async compactLongTermMemories() {
+    try {
+      const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_ANON_KEY
+      );
+
+      const summarizer = new ChatGoogleGenerativeAI({
+        model: "gemini-1.5-flash",
+        temperature: 0.2,
+        apiKey: process.env.GEMINI_API_KEY,
+      });
+
+      // 1) Get distinct user_ids that have memories
+      const { data: userRows, error: usersError } = await supabase
+        .from("user_memory")
+        .select("user_id")
+        .order("user_id", { ascending: true });
+
+      if (usersError) throw usersError;
+      const uniqueUserIds = Array.from(
+        new Set((userRows || []).map((r) => r.user_id))
+      );
+
+      const MAX_MEMORIES_TO_KEEP = 80; // keep latest
+      const MAX_CONTEXT_CHARS = 12000; // cap summarization input size
+
+      for (const userId of uniqueUserIds) {
+        // 2) Fetch all memories for the user
+        const { data: memories, error: memErr } = await supabase
+          .from("user_memory")
+          .select("id, content, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true });
+
+        if (memErr) {
+          console.error("Failed fetching memories for user:", userId, memErr);
+          continue;
+        }
+
+        if (!memories || memories.length <= MAX_MEMORIES_TO_KEEP) continue;
+
+        // 3) Determine which to compact (oldest N, keep latest MAX_MEMORIES_TO_KEEP)
+        const numToCompact = memories.length - MAX_MEMORIES_TO_KEEP;
+        const toCompact = memories.slice(0, numToCompact);
+        const toKeep = memories.slice(numToCompact);
+
+        // 4) Build summarization context (cap length)
+        let context = toCompact.map((m) => `- ${m.content}`).join("\n");
+        if (context.length > MAX_CONTEXT_CHARS) {
+          context = context.slice(0, MAX_CONTEXT_CHARS);
+        }
+
+        const system = `You are summarizing a user's long-term preferences, goals, constraints, and biographical details for future personalization.\n- Extract only stable, recurring facts and themes.\n- Remove duplicates and trivialities.\n- Prefer short bullets (4-8), under 120 words total.\n- No sensitive data.`;
+
+        const prompt = [new AIMessage(system), new HumanMessage(context)];
+
+        // 5) Generate summary
+        let summaryText = "";
+        try {
+          const result = await summarizer.invoke(prompt);
+          summaryText =
+            typeof result?.content === "string"
+              ? result.content
+              : String(result?.content ?? "");
+        } catch (summErr) {
+          console.error("Summarization failed for user:", userId, summErr);
+          continue;
+        }
+
+        if (!summaryText || summaryText.trim().length === 0) continue;
+
+        // 6) Save summary as a new long-term memory (will embed and store)
+        await saveLongTermMemory(userId, summaryText);
+
+        // 7) Delete compacted rows
+        const idsToDelete = toCompact.map((m) => m.id);
+        const { error: delErr } = await supabase
+          .from("user_memory")
+          .delete()
+          .in("id", idsToDelete);
+
+        if (delErr) {
+          console.error(
+            "Failed deleting compacted rows for user:",
+            userId,
+            delErr
+          );
+        } else {
+          console.log(
+            `Compacted ${idsToDelete.length} memories for user ${userId}; kept ${toKeep.length} and added 1 summary.`
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error in compactLongTermMemories:", error);
     }
   }
 

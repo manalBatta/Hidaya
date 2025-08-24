@@ -2103,6 +2103,7 @@ class _ProfilePageState extends State {
         'volunteerProfile': updatedUser['volunteerProfile'],
         'savedQuestions': updatedUser['savedQuestions'] ?? [],
         'savedLessons': updatedUser['savedLessons'] ?? [],
+        'ai_session_id': updatedUser['ai_session_id'],
       };
 
       // Only add bio field for non-volunteer users
