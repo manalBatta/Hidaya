@@ -7,19 +7,9 @@ import '../config.dart';
 
 class UserProvider with ChangeNotifier {
   Map<String, dynamic>? _user;
-  String? _sessionId;
+  String? _aiSessionId; // Add AI session ID field
 
   // Chat session initialization flag
-  bool _chatInitialized = false;
-  bool get chatInitialized => _chatInitialized;
-  void setChatInitialized(bool value) {
-    try {
-      _chatInitialized = value;
-      notifyListeners();
-    } catch (e) {
-      print("error setchatInitialized function : $e");
-    }
-  }
 
   Map<String, dynamic>? get user => _user;
   List<dynamic> get lessonsProgress =>
@@ -57,7 +47,7 @@ class UserProvider with ChangeNotifier {
   }
 
   String? get role => _user?['role'];
-  String? get sessionId => _sessionId;
+  String? get aiSessionId => _aiSessionId; // Add getter for AI session ID
 
   String get userId => _user?['id']?.toString() ?? '';
 
@@ -118,40 +108,78 @@ class UserProvider with ChangeNotifier {
   Future<void> setUser(
     Map<String, dynamic> userData, {
     String? sessionId,
+    String? aiSessionId,
   }) async {
-    print("setUser called with: $userData");
+    print("=== SET USER DEBUG ===");
+    print("setUser called with userData: $userData");
+    print("sessionId parameter: $sessionId");
+    print("aiSessionId parameter: $aiSessionId");
+    print("userData ai_session_id: ${userData['ai_session_id']}");
+
     _user = userData;
-    if (sessionId != null) {
-      _sessionId = sessionId;
+
+    if (aiSessionId != null) {
+      _aiSessionId = aiSessionId;
+      print("AI SessionId set from parameter: $aiSessionId");
     }
+    // Set ai_session_id from userData if it exists (this is the permanent ID)
+    if (userData['ai_session_id'] != null) {
+      _aiSessionId = userData['ai_session_id'];
+      print("AI SessionId set from userData: ${userData['ai_session_id']}");
+    }
+
+    print("Final values:");
+    print("User ID: ${_user?['id']}");
+    print("AI Session ID: $_aiSessionId");
     print("User set, isLoggedIn: $isLoggedIn");
+
     notifyListeners();
-    print("Listeners notified");
     await _saveUserToPrefs(userData);
-    print("User saved to prefs");
     final prefs = await SharedPreferences.getInstance();
-    if (_sessionId != null) {
-      await prefs.setString('sessionId', _sessionId!);
+
+    if (_aiSessionId != null) {
+      await prefs.setString('aiSessionId', _aiSessionId!);
+      print("AI SessionId saved to prefs: $_aiSessionId");
     }
+    print("=== END SET USER DEBUG ===");
   }
 
-  void setSessionId(String sessionId) async {
-    _sessionId = sessionId;
+
+  // Set the permanent AI session ID (should only be called once when first created)
+  void setAiSessionId(String aiSessionId) async {
+    print("=== USERPROVIDER AI SESSION DEBUG ===");
+    print("Setting aiSessionId: $aiSessionId");
+    print("Previous aiSessionId: $_aiSessionId");
+
+    _aiSessionId = aiSessionId;
+    // Update the user data to include the ai_session_id
+    if (_user != null) {
+      _user!['ai_session_id'] = aiSessionId;
+      print("Updated user data with ai_session_id");
+    }
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('sessionId', sessionId);
+    await prefs.setString('aiSessionId', aiSessionId);
+    // Also save the updated user data
+    if (_user != null) {
+      await _saveUserToPrefs(_user!);
+      print("User data saved to prefs");
+    }
+
+    print("AI SessionId set successfully");
+    print("=== END USERPROVIDER AI SESSION DEBUG ===");
   }
 
   // Clear user on logout
   Future<void> logout() async {
     _user = null;
-    _sessionId = null;
+    _aiSessionId = null;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('user');
     prefs.remove('sessionId');
+    prefs.remove('aiSessionId');
     prefs.setString('token', '');
-    setChatInitialized(true);
   }
 
   // Add a question to savedQuestions and persist
@@ -194,13 +222,26 @@ class UserProvider with ChangeNotifier {
 
   // Load user data at app startup
   Future<void> loadUserFromPrefs() async {
+    print("=== LOAD USER FROM PREFS DEBUG ===");
     final prefs = await SharedPreferences.getInstance();
     final userData = prefs.getString('user');
     final sessionId = prefs.getString('sessionId');
+    final aiSessionId = prefs.getString('aiSessionId');
+
+    print("Loaded from prefs:");
+    print("User data: ${userData != null ? "Yes" : "No"}");
+    print("Session ID: $sessionId");
+    print("AI Session ID: $aiSessionId");
+
     if (userData != null) {
       _user = jsonDecode(userData);
-      _sessionId = sessionId;
+      _aiSessionId = aiSessionId;
+      print("User data loaded:");
+      print("User ID: ${_user?['id']}");
+      print("User ai_session_id: ${_user?['ai_session_id']}");
+      print("AI Session ID set: $_aiSessionId");
       notifyListeners();
     }
+    print("=== END LOAD USER FROM PREFS DEBUG ===");
   }
 }

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../providers/UserProvider.dart';
 import 'CitySelectionDialog.dart';
 import '../constants/colors.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class PrayerTimesWidget extends StatefulWidget {
   const PrayerTimesWidget({Key? key}) : super(key: key);
@@ -88,9 +90,75 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
 
   Future<void> _fetchPrayerTimes() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final city = userProvider.city ?? 'Riyadh';
-    final country = userProvider.country ?? 'Saudi Arabia';
+    final fallbackCity = userProvider.city ?? 'Riyadh';
+    final fallbackCountry = userProvider.country ?? 'Saudi Arabia';
 
+    try {
+      // Step 1: check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception("Location services are disabled.");
+      }
+
+      // Step 2: request permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      // Step 3: if permanently denied → fallback to city/country
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        print("Location permissions are denied. Falling back to city.");
+        await _fetchPrayerTimesByCity(fallbackCity, fallbackCountry);
+        return;
+      }
+
+      // Step 4: get position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Step 5: call API with lat/lon
+      final url =
+          'https://api.aladhan.com/v1/timings?latitude=${position.latitude}&longitude=${position.longitude}&method=2';
+
+      final response = await http.get(Uri.parse(url));
+      print("Fetching prayer times from: $url");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final timings = data['data']['timings'];
+        final hijri = data['data']['date']['hijri']['date'];
+        final gregorian = data['data']['date']['gregorian']['date'];
+
+        if (!mounted) return;
+        setState(() {
+          prayerTimes = [
+            PrayerTime(name: 'Fajr', time: timings['Fajr'], arabic: 'الفجر'),
+            PrayerTime(name: 'Dhuhr', time: timings['Dhuhr'], arabic: 'الظهر'),
+            PrayerTime(name: 'Asr', time: timings['Asr'], arabic: 'العصر'),
+            PrayerTime(
+              name: 'Maghrib',
+              time: timings['Maghrib'],
+              arabic: 'المغرب',
+            ),
+            PrayerTime(name: 'Isha', time: timings['Isha'], arabic: 'العشاء'),
+          ];
+          hijriDate = hijri;
+          gregorianDate = gregorian;
+        });
+      } else {
+        throw Exception("Failed to fetch prayer times by location");
+      }
+    } catch (e) {
+      // Any error (like GPS off, API error) → fallback
+      print("Error fetching prayer times by location: $e");
+      await _fetchPrayerTimesByCity(fallbackCity, fallbackCountry);
+    }
+  }
+
+  Future<void> _fetchPrayerTimesByCity(String city, String country) async {
     final url =
         'https://api.aladhan.com/v1/timingsByCity?city=${Uri.encodeComponent(city)}&country=${Uri.encodeComponent(country)}&method=2';
 
@@ -120,22 +188,12 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
           gregorianDate = gregorian;
         });
       } else {
-        if (!mounted) return;
-        setState(() {
-          prayerTimes = [
-            PrayerTime(name: 'Fajr', time: '05:12 AM', arabic: 'الفجر'),
-            PrayerTime(name: 'Dhuhr', time: '12:45 PM', arabic: 'الظهر'),
-            PrayerTime(name: 'Asr', time: '04:23 PM', arabic: 'العصر'),
-            PrayerTime(name: 'Maghrib', time: '07:18 PM', arabic: 'المغرب'),
-            PrayerTime(name: 'Isha', time: '08:45 PM', arabic: 'العشاء'),
-          ];
-          hijriDate = '';
-          gregorianDate = '';
-        });
+        throw Exception("Failed to fetch prayer times by city");
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
+        // Last fallback → static times
         prayerTimes = [
           PrayerTime(name: 'Fajr', time: '05:12 AM', arabic: 'الفجر'),
           PrayerTime(name: 'Dhuhr', time: '12:45 PM', arabic: 'الظهر'),
@@ -322,7 +380,58 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
     );
   }
 
+  Widget _buildLocationRow(
+    String city,
+    String country, {
+    bool isFallback = false,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isFallback ? Icons.location_off : Icons.location_on_outlined,
+              color:
+                  isFallback
+                      ? AppColors.islamicGreen400
+                      : AppColors.islamicGreen500,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$city, $country',
+              style: TextStyle(
+                fontSize: 14,
+                color:
+                    isFallback
+                        ? AppColors.islamicGreen400
+                        : AppColors.islamicGreen600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        if (isFallback) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Using saved location',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.islamicGreen400,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildPrayerTimesModal() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenHeight < 600 || screenWidth < 400;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
@@ -340,73 +449,81 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
           ),
         ],
       ),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.6,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: isSmallScreen ? screenHeight * 0.8 : screenHeight * 0.6,
+          minHeight: 400,
+        ),
         child: Column(
           children: [
             // Header with close button
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: const BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: AppColors.adminGreen100, width: 1),
                 ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.prayerGreen,
-                              borderRadius: BorderRadius.circular(8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.prayerGreen,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                '🕌',
+                                style: TextStyle(fontSize: 14),
+                              ),
                             ),
-                            child: const Text(
-                              '🕌',
-                              style: TextStyle(fontSize: 16),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Prayer Times',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.islamicGreen800,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Prayer Times',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.islamicGreen800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hijriDate.isNotEmpty && gregorianDate.isNotEmpty
-                            ? 'Today • $gregorianDate • Hijri: $hijriDate'
-                            : 'Today • ${_getCurrentDate()}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.islamicGreen600,
-                          fontWeight: FontWeight.w500,
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          hijriDate.isNotEmpty && gregorianDate.isNotEmpty
+                              ? 'Today • $gregorianDate • Hijri: $hijriDate'
+                              : 'Today • ${_getCurrentDate()}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.islamicGreen600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: AppColors.islamicGreen50,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(
                         Icons.close,
                         color: AppColors.islamicGreen600,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                   ),
@@ -421,62 +538,73 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                   horizontal: 20,
                   vertical: 16,
                 ),
+                shrinkWrap: true,
+                physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: prayerTimes.length,
                 itemBuilder: (context, index) {
                   final prayer = prayerTimes[index];
                   final isCurrentPrayer = _isCurrentPrayer(prayer);
 
-                  return Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: Duration(milliseconds: 300 + (index * 100)),
-                        curve: Curves.easeOutBack,
-                        transform: Matrix4.translationValues(0, index * 20.0, 0)
-                          ..scale(1.0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300 + (index * 100)),
+                      curve: Curves.easeOutBack,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              isCurrentPrayer
+                                  ? AppColors.islamicGreen50
+                                  : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
                             color:
                                 isCurrentPrayer
-                                    ? AppColors.islamicGreen50
+                                    ? AppColors.islamicGreen200
                                     : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                            width: 1,
                           ),
-                          child: Row(
-                            children: [
-                              // Prayer icon and name
-                              Expanded(
-                                flex: 2,
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color:
-                                            isCurrentPrayer
-                                                ? AppColors.islamicGreen500
-                                                : AppColors.islamicGreen100,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Icon(
-                                        _getPrayerIcon(prayer.name),
-                                        color:
-                                            isCurrentPrayer
-                                                ? AppColors.islamicWhite
-                                                : AppColors.islamicGreen600,
-                                        size: 20,
-                                      ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Prayer icon and name
+                            Expanded(
+                              flex: 2,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isCurrentPrayer
+                                              ? AppColors.islamicGreen500
+                                              : AppColors.islamicGreen100,
+                                      borderRadius: BorderRadius.circular(18),
                                     ),
-                                    const SizedBox(width: 16),
-                                    Column(
+                                    child: Icon(
+                                      _getPrayerIcon(prayer.name),
+                                      color:
+                                          isCurrentPrayer
+                                              ? AppColors.islamicWhite
+                                              : AppColors.islamicGreen600,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           prayer.name,
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: 15,
                                             fontWeight:
                                                 isCurrentPrayer
                                                     ? FontWeight.bold
@@ -486,51 +614,53 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                                                     ? AppColors.islamicGreen800
                                                     : AppColors.islamicGreen700,
                                           ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
                                           prayer.arabic,
                                           style: const TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             color: AppColors.islamicGreen500,
                                             fontFamily: 'Arabic',
                                           ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
+                            ),
 
-                              // Prayer time
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
+                            // Prayer time
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    isCurrentPrayer
+                                        ? AppColors.islamicGreen500
+                                        : AppColors.islamicGreen50,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                prayer.time,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                   color:
                                       isCurrentPrayer
-                                          ? AppColors.islamicGreen500
-                                          : AppColors.islamicGreen50,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  prayer.time,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        isCurrentPrayer
-                                            ? AppColors.islamicWhite
-                                            : AppColors.islamicGreen700,
-                                  ),
+                                          ? AppColors.islamicWhite
+                                          : AppColors.islamicGreen700,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   );
                 },
               ),
@@ -544,29 +674,69 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
                   top: BorderSide(color: AppColors.islamicGreen100, width: 1),
                 ),
               ),
-              child: Consumer<UserProvider>(
-                builder: (context, userProvider, child) {
-                  final city = userProvider.city ?? 'Unknown City';
-                  final country = userProvider.country ?? 'Unknown Country';
+              child: FutureBuilder<Position?>(
+                future: _getCurrentLocation(),
+                builder: (context, snapshot) {
+                  final userProvider = Provider.of<UserProvider>(
+                    context,
+                    listen: false,
+                  );
 
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        color: AppColors.islamicGreen500,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$city, $country',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.islamicGreen600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  // Default fallback values
+                  String city = userProvider.city ?? 'Unknown City';
+                  String country = userProvider.country ?? 'Unknown Country';
+                  bool isUsingFallback =
+                      true; // Track if we're using fallback data
+
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final position = snapshot.data!;
+
+                    return FutureBuilder<List<Placemark>>(
+                      future: _getPlacemarkFromCoordinates(position),
+                      builder: (context, placeSnapshot) {
+                        if (placeSnapshot.hasData &&
+                            placeSnapshot.data != null &&
+                            placeSnapshot.data!.isNotEmpty) {
+                          final place = placeSnapshot.data!.first;
+
+                          // Try to get city name from multiple sources
+                          String? detectedCity =
+                              place.locality ??
+                              place.subLocality ??
+                              place.administrativeArea;
+
+                          // Try to get country name
+                          String? detectedCountry = place.country;
+
+                          // Only update if we got valid data
+                          if (detectedCity != null && detectedCity.isNotEmpty) {
+                            city = detectedCity;
+                            isUsingFallback = false; // We got real GPS data
+                          }
+                          if (detectedCountry != null &&
+                              detectedCountry.isNotEmpty) {
+                            country = detectedCountry;
+                            isUsingFallback = false; // We got real GPS data
+                          }
+
+                          print(
+                            "Detected location - City: $city, Country: $country, Using Fallback: $isUsingFallback",
+                          );
+                        }
+
+                        return _buildLocationRow(
+                          city,
+                          country,
+                          isFallback: isUsingFallback,
+                        );
+                      },
+                    );
+                  }
+
+                  return _buildLocationRow(
+                    city,
+                    country,
+                    isFallback: isUsingFallback,
                   );
                 },
               ),
@@ -616,6 +786,88 @@ class _PrayerTimesWidgetState extends State<PrayerTimesWidget>
       'December',
     ];
     return '${months[now.month - 1]} ${now.day}, ${now.year}';
+  }
+
+  Future<Position?> _getCurrentLocation() async {
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        return null;
+      }
+
+      // Check permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        return null;
+      }
+
+      // Get current position
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+      );
+    } catch (e) {
+      print("Error getting current location: $e");
+      return null;
+    }
+  }
+
+  Future<List<Placemark>> _getPlacemarkFromCoordinates(
+    Position position,
+  ) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      // Filter out null placemarks and validate data
+      final validPlacemarks =
+          placemarks.where((placemark) {
+            return placemark != null &&
+                (placemark.locality != null ||
+                    placemark.subLocality != null ||
+                    placemark.country != null);
+          }).toList();
+
+      print("Found ${validPlacemarks.length} valid placemarks");
+      if (validPlacemarks.isNotEmpty) {
+        final firstPlace = validPlacemarks.first;
+        print(
+          "First placemark - Locality: ${firstPlace.locality}, SubLocality: ${firstPlace.subLocality}, Country: ${firstPlace.country}",
+        );
+      }
+
+      // If no valid placemarks found, try with a more lenient approach
+      if (validPlacemarks.isEmpty && placemarks.isNotEmpty) {
+        print("No valid placemarks found, trying more lenient approach...");
+        // Accept any placemark that exists (even if fields are null)
+        final lenientPlacemarks =
+            placemarks.where((placemark) {
+              return placemark != null;
+            }).toList();
+
+        print("Lenient approach found ${lenientPlacemarks.length} placemarks");
+        if (lenientPlacemarks.isNotEmpty) {
+          final firstPlace = lenientPlacemarks.first;
+          print(
+            "Lenient placemark - Locality: ${firstPlace.locality}, SubLocality: ${firstPlace.subLocality}, Country: ${firstPlace.country}",
+          );
+        }
+
+        return lenientPlacemarks;
+      }
+
+      return validPlacemarks;
+    } catch (e) {
+      print("Error getting placemark: $e");
+      return [];
+    }
   }
 
   @override

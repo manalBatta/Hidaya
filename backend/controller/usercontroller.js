@@ -112,6 +112,8 @@ export async function login(req, res, next) {
       savedStories: user.savedStories,
       notifications: user.notifications,
       lessonsProgress: user.lessonsProgress,
+      ...(user.city && { city: user.city }),
+      ai_session_id: user.ai_session_id,
     },
   });
 
