@@ -83,3 +83,12 @@ router.patch("/lesson/:id/progress", authMiddleware, updateLessonProgressInUser)
 final getalllesson = url + "lessons";
 final getlessonbyid = url + "lesson/";
 final updateLessonProgress = url + "lesson/progress/";
+
+// Meeting request endpoints
+final meetingRequests = url + "meeting-requests";
+final volunteerMeetingRequests = url + "meeting-requests/volunteer";
+final userMeetingRequests = url + "meeting-requests/user";
+
+// Report endpoints
+final reportQuestion = url + "reportquestion";
+final adminFlags = url + "admin/flags";

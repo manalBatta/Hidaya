@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:http/http.dart' as http;
 import '../utils/auth_utils.dart';
+import '../config.dart';
 import 'dart:convert';
+
 class ReportModal extends StatefulWidget {
   final String questionId;
   final String questionText;
   final String itemType;
-     final BuildContext scaffoldContext;  // هذا جديد
+  final BuildContext scaffoldContext; // هذا جديد
   final VoidCallback? onReportSuccess;
   final VoidCallback? onReportAnswerSuccess;
-  
 
   const ReportModal({
     Key? key,
@@ -46,7 +47,7 @@ class _ReportModalState extends State<ReportModal> {
     super.dispose();
   }
 
-   Future<void> _submitReport() async {
+  Future<void> _submitReport() async {
     if (_selectedReportType == null) {
       _showSnackBar('Please select a report type', isError: true);
       return;
@@ -57,10 +58,11 @@ class _ReportModalState extends State<ReportModal> {
     try {
       final token = await AuthUtils.getValidToken(context);
       debugPrint(
-          'Report submitted: {id: ${widget.questionId}, type: $_selectedReportType, description: ${_controller.text}}');
+        'Report submitted: {id: ${widget.questionId}, type: $_selectedReportType, description: ${_controller.text}}',
+      );
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/reportquestion'),
+        Uri.parse(reportQuestion),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",
@@ -75,7 +77,7 @@ class _ReportModalState extends State<ReportModal> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         _showSnackBar('Report submitted successfully. Thank you!');
-          
+
         if (widget.onReportSuccess != null) {
           // Close the dialog
           if (mounted) {
@@ -99,17 +101,15 @@ class _ReportModalState extends State<ReportModal> {
     }
   }
 
-
- void _showSnackBar(String msg, {bool isError = false}) {
-  ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
-    SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? Colors.red : AppColors.islamicGreen600,
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
-
+  void _showSnackBar(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : AppColors.islamicGreen600,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,10 +134,7 @@ class _ReportModalState extends State<ReportModal> {
                 ],
               ),
               SizedBox(height: 16),
-              Text(
-                'Reporting:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
+              Text('Reporting:', style: TextStyle(fontWeight: FontWeight.w500)),
               SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -158,19 +155,21 @@ class _ReportModalState extends State<ReportModal> {
                 'Select a reason:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
-              ..._reportTypes.map((type) => RadioListTile<String>(
-                    title: Text(type.label),
-                    value: type.value,
-                    groupValue: _selectedReportType,
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedReportType = val;
-                      });
-                    },
-                    dense: true,
-                    activeColor: Colors.red,
-                    contentPadding: EdgeInsets.zero,
-                  )),
+              ..._reportTypes.map(
+                (type) => RadioListTile<String>(
+                  title: Text(type.label),
+                  value: type.value,
+                  groupValue: _selectedReportType,
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedReportType = val;
+                    });
+                  },
+                  dense: true,
+                  activeColor: Colors.red,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
               SizedBox(height: 12),
               Text(
                 'Additional details (optional):',
@@ -196,7 +195,8 @@ class _ReportModalState extends State<ReportModal> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                    onPressed:
+                        _submitting ? null : () => Navigator.of(context).pop(),
                     child: Text('Cancel'),
                   ),
                   SizedBox(width: 12),
@@ -205,21 +205,25 @@ class _ReportModalState extends State<ReportModal> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: _submitting
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text('Submit'),
+                    child:
+                        _submitting
+                            ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                            : Text('Submit'),
                   ),
                 ],
               ),

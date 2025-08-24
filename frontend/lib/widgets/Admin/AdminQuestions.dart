@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/config.dart';
 import 'package:frontend/utils/auth_utils.dart';
+
 class Question {
   final String id;
   final String text;
@@ -70,14 +71,13 @@ class Question {
     );
   }
 
-   @override
-   String toString() {
+  @override
+  String toString() {
     return 'Question(id: $id, text: $text, shortText: $shortText, user: $user, createdAt: $createdAt, isPublic: $isPublic, isFlagged: $isFlagged, isAnswered: $isAnswered, category: $category, language: $language, likes: $likes, shares: $shares, views: $views, answers: $answers)';
-   }
+  }
 }
 
 class Answer {
-
   final String id;
   final String text;
   final String shortText;
@@ -190,8 +190,8 @@ class _AdminQuestionsState extends State<AdminQuestions>
   static const Color islamicGreen900 = Color(0xFF0C1C12);
   static const Color islamicCream = Color(0xFFFDF8F0);
 
- // Mock data
-   List<Question> _questions = [
+  // Mock data
+  List<Question> _questions = [
     Question(
       id: '1',
       text:
@@ -343,8 +343,8 @@ class _AdminQuestionsState extends State<AdminQuestions>
       ],
     ),
   ];
-   
-   List<Answer> _answers = [
+
+  List<Answer> _answers = [
     Answer(
       id: 'ans1',
       text:
@@ -453,30 +453,30 @@ class _AdminQuestionsState extends State<AdminQuestions>
     ),
   ];
 
-
-
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-      getQuestions().then((questions) {
-    setState(() {
-      _questions = questions;
-    });
-  }).catchError((e) {
-    // handle error if needed
-    print('Error loading questions: $e');
-  });
-   getAnswers().then((answers){
-    setState(() {
-      _answers=answers;
-    });
-   }).catchError((e) {
-    // handle error if needed
-    print('Error loading questions: $e');
-  });
-  
+    getQuestions()
+        .then((questions) {
+          setState(() {
+            _questions = questions;
+          });
+        })
+        .catchError((e) {
+          // handle error if needed
+          print('Error loading questions: $e');
+        });
+    getAnswers()
+        .then((answers) {
+          setState(() {
+            _answers = answers;
+          });
+        })
+        .catchError((e) {
+          // handle error if needed
+          print('Error loading questions: $e');
+        });
   }
 
   @override
@@ -485,126 +485,112 @@ class _AdminQuestionsState extends State<AdminQuestions>
     super.dispose();
   }
 
- 
-
-//get all questions from the database and  fill the gathered questions from the database to the _questions list
-//get all answers from the database and fill the gathered answers from the database to the _answers list
+  //get all questions from the database and  fill the gathered questions from the database to the _questions list
+  //get all answers from the database and fill the gathered answers from the database to the _answers list
   Future<List<Question>> getQuestions() async {
     //get all questions from the database
-    //final response = await http.get(Uri.parse('http://localhost:3000/api/questions'));
-          final url = Uri.parse(adminAllQuestionsUrl);
-      final response = await http.get(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode != 200 ) {
-       throw Exception('Failed to load questions');
-      }
-        if (data is! List) {
-    throw Exception('Unexpected API response structure');
-  }   
-   final List<Question> _questionslist = [];
-
-for (var q in data) {
-  final List<Answer> answers = [];
-
-  for (var a in q['answers'] ?? []) {
-    answers.add(
-      Answer(
-        id: a['id'],
-        text: a['text'],
-        shortText: a['shortText'],
-        questionText: a['questionText'],
-        createdAt: DateTime.parse(a['createdAt']),
-        upvotes: a['upvotes'],
-        language: a['language'],
-        isFlagged: a['isFlagged'],
-        isHidden: a['isHidden'],
-        isTopAnswer: a['isTopAnswer'],
-        volunteer: Volunteer(
-          name: a['volunteer']['name'],
-          rating: (a['volunteer']['rating'] ?? 0).toDouble(),
-        ),
-      ),
+    final url = Uri.parse(adminAllQuestionsUrl);
+    final response = await http.get(
+      url,
+      headers: {"Content-Type": "application/json"},
     );
-  }
 
-  _questionslist.add(
-    Question(
-      id: q['id'],
-      text: q['text'],
-      shortText: q['shortText'],
-      user: User(
-        name: q['user']['name'],
-        avatar: q['user']['avatar'],
-      ),
-      createdAt: DateTime.parse(q['createdAt']),
-      isPublic: q['isPublic'],
-      isFlagged: q['isFlagged'],
-      isAnswered: q['isAnswered'],
-      category: q['category'],
-      language: q['language'],
-      likes: q['likes'],
-      shares: q['shares'],
-      views: q['views'],
-      answers: answers,
-    ),
-  );
-}
+    final data = jsonDecode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load questions');
+    }
+    if (data is! List) {
+      throw Exception('Unexpected API response structure');
+    }
+    final List<Question> _questionslist = [];
 
-return _questionslist;
+    for (var q in data) {
+      final List<Answer> answers = [];
 
+      for (var a in q['answers'] ?? []) {
+        answers.add(
+          Answer(
+            id: a['id'],
+            text: a['text'],
+            shortText: a['shortText'],
+            questionText: a['questionText'],
+            createdAt: DateTime.parse(a['createdAt']),
+            upvotes: a['upvotes'],
+            language: a['language'],
+            isFlagged: a['isFlagged'],
+            isHidden: a['isHidden'],
+            isTopAnswer: a['isTopAnswer'],
+            volunteer: Volunteer(
+              name: a['volunteer']['name'],
+              rating: (a['volunteer']['rating'] ?? 0).toDouble(),
+            ),
+          ),
+        );
+      }
+
+      _questionslist.add(
+        Question(
+          id: q['id'],
+          text: q['text'],
+          shortText: q['shortText'],
+          user: User(name: q['user']['name'], avatar: q['user']['avatar']),
+          createdAt: DateTime.parse(q['createdAt']),
+          isPublic: q['isPublic'],
+          isFlagged: q['isFlagged'],
+          isAnswered: q['isAnswered'],
+          category: q['category'],
+          language: q['language'],
+          likes: q['likes'],
+          shares: q['shares'],
+          views: q['views'],
+          answers: answers,
+        ),
+      );
+    }
+
+    return _questionslist;
   }
 
   Future<List<Answer>> getAnswers() async {
     //get all answers from the database
-   final url = Uri.parse(adminAllAnswersUrl);
-      final response = await http.get(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      );
+    final url = Uri.parse(adminAllAnswersUrl);
+    final response = await http.get(
+      url,
+      headers: {"Content-Type": "application/json"},
+    );
 
-      final data = jsonDecode(response.body);
-     
-      if (response.statusCode != 200 ) {
-       throw Exception('Failed to load questions');
-      }
-        if (data is! List) {
-    throw Exception('Unexpected API response structure');
-  } 
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load questions');
+    }
+    if (data is! List) {
+      throw Exception('Unexpected API response structure');
+    }
     final List<Answer> _answerslist = [];
-   for (var a in data) {
-    _answerslist.add(
-      Answer(
-        id: a['id'],
-        text: a['text'],
-        shortText: a['shortText'],
-        questionText: a['questionText'],
-        createdAt: DateTime.parse(a['createdAt']),
-        upvotes: a['upvotes'],
-        language: a['language'],
-        isFlagged: a['isFlagged'],
-        isHidden: a['isHidden'],
-        isTopAnswer: a['isTopAnswer'],
-        volunteer: Volunteer(
-          name: a['volunteer']['name'],
-          rating: (a['volunteer']['rating'] ?? 0).toDouble(),
+    for (var a in data) {
+      _answerslist.add(
+        Answer(
+          id: a['id'],
+          text: a['text'],
+          shortText: a['shortText'],
+          questionText: a['questionText'],
+          createdAt: DateTime.parse(a['createdAt']),
+          upvotes: a['upvotes'],
+          language: a['language'],
+          isFlagged: a['isFlagged'],
+          isHidden: a['isHidden'],
+          isTopAnswer: a['isTopAnswer'],
+          volunteer: Volunteer(
+            name: a['volunteer']['name'],
+            rating: (a['volunteer']['rating'] ?? 0).toDouble(),
+          ),
         ),
-      ),);
-   }
-
+      );
+    }
 
     return _answerslist;
   }
-
-
-
 
   List<Question> get _filteredQuestions {
     return _questions.where((question) {
@@ -701,7 +687,6 @@ return _questionslist;
                         ),
                       ],
                     ),
-                 
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -1426,7 +1411,6 @@ return _questionslist;
                     ],
                   ),
                   const SizedBox(height: 2),
-                
                 ],
               ),
             ),
@@ -1864,33 +1848,34 @@ return _questionslist;
   }
 
   Future<void> _deleteQuestion(String id) async {
-     print('🍓🫕🍫 Deleting question with ID: $id');
-  final url = Uri.parse('$deleteQuestionUrl$id');
+    print('🍓🫕🍫 Deleting question with ID: $id');
+    final url = Uri.parse('$deleteQuestionUrl$id');
 
     final token = await AuthUtils.getValidToken(context);
     print('🍓🫕🍫 Using token: $token');
-  try {
-    final response = await http.delete(url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      });
-print('🍓🫕🍫 ${response.body}');
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      print('🍓🫕🍫 ${response.body}');
 
-    if (response.statusCode == 200) {
-      _showSnackbar('Question deleted successfully');
-      // refresh UI
-      setState(() {
-        _questions.removeWhere((q) => q.id == id);
-      });
-    } else {
-      _showSnackbar('Failed to delete question');
+      if (response.statusCode == 200) {
+        _showSnackbar('Question deleted successfully');
+        // refresh UI
+        setState(() {
+          _questions.removeWhere((q) => q.id == id);
+        });
+      } else {
+        _showSnackbar('Failed to delete question');
+      }
+    } catch (e) {
+      _showSnackbar('Error deleting question');
     }
-  } catch (e) {
-    _showSnackbar('Error deleting question');
   }
-}
-
 
   Future<void> _FlagByAdmin(String id, bool isFlagged) async {
     final url = Uri.parse('$flagQuestionUrl$id');
@@ -1899,9 +1884,7 @@ print('🍓🫕🍫 ${response.body}');
     try {
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'isFlagged': !isFlagged}),
       );
       print('Response status: ${response.body}');
@@ -1909,7 +1892,9 @@ print('🍓🫕🍫 ${response.body}');
         setState(() {
           final index = _questions.indexWhere((q) => q.id == id);
           if (index != -1) {
-            _questions[index] = _questions[index].copyWith(isFlagged: !isFlagged);
+            _questions[index] = _questions[index].copyWith(
+              isFlagged: !isFlagged,
+            );
           }
         });
         _showSnackbar('Flag status updated successfully');
@@ -1921,12 +1906,6 @@ print('🍓🫕🍫 ${response.body}');
     }
   }
 
-
- 
-
-
-
-
   void _handleQuestionAction(String action, Question question) {
     switch (action) {
       case 'view':
@@ -1936,7 +1915,7 @@ print('🍓🫕🍫 ${response.body}');
         _showEditQuestionDialog(question);
         break;
       case 'flag':
-         _FlagByAdmin(question.id, question.isFlagged);
+        _FlagByAdmin(question.id, question.isFlagged);
         _showSnackbar(
           'Question ${question.isFlagged ? "unflagged" : "flagged"}',
         );
@@ -2281,7 +2260,6 @@ print('🍓🫕🍫 ${response.body}');
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                              
                                 ],
                               ),
                             ],
@@ -2358,13 +2336,12 @@ print('🍓🫕🍫 ${response.body}');
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed:
-                              () async{
+                          onPressed: () async {
                             // Update the question details
-                             Navigator.pop(context);
-                               await Future.delayed(Duration(milliseconds: 100));
-                         _showEditAnswerDialog(answer);
-                          //  _showSnackbar('Question updated successfully');
+                            Navigator.pop(context);
+                            await Future.delayed(Duration(milliseconds: 100));
+                            _showEditAnswerDialog(answer);
+                            //  _showSnackbar('Question updated successfully');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: islamicGreen600,
@@ -2382,70 +2359,53 @@ print('🍓🫕🍫 ${response.body}');
     );
   }
 
+  Future<void> _updateQuestionByAdmin(
+    String questionId,
+    String text,
+    String category,
+  ) async {
+    await Future.delayed(const Duration(seconds: 1));
+    // Update the question in the database
+    // This is a placeholder for actual update logic
+    print('Updating question $questionId');
+    print('New text: $text');
+    print('New category: $category');
 
- Future<void> _updateQuestionByAdmin(String questionId, String text, String category) async {
-  await Future.delayed(const Duration(seconds: 1));
-  // Update the question in the database
-  // This is a placeholder for actual update logic
-  print('Updating question $questionId');
-  print('New text: $text');
-  print('New category: $category');
-
-  // Simulate a successful update
+    // Simulate a successful update
     try {
-    final response = await http.put(
-      Uri.parse('$adminUpdateQuestionUrl/$questionId'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'text': text,
-        'category': category,
-      }),
-    );
+      final response = await http.put(
+        Uri.parse('$adminUpdateQuestionUrl/$questionId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': text, 'category': category}),
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 204) {
-         final index = _questions.indexWhere((q) => q.id == questionId);
-      print('🔍 Found question at index: $index');
-      if (index != -1) {
-        print('📝 Before update: ${_questions[index].text}');
-        setState(() {
-          _questions[index] = _questions[index].copyWith(
-            text: text,
-            shortText: text.length > 100 ? text.substring(0, 100) + '...' : text,
-            category: category,
-          );
-        });
-        print('✅ After update: ${_questions[index].text}');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        final index = _questions.indexWhere((q) => q.id == questionId);
+        print('🔍 Found question at index: $index');
+        if (index != -1) {
+          print('📝 Before update: ${_questions[index].text}');
+          setState(() {
+            _questions[index] = _questions[index].copyWith(
+              text: text,
+              shortText:
+                  text.length > 100 ? text.substring(0, 100) + '...' : text,
+              category: category,
+            );
+          });
+          print('✅ After update: ${_questions[index].text}');
+        } else {
+          print('❌ Question not found in _questions list');
+        }
+        _showSnackbar('Question updated successfully');
       } else {
-        print('❌ Question not found in _questions list');
+        print('❌ Failed to update question: ${response.body}');
+        _showSnackbar('Failed to update question');
       }
-      _showSnackbar('Question updated successfully');
-    } else {
-      print('❌ Failed to update question: ${response.body}');
-      _showSnackbar('Failed to update question');
+    } catch (e) {
+      print('🔥 Error: $e');
+      _showSnackbar('An error occurred while updating the question');
     }
-  } catch (e) {
-    print('🔥 Error: $e');
-    _showSnackbar('An error occurred while updating the question');
   }
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   void _showEditQuestionDialog(Question question) {
     final textController = TextEditingController(text: question.text);
@@ -2508,17 +2468,17 @@ print('🍓🫕🍫 ${response.body}');
                           ),
                           items:
                               [
-                                     'Worship',
-                                      'Prayer',
-                                      'Fasting',
-                                     'Hajj & Umrah',
-                                      'Islamic Finance',
-                                       'Family & Marriage',
-                                         'Daily Life',
-                                         'Quran & Sunnah',
-                                        'Islamic History',
-                                         'Etiquette',
-                                            'Other',
+                                    'Worship',
+                                    'Prayer',
+                                    'Fasting',
+                                    'Hajj & Umrah',
+                                    'Islamic Finance',
+                                    'Family & Marriage',
+                                    'Daily Life',
+                                    'Quran & Sunnah',
+                                    'Islamic History',
+                                    'Etiquette',
+                                    'Other',
                                   ]
                                   .map(
                                     (category) => DropdownMenuItem(
@@ -2564,22 +2524,21 @@ print('🍓🫕🍫 ${response.body}');
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed: () async{
+                          onPressed: () async {
                             // Update the question details
-                        await _updateQuestionByAdmin(
+                            await _updateQuestionByAdmin(
                               question.id,
                               textController.text,
                               selectedCategory,
                             );
                             Navigator.pop(context);
-                          //  _showSnackbar('Question updated successfully');
+                            //  _showSnackbar('Question updated successfully');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: islamicGreen600,
                             foregroundColor: Colors.white,
                           ),
                           child: const Text('Save Changes'),
-                          
                         ),
                       ],
                     ),
@@ -2631,180 +2590,190 @@ print('🍓🫕🍫 ${response.body}');
     return '${date.day}/${date.month}/${date.year}';
   }
 
- Future<void> _updateAnswerByAdmin(String answerId, String updatedText) async {
-  try {
-    final response = await http.put(
-      Uri.parse('$adminUpdateAnswerUrl/$answerId'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'text': updatedText}),
+  Future<void> _updateAnswerByAdmin(String answerId, String updatedText) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$adminUpdateAnswerUrl/$answerId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': updatedText}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        final index = _questions.indexWhere(
+          (q) => q.answers.any((a) => a.id == answerId),
+        );
+        if (index == -1) {
+          _showSnackbar('Question not found');
+          return;
+        }
+
+        final question = _questions[index];
+
+        final updatedAnswers =
+            question.answers.map((a) {
+              if (a.id == answerId) {
+                // Only reset upvotes if the text has changed
+                if (a.text != updatedText) {
+                  return a.copyWith(
+                    text: updatedText,
+                    shortText: updatedText,
+                    upvotes: 0,
+                  );
+                }
+                return a.copyWith(text: updatedText, shortText: updatedText);
+              }
+              return a;
+            }).toList();
+
+        final updatedQuestion = question.copyWith(answers: updatedAnswers);
+
+        setState(() {
+          _questions = List<Question>.from(_questions);
+          _questions[index] = updatedQuestion;
+          final answerIndex = _answers.indexWhere((a) => a.id == answerId);
+          if (answerIndex != -1) {
+            if (_answers[answerIndex].text != updatedText) {
+              _answers[answerIndex] = _answers[answerIndex].copyWith(
+                text: updatedText,
+                shortText: updatedText,
+                upvotes: 0,
+              );
+            } else {
+              _answers[answerIndex] = _answers[answerIndex].copyWith(
+                text: updatedText,
+                shortText: updatedText,
+              );
+            }
+          }
+        });
+
+        _showSnackbar('Answer updated successfully');
+        print('🔄 UI updated successfully.');
+      } else {
+        _showSnackbar('Failed to update answer');
+      }
+    } catch (e, stack) {
+      print('❌ Error updating answer: $e');
+      print(stack);
+      _showSnackbar('Error updating answer');
+    }
+  }
+
+  void _showEditAnswerDialog(Answer answer) {
+    final TextEditingController _controller = TextEditingController(
+      text: answer.text,
     );
 
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      final index = _questions.indexWhere((q) => q.answers.any((a) => a.id == answerId));
-      if (index == -1) {
-        _showSnackbar('Question not found');
-        return;
-      }
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Edit Answer'),
+            content: SizedBox(
+              width: 500,
+              child: TextField(
+                controller: _controller,
+                maxLines: null,
+                decoration: InputDecoration(
+                  hintText: 'Edit your answer here...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF9FAFB),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final updatedText = _controller.text.trim();
+                  if (updatedText.isEmpty) {
+                    _showSnackbar('Answer cannot be empty');
+                    return;
+                  }
 
-      final question = _questions[index];
-      
-      final updatedAnswers = question.answers.map((a) {
-        if (a.id == answerId) {
-              // Only reset upvotes if the text has changed
-              if (a.text != updatedText) {
-                return a.copyWith(
-                  text: updatedText,
-                  shortText: updatedText,
-                  upvotes: 0,
-                );
-              }
-          return a.copyWith(text: updatedText, shortText: updatedText);
-        }
-        return a;
-      }).toList();
+                  await _updateAnswerByAdmin(answer.id, updatedText);
 
-      final updatedQuestion = question.copyWith(answers: updatedAnswers);
+                  Navigator.pop(context);
 
-     setState(() {
-  _questions = List<Question>.from(_questions);
-  _questions[index] = updatedQuestion;
-  final answerIndex = _answers.indexWhere((a) => a.id == answerId);
-  if (answerIndex != -1) {
-    if (_answers[answerIndex].text != updatedText) {
-      _answers[answerIndex] = _answers[answerIndex].copyWith(
-        text: updatedText,
-        shortText: updatedText,
-        upvotes: 0, 
-      );
-    } else {
-      _answers[answerIndex] = _answers[answerIndex].copyWith(
-        text: updatedText,
-        shortText: updatedText,
-      );
-    }
-  }
-});
-
-      _showSnackbar('Answer updated successfully');
-      print('🔄 UI updated successfully.');
-    } else {
-      _showSnackbar('Failed to update answer');
-    }
-  } catch (e, stack) {
-    print('❌ Error updating answer: $e');
-    print(stack);
-    _showSnackbar('Error updating answer');
-  }
-}
-
-
-void _showEditAnswerDialog(Answer answer) {
-  final TextEditingController _controller = TextEditingController(text: answer.text);
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Edit Answer'),
-      content: SizedBox(
-        width: 500,
-        child: TextField(
-          controller: _controller,
-          maxLines: null,
-          decoration: InputDecoration(
-            hintText: 'Edit your answer here...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: const Color(0xFFF9FAFB),
-            contentPadding: const EdgeInsets.all(16),
+                  _showSnackbar('Answer updated successfully');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: islamicGreen600,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Save'),
+              ),
+            ],
           ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final updatedText = _controller.text.trim();
-            if (updatedText.isEmpty) {
-              _showSnackbar('Answer cannot be empty');
-              return;
-            }
+    );
+  }
 
-            await _updateAnswerByAdmin(
-              answer.id,
-              updatedText,
-            );
-
-            Navigator.pop(context);
-            
-
-            _showSnackbar('Answer updated successfully');
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: islamicGreen600,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Save'),
-        ),
-      ],
-    ),
-  );
-}
-
- 
   Future<void> _deleteAnswer(String answerId) async {
     // Implement the logic to delete the answer
     // This is a placeholder for actual delete logic
     print('Deleting answer with ID: $answerId');
-  try {
-    final response = await http.delete(Uri.parse('$deleteAns$answerId'));
-    // You may want to handle the response and update the UI here
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      setState(() {
-        _answers.removeWhere((a) => a.id == answerId);
-        for (var question in _questions) {
-          question.answers.removeWhere((a) => a.id == answerId);
-        }
-      });
-      _showSnackbar('Answer deleted successfully');
-    } else {
-      _showSnackbar('Failed to delete answer');
+    try {
+      final response = await http.delete(Uri.parse('$deleteAns$answerId'));
+      // You may want to handle the response and update the UI here
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        setState(() {
+          _answers.removeWhere((a) => a.id == answerId);
+          for (var question in _questions) {
+            question.answers.removeWhere((a) => a.id == answerId);
+          }
+        });
+        _showSnackbar('Answer deleted successfully');
+      } else {
+        _showSnackbar('Failed to delete answer');
+      }
+    } catch (e) {
+      print('❌ Error deleting answer: $e');
+      _showSnackbar('Error deleting answer');
     }
-  } catch (e) {
-    print('❌ Error deleting answer: $e');
-    _showSnackbar('Error deleting answer');
   }
 
-  }
-
-
-  Future<void> _hideAnswer(String answerId, bool isHidden) async {//Hide or unhide an answer
+  Future<void> _hideAnswer(String answerId, bool isHidden) async {
+    //Hide or unhide an answer
     // Implement the logic to hide the answer
     // This is a placeholder for actual hide logic
     print('Hiding answer with ID: $answerId');
     try {
-      final response = await http.put(Uri.parse('$adminHideAnswerUrl/$answerId'), 
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'isHidden': !isHidden}));
+      final response = await http.put(
+        Uri.parse('$adminHideAnswerUrl/$answerId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'isHidden': !isHidden}),
+      );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         setState(() {
           //update the UI to reflect the hidden answer (isHidden=true)
           final answerIndex = _answers.indexWhere((a) => a.id == answerId);
           if (answerIndex != -1) {
-            _answers[answerIndex] = _answers[answerIndex].copyWith(isHidden: !isHidden);
+            _answers[answerIndex] = _answers[answerIndex].copyWith(
+              isHidden: !isHidden,
+            );
           }
           for (var question in _questions) {
-            final qAnswerIndex = question.answers.indexWhere((a) => a.id == answerId);
+            final qAnswerIndex = question.answers.indexWhere(
+              (a) => a.id == answerId,
+            );
             if (qAnswerIndex != -1) {
-              question.answers[qAnswerIndex] = question.answers[qAnswerIndex].copyWith(isHidden: !isHidden);
+              question.answers[qAnswerIndex] = question.answers[qAnswerIndex]
+                  .copyWith(isHidden: !isHidden);
             }
           }
         });
         // Show a snackbar or some feedback to the user
-        _showSnackbar('Answer ${!isHidden ? 'hidden' : 'unhidden'} successfully');
+        _showSnackbar(
+          'Answer ${!isHidden ? 'hidden' : 'unhidden'} successfully',
+        );
       } else {
         _showSnackbar('Failed to hide answer');
       }
@@ -2812,10 +2781,5 @@ void _showEditAnswerDialog(Answer answer) {
       print('❌ Error hiding answer: $e');
       _showSnackbar('Error hiding answer');
     }
-
   }
-
-
-
-
 }

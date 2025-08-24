@@ -3,8 +3,6 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 
 class MeetingRequestService {
-  static const String baseUrl = 'http://localhost:5000';
-
   // Create a new meeting request
   static Future<Map<String, dynamic>> createMeetingRequest({
     required String volunteerId,
@@ -17,7 +15,7 @@ class MeetingRequestService {
       print("preferredSlots: $preferredSlots");
       print("token: $token");
       final response = await http.post(
-        Uri.parse('$baseUrl/meeting-requests'),
+        Uri.parse(meetingRequests),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -49,7 +47,7 @@ class MeetingRequestService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/meeting-requests'),
+        Uri.parse(meetingRequests),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -75,7 +73,7 @@ class MeetingRequestService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/meeting-requests/$meetingId'),
+        Uri.parse('$meetingRequests/$meetingId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -102,7 +100,7 @@ class MeetingRequestService {
   }) async {
     try {
       final response = await http.patch(
-        Uri.parse('$baseUrl/meeting-requests/$meetingId/select-time'),
+        Uri.parse('$meetingRequests/$meetingId/select-time'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -139,7 +137,7 @@ class MeetingRequestService {
   }) async {
     try {
       final response = await http.patch(
-        Uri.parse('$baseUrl/meeting-requests/$meetingId/reject'),
+        Uri.parse('$meetingRequests/$meetingId/reject'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -168,7 +166,7 @@ class MeetingRequestService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/meeting-requests/volunteer'),
+        Uri.parse(volunteerMeetingRequests),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -194,7 +192,7 @@ class MeetingRequestService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/meeting-requests/user'),
+        Uri.parse(userMeetingRequests),
         headers: {'Authorization': 'Bearer $token'},
       );
 
