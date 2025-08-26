@@ -292,8 +292,9 @@ class _QuestionCardState extends State<QuestionCard> {
                   .toList();
           isLoadingAnswers = false;
         });
-        // Fetch the upvoted answer ID for this question
-        await fetchUpvotedAnswerId();
+        // Only fetch upvoted answer ID if we need it for upvoting functionality
+        // For now, skip this to speed up the answer form loading
+        // await fetchUpvotedAnswerId();
       } else {
         setState(() {
           isLoadingAnswers = false;
@@ -437,6 +438,34 @@ class _QuestionCardState extends State<QuestionCard> {
       isSubmittingAnswer = true;
     });
 
+    // Check if user has already answered this question
+    try {
+      await _fetchAllAnswers();
+      if (_hasCurrentUserAnswered()) {
+        setState(() {
+          isSubmittingAnswer = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'You have already submitted an answer for this question.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+
+        // Hide the form since user already answered
+        setState(() {
+          showAnswerForm = false;
+        });
+        return;
+      }
+    } catch (e) {
+      // If we can't check, continue with submission
+      print('Could not verify if user already answered: $e');
+    }
+
     try {
       final token = await AuthUtils.getValidToken(context);
       if (token == null) {
@@ -554,22 +583,11 @@ class _QuestionCardState extends State<QuestionCard> {
       return;
     }
 
-    // Always fetch latest answers before showing the form
-    await _fetchAllAnswers();
-    if (!_hasCurrentUserAnswered()) {
-      setState(() {
-        showAnswerForm = true;
-      });
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'You have already submitted an answer for this question.',
-          ),
-        ),
-      );
-    }
+    // Show the form immediately without any API calls
+    setState(() {
+      showAnswerForm = true;
+      isSubmittingAnswer = false; // No loading state needed
+    });
   }
 
   void _handleReportSuccess(String answerId) {
@@ -1296,6 +1314,7 @@ class _QuestionCardState extends State<QuestionCard> {
                       ],
                     ),
                     SizedBox(height: 12),
+
                     TextFormField(
                       controller: _answerController,
                       maxLines: 4,
