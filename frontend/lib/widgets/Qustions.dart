@@ -38,6 +38,9 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   late TabController _tabController;
 
   final ScrollController _favoritesScrollController = ScrollController();
+  final ScrollController _recentQuestionsScrollController = ScrollController();
+  final ScrollController _communityQuestionsScrollController =
+      ScrollController();
   late VoidCallback _navListener;
   NavigationProvider? _navProvider;
 
@@ -531,8 +534,6 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
   Timer? _timer;
 
   final Map<String, GlobalKey> _questionKeys = {}; // Add this line
-  final ScrollController _communityScrollController =
-      ScrollController(); // Add this line
   bool _isAutoLoading = false; // Add this line
 
   @override
@@ -611,9 +612,9 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
       };
       _navProvider?.addListener(_navListener);
     });
-    _communityScrollController.addListener(() {
-      if (_communityScrollController.position.pixels >=
-          _communityScrollController.position.maxScrollExtent - 50) {
+    _communityQuestionsScrollController.addListener(() {
+      if (_communityQuestionsScrollController.position.pixels >=
+          _communityQuestionsScrollController.position.maxScrollExtent - 50) {
         _loadMoreCommunityQuestionsIfNeeded();
       }
     });
@@ -639,7 +640,8 @@ class _QuestionsState extends State<Questions> with TickerProviderStateMixin {
     userProvider?.removeListener(() {});
     _navProvider?.removeListener(_navListener);
     _favoritesScrollController.dispose();
-    _communityScrollController.dispose();
+    _recentQuestionsScrollController.dispose();
+    _communityQuestionsScrollController.dispose();
     super.dispose();
   }
 
@@ -895,7 +897,7 @@ Question: "$questionText"
   }
 
   int _currentPage = 1;
-  final int _pageSize = 3;
+  final int _pageSize = 10;
   bool _hasMoreCommunityQuestions = true;
   bool _isLoadingCommunityQuestions = false;
 
@@ -939,6 +941,7 @@ Question: "$questionText"
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['status'] == true) {
         final questions = data['question'];
+        print('questions: ${questions.length}');
         if (questions is List && questions.isNotEmpty) {
           List<Map<String, dynamic>> updatedQuestions = [];
           for (var question in questions) {
@@ -974,7 +977,6 @@ Question: "$questionText"
               'isFlagged': question['isFlagged'] ?? false,
             });
           }
-
           // Exclude questions asked by the current user
           final currentUserId = userProvider?.userId;
           if (currentUserId != null) {
@@ -1005,6 +1007,7 @@ Question: "$questionText"
             getFavoriteQuestions();
             await retryPendingAIs(_communityQuestions);
           }
+          print('updatedQuestions: ${updatedQuestions.length}');
 
           // If received less than page size, no more pages left
           if (questions.length < _pageSize) {
@@ -1209,7 +1212,10 @@ Question: "$questionText"
             final question = ans['question'];
             final questionId = question?['questionId'];
             if (questionId == null) continue;
-            if (ans['isFlagged'] == true || ans['isHidden'] == true || ans['hiddenTemporary'] == true) continue;
+            if (ans['isFlagged'] == true ||
+                ans['isHidden'] == true ||
+                ans['hiddenTemporary'] == true)
+              continue;
             // If you want the latest answer, compare createdAt
             if (!latestAnswersByQuestion.containsKey(questionId) ||
                 DateTime.parse(ans['createdAt']).isAfter(
@@ -1861,28 +1867,39 @@ Question: "$questionText"
             ),
             SizedBox(height: 16),
 
-            ..._recentQuestions
-                .where((question) => question['isFlagged'] != true)
-                .map(
-                  (question) => QuestionCard(
+            Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: ListView.builder(
+                controller: _recentQuestionsScrollController,
+                itemCount:
+                    _recentQuestions
+                        .where((question) => question['isFlagged'] != true)
+                        .length,
+                itemBuilder: (context, index) {
+                  final filteredQuestions =
+                      _recentQuestions
+                          .where((question) => question['isFlagged'] != true)
+                          .toList();
+                  final question = filteredQuestions[index];
+                  return QuestionCard(
                     question: question,
                     onReportSuccess: () {
-                      // if (!mounted) return;
                       setState(() {
                         debugPrint("🚩 Marking question as flagged at index");
-                        final index = _recentQuestions.indexWhere(
+                        final originalIndex = _recentQuestions.indexWhere(
                           (q) =>
                               (q['questionId'] ?? q['_id']) ==
                               (question['questionId'] ?? question['_id']),
                         );
-                        if (index != -1) {
-                          _recentQuestions[index]['isFlagged'] = true;
+                        if (originalIndex != -1) {
+                          _recentQuestions[originalIndex]['isFlagged'] = true;
                         }
                       });
                     },
-                  ),
-                )
-                .toList(),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -1958,7 +1975,7 @@ Question: "$questionText"
                                   style: TextStyle(fontSize: 13),
                                 ),
                               ),
-                              SizedBox(width: 2),
+                              /* SizedBox(width: 2),
                               Container(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: 4,
@@ -1972,7 +1989,7 @@ Question: "$questionText"
                                   '${_communityQuestions.length}',
                                   style: TextStyle(fontSize: 10),
                                 ),
-                              ),
+                              ), */
                             ],
                           ),
                         ),
@@ -2136,7 +2153,7 @@ Question: "$questionText"
                         )
                         : ListView.builder(
                           controller:
-                              _communityScrollController, // Attach controller here
+                              _communityQuestionsScrollController, // Attach controller here
                           itemCount: filteredQuestions.length,
                           itemBuilder: (context, index) {
                             final question = filteredQuestions[index];
@@ -2284,12 +2301,10 @@ Question: "$questionText"
                       setState(() {
                         print('New text: $text');
                         _myAnswers[index]['volunteerAnswer']['text'] = text;
-                       _myAnswers[index]['topAnswer']['text'] = text;
+                        _myAnswers[index]['topAnswer']['text'] = text;
                         //make sure to update upvotesCount
-                       _myAnswers[index]['volunteerAnswer']['upvotesCount'] =
+                        _myAnswers[index]['volunteerAnswer']['upvotesCount'] =
                             0;
-
-
                       });
                       _refreshQuestion(index);
                     },
@@ -2391,22 +2406,22 @@ Question: "$questionText"
       }
     }
   }
-  Future<void> _refreshQuestion(int index) async {
-  final questionId = _myAnswers[index]['question']['questionId'];
-  final response = await http.get(
-    Uri.parse('$questions/$questionId'),
-    headers: {'Content-Type': 'application/json'},
-  );
-  print('Response body: ${response.body}');
-  if (response.statusCode == 200) {
-    final updatedQuestion = jsonDecode(response.body);
-    setState(() {
-      //_myAnswers[index]['question'] = updatedQuestion;
-      _myAnswers[index]['topAnswer'] = updatedQuestion['topAnswer'];
-    });
-  }
-}
 
+  Future<void> _refreshQuestion(int index) async {
+    final questionId = _myAnswers[index]['question']['questionId'];
+    final response = await http.get(
+      Uri.parse('$questions/$questionId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    print('Response body: ${response.body}');
+    if (response.statusCode == 200) {
+      final updatedQuestion = jsonDecode(response.body);
+      setState(() {
+        //_myAnswers[index]['question'] = updatedQuestion;
+        _myAnswers[index]['topAnswer'] = updatedQuestion['topAnswer'];
+      });
+    }
+  }
 }
 
 Future<String?> generateAIAnswerGemini(String questionText) async {

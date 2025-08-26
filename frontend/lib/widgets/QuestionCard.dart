@@ -2063,38 +2063,35 @@ class _QuestionCardState extends State<QuestionCard> {
                             color: AppColors.askPageSubtitle,
                           ),
                         ),
+                        SizedBox(width: 8),
+                        // Flag icon for reporting
+                        if ((userRole == 'user' ||
+                                userRole == 'certified_volunteer') &&
+                            !isOwner)
+                          IconButton(
+                            icon: Icon(
+                              Icons.flag_outlined,
+                              color: Colors.redAccent,
+                            ),
+                            tooltip: 'Report',
+                            onPressed: () async {
+                              await showDialog(
+                                context: context,
+                                builder:
+                                    (context) => ReportModal(
+                                      questionId: answerId,
+                                      questionText: answerText,
+                                      itemType: 'answer',
+                                      scaffoldContext: scaffoldContext,
+                                      onReportSuccess:
+                                          () => _handleReportSuccess(answerId),
+                                    ),
+                              );
+                            },
+                          ),
                       ],
                     ),
 
-                  // 🔴 Flag icon positioned top-right
-                  if ((userRole == 'user' ||
-                          userRole == 'certified_volunteer') &&
-                      !isOwner)
-                    Positioned(
-                      top: 4,
-                      right: 16,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.flag_outlined,
-                          color: Colors.redAccent,
-                        ),
-                        tooltip: 'Report',
-                        onPressed: () async {
-                          await showDialog(
-                            context: context,
-                            builder:
-                                (context) => ReportModal(
-                                  questionId: answerId,
-                                  questionText: answerText,
-                                  itemType: 'answer',
-                                  scaffoldContext: scaffoldContext,
-                                  onReportSuccess:
-                                      () => _handleReportSuccess(answerId),
-                                ),
-                          );
-                        },
-                      ),
-                    ),
                   if (isOwner) // <-- Add edit button for owner
                     IconButton(
                       icon: Icon(Icons.edit, color: AppColors.islamicGreen500),

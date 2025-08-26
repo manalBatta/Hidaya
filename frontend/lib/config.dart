@@ -74,11 +74,7 @@ final addLessonUrl = url + "admin/addlesson";
 final deleteLessonUrl = url + "admin/deletelesson/";
 final updateLessonUrl = url + "admin/updatelesson/";
 
-/* router.get("/lessons", getalllesson);
-//get lesson by id
-router.get("/lesson/:id", getlessonbyid);
-router.patch("/lesson/:id/progress", authMiddleware, updateLessonProgressInUser);
- */
+
 
 final getalllesson = url + "lessons";
 final getlessonbyid = url + "lesson/";
