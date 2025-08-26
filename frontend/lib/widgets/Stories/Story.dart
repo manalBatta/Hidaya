@@ -111,6 +111,7 @@ class _StoriesPageState extends State<StoriesPage>
   Set<String> _likedStories = {};
   Set<String> _savedStories = {};
   String? _expandedStory;
+  List<Story> _allStories = [];
   List<Story> _filteredStories = [];
   bool _isLoading = true;
   String? _error;
@@ -119,13 +120,16 @@ class _StoriesPageState extends State<StoriesPage>
   bool _isFetchingMore = false;
 
   // Filter states
-  // Removed ContentType, Language, Gender filter states as they are not used with API data
+  StoryType? _selectedStoryType;
+  String _sortBy = 'date'; // 'date', 'views', 'likes'
+  List<String> _availableCountries = [];
 
   late AnimationController _heartAnimController;
   late AnimationController _bookmarkAnimController;
   late Animation<double> _heartScale;
   late Animation<double> _bookmarkScale;
   final FocusNode _focusNode = FocusNode();
+  final TextEditingController _searchController = TextEditingController();
 
   // --- Blur control ---
   Map<String, DateTime?> _lastCollapsedTime = {};
@@ -203,15 +207,19 @@ class _StoriesPageState extends State<StoriesPage>
         if (mounted) {
           setState(() {
             if (append) {
-              _filteredStories.addAll(newStories);
+              _allStories.addAll(newStories);
             } else {
-              _filteredStories = newStories;
+              _allStories = newStories;
             }
+            _filteredStories = List.from(_allStories);
             _isLoading = false;
             _isFetchingMore = false;
             _currentPage = pagination['page'] ?? page;
             _totalPages = pagination['totalPages'] ?? 1;
           });
+
+          // Extract unique countries for filter dropdown
+          _extractAvailableCountries();
         }
       } else {
         throw Exception('Failed to load stories');
@@ -323,38 +331,121 @@ class _StoriesPageState extends State<StoriesPage>
     _heartAnimController.dispose();
     _bookmarkAnimController.dispose();
     _focusNode.dispose();
+    _searchController.dispose();
     // Dispose all video controllers
     _videoControllers.forEach((key, controller) => controller.dispose());
     super.dispose();
   }
 
-  void _filterStories() {
+  void _extractAvailableCountries() {
+    Set<String> countries = {};
+    for (var story in _allStories) {
+      if (story.country.isNotEmpty) {
+        countries.add(story.country);
+      }
+    }
     setState(() {
-      _filteredStories =
-          _filteredStories.where((story) {
-            bool matchesSearch =
-                _searchQuery.isEmpty ||
-                story.title.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                story.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                story.country.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                (story.background?.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ??
-                    false) ||
-                (story.journeyToIslam?.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ??
-                    false) ||
-                (story.afterIslam?.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ??
-                    false);
-            return matchesSearch;
-          }).toList();
+      _availableCountries = countries.toList()..sort();
+    });
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _selectedStoryType = null;
+      _sortBy = 'date';
+      _searchQuery = '';
+    });
+    _searchController.clear();
+    _filterStories();
+
+    // Clear the search text field
+    if (_focusNode.hasFocus) {
+      _focusNode.unfocus();
+    }
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? AppColors.islamicGreen500 : AppColors.islamicCream,
+          border: Border.all(
+            color:
+                isSelected
+                    ? AppColors.islamicGreen500
+                    : AppColors.islamicGreen300,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.islamicGreen700,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _filterStories() {
+    // Start with all stories
+    List<Story> filtered = List.from(_allStories);
+
+    // Apply search filter
+    filtered =
+        filtered.where((story) {
+          bool matchesSearch =
+              _searchQuery.isEmpty ||
+              story.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              story.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              story.country.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              (story.background?.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ??
+                  false) ||
+              (story.journeyToIslam?.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ??
+                  false) ||
+              (story.afterIslam?.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ??
+                  false);
+          return matchesSearch;
+        }).toList();
+
+    // Apply story type filter
+    if (_selectedStoryType != null) {
+      filtered =
+          filtered.where((story) => story.type == _selectedStoryType).toList();
+    }
+
+    // Apply sorting
+    switch (_sortBy) {
+      case 'date':
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case 'views':
+        filtered.sort((a, b) => b.views.compareTo(a.views));
+        break;
+      case 'likes':
+        filtered.sort((a, b) => b.likeCount.compareTo(a.likeCount));
+        break;
+    }
+
+    setState(() {
+      _filteredStories = filtered;
     });
   }
 
@@ -570,6 +661,8 @@ class _StoriesPageState extends State<StoriesPage>
                   ),
                 // Search Header
                 _buildSearchHeader(),
+                // Results Count
+                //_buildResultsCount(),
                 // Filter Panel
                 if (_showFilters) _buildFilterPanel(),
                 // (Page indicators removed as requested)
@@ -614,10 +707,14 @@ class _StoriesPageState extends State<StoriesPage>
                   ],
                 ),
                 child: TextField(
+                  controller: _searchController,
                   onChanged: (value) {
                     setState(() {
                       _searchQuery = value;
                     });
+                    _filterStories();
+                  },
+                  onSubmitted: (value) {
                     _filterStories();
                   },
                   decoration: InputDecoration(
@@ -660,7 +757,7 @@ class _StoriesPageState extends State<StoriesPage>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.grey900.withOpacity(0.08),
+                      color: AppColors.grey900.withOpacity(0.8),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -678,9 +775,41 @@ class _StoriesPageState extends State<StoriesPage>
     );
   }
 
+  Widget _buildResultsCount() {
+    return Positioned(
+      top: 100,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.islamicCream.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.islamicGreen300.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${_filteredStories.length} story${_filteredStories.length == 1 ? '' : 'ies'} found',
+              style: TextStyle(
+                color: AppColors.islamicGreen700,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterPanel() {
     return Positioned(
-      top: 120,
+      top: 100,
       left: 16,
       right: 16,
       child: Container(
@@ -700,7 +829,166 @@ class _StoriesPageState extends State<StoriesPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Removed ContentType and Language filter chips as they are not used with API data
+            // Header with clear filters button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filters',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.islamicGreen900,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _clearAllFilters,
+                  child: Text(
+                    'Clear All',
+                    style: TextStyle(color: AppColors.islamicGreen700),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+
+            // Story Type Filter
+            Text(
+              'Story Type',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.islamicGreen800,
+              ),
+            ),
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                _buildFilterChip(
+                  label: 'All',
+                  isSelected: _selectedStoryType == null,
+                  onTap: () {
+                    setState(() {
+                      _selectedStoryType = null;
+                    });
+                    _filterStories();
+                  },
+                ),
+                _buildFilterChip(
+                  label: 'Video',
+                  isSelected: _selectedStoryType == StoryType.video,
+                  onTap: () {
+                    setState(() {
+                      _selectedStoryType = StoryType.video;
+                    });
+                    _filterStories();
+                  },
+                ),
+                _buildFilterChip(
+                  label: 'Image',
+                  isSelected: _selectedStoryType == StoryType.image,
+                  onTap: () {
+                    setState(() {
+                      _selectedStoryType = StoryType.image;
+                    });
+                    _filterStories();
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+
+            // Country Filter
+            /*  if (_availableCountries.isNotEmpty) ...[
+              Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.islamicGreen800,
+                ),
+              ),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.islamicGreen300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String>(
+                  value: _selectedCountry,
+                  hint: Text('Select Country'),
+                  isExpanded: true,
+                  underline: SizedBox(),
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('All Countries'),
+                    ),
+                    ..._availableCountries.map(
+                      (country) => DropdownMenuItem<String>(
+                        value: country,
+                        child: Text(country),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCountry = value;
+                    });
+                    _filterStories();
+                  },
+                ),
+              ),
+              SizedBox(height: 16),
+            ], */
+
+            // Sort Options
+            Text(
+              'Sort By',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.islamicGreen800,
+              ),
+            ),
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                _buildFilterChip(
+                  label: 'Date',
+                  isSelected: _sortBy == 'date',
+                  onTap: () {
+                    setState(() {
+                      _sortBy = 'date';
+                    });
+                    _filterStories();
+                  },
+                ),
+                _buildFilterChip(
+                  label: 'Views',
+                  isSelected: _sortBy == 'views',
+                  onTap: () {
+                    setState(() {
+                      _sortBy = 'views';
+                    });
+                    _filterStories();
+                  },
+                ),
+                _buildFilterChip(
+                  label: 'Likes',
+                  isSelected: _sortBy == 'likes',
+                  onTap: () {
+                    setState(() {
+                      _sortBy = 'likes';
+                    });
+                    _filterStories();
+                  },
+                ),
+              ],
+            ),
           ],
         ),
       ),
