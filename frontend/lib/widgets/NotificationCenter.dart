@@ -679,7 +679,18 @@ class _NotificationCenterState extends State<NotificationCenter> {
       }
 
       final endpoint = action == 'accept' ? acceptConnection : ignoreConnection;
-      final uri = Uri.parse(endpoint).replace(
+      print('Endpoint: $endpoint'); // Debug print
+      print('AcceptConnection: $acceptConnection'); // Debug print
+      print('IgnoreConnection: $ignoreConnection'); // Debug print
+
+      // Fallback if variables are null
+      final finalEndpoint =
+          endpoint ??
+          (action == 'accept'
+              ? '${url}connections/accept'
+              : '${url}connections/ignore');
+
+      final uri = Uri.parse(finalEndpoint).replace(
         queryParameters: {
           'userA': data['matchedUserId'], // matchedUserId
           'userB': data['currentUserId'], // current user
