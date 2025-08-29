@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
@@ -581,6 +582,10 @@ class _NotificationCenterState extends State<NotificationCenter> {
         // Handle user match notification - fetch user details and show popup
         _handleUserMatchNotification(context, data);
         break;
+      case 'connection_established':
+        // Handle connection established notification - show user details and email
+        _handleConnectionEstablishedNotification(context, data);
+        break;
       default:
         // Handle other notification types if needed
         print('Unknown notification type: $type');
@@ -595,6 +600,123 @@ class _NotificationCenterState extends State<NotificationCenter> {
   ) async {
     // Pass the entire notification data to the popup
     showConnectionPopup(context, data);
+  }
+
+  // Function to handle connection established notification
+  void _handleConnectionEstablishedNotification(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.islamicGreen600),
+              SizedBox(width: 10),
+              Text(
+                'Connection Established!',
+                style: TextStyle(
+                  color: AppColors.islamicGreen600,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You are now connected!',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 15),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.grey100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Connected User Details:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          'Email: ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              // Open email app with the email
+                              final email = data['connectedUserEmail'];
+                              if (email != null) {
+                                // You can use url_launcher package to open email app
+                                // For now, just copy to clipboard
+                                Clipboard.setData(ClipboardData(text: email));
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Email copied to clipboard: $email',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(
+                              data['connectedUserEmail'] ??
+                                  'No email available',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.islamicGreen600,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 15),
+              Text(
+                'You can now communicate with each other via email to support one another in your Islamic journey.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Function to show connection popup

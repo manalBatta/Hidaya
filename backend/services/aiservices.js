@@ -393,8 +393,16 @@ async function recordUserMatch(userA, userB) {
         data[0].user_b
       );
 
-      if (!connectionStatus.bothAccepted) {
+      // Only send notifications if it's a new connection and not already accepted
+      if (!connectionStatus.bothAccepted && connectionStatus.isNewConnection) {
+        console.log(
+          `Sending notifications for new connection between ${data[0].user_a} and ${data[0].user_b}`
+        );
         await sendMatchNotification(data[0].user_a, data[0].user_b);
+      } else {
+        console.log(
+          `Skipping notifications - connection already exists  between ${data[0].user_a} and ${data[0].user_b}`
+        );
       }
     }
 
@@ -436,6 +444,7 @@ async function checkConnectionStatus(userA, userB) {
         bothAccepted: false,
         userAAccepted: false,
         userBAccepted: false,
+        isNewConnection: true, // Indicates this is a new connection
       };
     }
 
@@ -444,10 +453,16 @@ async function checkConnectionStatus(userA, userB) {
       bothAccepted,
       userAAccepted: data.user_a_accepted,
       userBAccepted: data.user_b_accepted,
+      isNewConnection: false, // Indicates this connection already existed
     };
   } catch (err) {
     console.error("checkConnectionStatus error:", err);
-    return { bothAccepted: false, userAAccepted: false, userBAccepted: false };
+    return {
+      bothAccepted: false,
+      userAAccepted: false,
+      userBAccepted: false,
+      isNewConnection: false,
+    };
   }
 }
 
@@ -679,7 +694,7 @@ async function sendEmailExchangeNotification(userA, userB) {
     if (userADetails && userBDetails) {
       // Send notification to user A with user B's email
       await sendNotification({
-        userId: userA,
+        userId: userADetails.userId,
         type: "connection_established",
         title: "Connection Established!",
         message: `You're now connected with ${
@@ -693,7 +708,7 @@ async function sendEmailExchangeNotification(userA, userB) {
 
       // Send notification to user B with user A's email
       await sendNotification({
-        userId: userB,
+        userId: userBDetails.userId,
         type: "connection_established",
         title: "Connection Established!",
         message: `You're now connected with ${
