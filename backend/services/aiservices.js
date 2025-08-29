@@ -475,7 +475,7 @@ async function sendMatchNotification(userA, userB) {
         } have much in common. Would you like to connect and remind one another of Allah along this journey?`,
         data: {
           matchedUserId: userB,
-          currentUserId: userADetails.userId,
+          currentUserId: userA,
           matchType: "initial",
         },
       });
@@ -720,7 +720,7 @@ async function findSimilarUsers(userId, messageContent, limit = 5) {
     const { data, error } = await supabase.rpc("find_similar_users", {
       p_query_embedding: vector,
       p_current_user_id: userId,
-      p_match_threshold: 0.3,   
+      p_match_threshold: 0.3,
       p_match_count: limit,
     });
     if (error) {
