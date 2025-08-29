@@ -4,14 +4,13 @@ import User from "../models/User.js";
 import {
   askGeminiWithLangchain,
   askGeminiWithLangGraph,
-} from "../services/langchainGemini.js";
+} from "../services/aiservices.js";
 
 import {
   getLastSession,
   createNewSupabaseSession,
   saveChatMessage,
   fetchRecentMessages,
-  detectLanguage,
 } from "../services/aiservices.js";
 
 router.post("/start", async (req, res) => {
@@ -58,13 +57,10 @@ router.post("/start", async (req, res) => {
           ?.message || "Asalamualaikum";
       console.log("Last user message:", lastUserMessage);
 
-      //detect lang
-      //const language = detectLanguage(lastUserMessage);
       greetingMessage = await askGeminiWithLangchain({
         user,
         history: recentMessages,
         message: "__resume__", // Special marker
-        //         language,
         lastUserMessage,
       });
 

@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 
 //final url = 'http://192.168.100.189:5000/';
-//final url = 'http://localhost:5000/';
-final String url = "https://hidaya-vq2k.onrender.com/";
+final url = 'http://localhost:5000/';
+//final String url = "https://hidaya-vq2k.onrender.com/";
 final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
@@ -73,8 +73,6 @@ final adminDismissFlagUrl =
 final addLessonUrl = url + "admin/addlesson";
 final deleteLessonUrl = url + "admin/deletelesson/";
 final updateLessonUrl = url + "admin/updatelesson/";
-
-
 
 final getalllesson = url + "lessons";
 final getlessonbyid = url + "lesson/";

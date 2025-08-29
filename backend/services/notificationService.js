@@ -108,15 +108,41 @@ async function sendNotification(options) {
   }
 }
 
-/**
- * Send OneSignal push notification
- * @param {Object} options - Push notification options
- * @returns {Promise<Object>} - Result object
- */
+
 async function sendOneSignalPush(options) {
   const { playerId, title, message, data } = options;
 
   try {
+    // Build action buttons for user_match type
+    const isUserMatch = data?.type === "user_match";
+    const apiBase = process.env.API_BASE_URL || "";
+    console.log("apiBase", apiBase);
+    const webButtons = isUserMatch
+      ? [
+          {
+            id: "accept_connection",
+            text: "Accept Connection",
+            url: `${apiBase}/connections/accept?userA=${encodeURIComponent(
+              data?.matchedUserId || ""
+            )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
+          },
+          {
+            id: "ignore_connection",
+            text: "Ignore",
+            url: `${apiBase}/connections/ignore?userA=${encodeURIComponent(
+              data?.matchedUserId || ""
+            )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
+          },
+        ]
+      : undefined;
+
+    const mobileButtons = isUserMatch
+      ? [
+          { id: "accept_connection", text: "Accept Connection", icon: "" },
+          { id: "ignore_connection", text: "Ignore", icon: "" },
+        ]
+      : undefined;
+
     const response = await axios.post(
       `https://onesignal.com/api/v1/notifications`,
       {
@@ -125,6 +151,10 @@ async function sendOneSignalPush(options) {
         headings: { en: title },
         contents: { en: message },
         data: data,
+        // Buttons for mobile apps
+        buttons: mobileButtons,
+        // Buttons for web push
+        web_buttons: webButtons,
         priority: 10,
       },
       {
