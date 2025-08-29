@@ -121,14 +121,14 @@ async function sendOneSignalPush(options) {
           {
             id: "accept_connection",
             text: "Accept Connection",
-            url: `http://localhost:5000/connections/accept?userA=${encodeURIComponent(
+            url: `${apiBase}/connections/accept?userA=${encodeURIComponent(
               data?.matchedUserId || ""
             )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
           },
           {
             id: "ignore_connection",
             text: "Ignore",
-            url: `http://localhost:5000/connections/ignore?userA=${encodeURIComponent(
+            url: `${apiBase}/connections/ignore?userA=${encodeURIComponent(
               data?.matchedUserId || ""
             )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
           },
