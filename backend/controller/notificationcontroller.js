@@ -75,6 +75,27 @@ export const deleteAllNotifications = async (req, res, next) => {
   }
 };
 
+export const markNotificationAsShown = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { notificationId } = req.params;
+    await UserServices.markNotificationAsShown(userId, notificationId);
+    res.status(200).json({
+      status: true,
+      success: "Notification marked as shown",
+    });
+  } catch (err) {
+    console.log("---> err in markNotificationAsShown -->", err);
+    if (err.message === "Notification not found") {
+      return res.status(404).json({
+        status: false,
+        message: "Notification not found",
+      });
+    }
+    next(err);
+  }
+};
+
 // Test notification endpoint
 export const sendTestNotification = async (req, res, next) => {
   try {

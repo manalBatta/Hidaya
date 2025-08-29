@@ -85,6 +85,7 @@ async function sendNotification(options) {
           message: message,
           data: data,
           read: false,
+          pending: type === "user_match", // Mark user_match notifications as pending
           createdAt: new Date().toISOString(),
         };
 

@@ -25,9 +25,6 @@ import 'package:frontend/constants/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// Global variable to store pending connection data
-Map<String, dynamic>? _pendingConnectionData;
-
 Future<void> resetAppState() async {
   // Clear SharedPreferences
   final prefs = await SharedPreferences.getInstance();
@@ -283,13 +280,10 @@ Future<void> main() async {
             );
             break;
           case 'user_match':
-            // Show connection popup when notification is clicked
-            if (data['action'] == 'show_connection_popup') {
-              print('Showing connection popup for user match');
-              // Store the data to show popup when app is opened
-              // The popup will be shown from the main app widget
-              _pendingConnectionData = data;
-            }
+            // User match notifications are now handled via database
+            print(
+              'User match notification received - will be handled via database',
+            );
             break;
         }
       }
@@ -357,10 +351,49 @@ class _HidayaAppState extends State<HidayaApp> {
     }
   }
 
-  void _checkPendingConnectionData() {
-    if (_pendingConnectionData != null) {
-      showConnectionPopup(context, _pendingConnectionData!);
-      _pendingConnectionData = null; // Clear after showing
+  void _checkPendingConnectionData() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (!userProvider.isLoggedIn) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) return;
+
+      // For Netlify, use environment variables
+      final apiBaseUrl = const String.fromEnvironment('API_BASE_URL');
+
+      // Get pending notifications from database
+      final response = await http.get(
+        Uri.parse('$apiBaseUrl/notifications'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final notifications =
+            jsonDecode(response.body)['notifications'] as List;
+        final pendingUserMatches =
+            notifications
+                .where(
+                  (notification) =>
+                      notification['type'] == 'user_match' &&
+                      notification['pending'] == true,
+                )
+                .toList();
+
+        for (final notification in pendingUserMatches) {
+          showConnectionPopup(context, notification['data']);
+          // Mark as shown
+          await http.put(
+            Uri.parse(
+              '$apiBaseUrl/notifications/${notification['id']}/mark-shown',
+            ),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+        }
+      }
+    } catch (e) {
+      print('Error checking pending connection data: $e');
     }
   }
 
