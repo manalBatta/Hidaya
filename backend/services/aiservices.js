@@ -715,13 +715,13 @@ async function findSimilarUsers(userId, messageContent, limit = 5) {
     // Generate embedding for the message content
     const { embedding } = await embeddingModel.embedContent(messageContent);
     const vector = embedding?.values || [];
-
+    console.log("findSimilarUsers is called for user:", userId);
     // Find users with similar message content using the SQL function
     const { data, error } = await supabase.rpc("find_similar_users", {
-      query_embedding: vector,
-      current_user_id: userId,
-      match_threshold: 0.7,
-      match_count: limit,
+      p_query_embedding: vector,
+      p_current_user_id: userId,
+      p_match_threshold: 0.3,   
+      p_match_count: limit,
     });
     if (error) {
       console.error("Error finding similar users:", error);

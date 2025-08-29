@@ -108,7 +108,6 @@ async function sendNotification(options) {
   }
 }
 
-
 async function sendOneSignalPush(options) {
   const { playerId, title, message, data } = options;
 
@@ -122,14 +121,14 @@ async function sendOneSignalPush(options) {
           {
             id: "accept_connection",
             text: "Accept Connection",
-            url: `${apiBase}/connections/accept?userA=${encodeURIComponent(
+            url: `http://localhost:5000/connections/accept?userA=${encodeURIComponent(
               data?.matchedUserId || ""
             )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
           },
           {
             id: "ignore_connection",
             text: "Ignore",
-            url: `${apiBase}/connections/ignore?userA=${encodeURIComponent(
+            url: `http://localhost:5000/connections/ignore?userA=${encodeURIComponent(
               data?.matchedUserId || ""
             )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
           },

@@ -101,6 +101,7 @@ router.post("/send", async (req, res) => {
     const user = await User.findOne({ userId });
     console.log("Fetched user profile:", user ? "Yes" : "No");
     console.log("User ai_session_id:", user?.ai_session_id);
+    console.log("User ", user);
 
     // Call Gemini API with integrated short-term + long-term memory
     const aiReply = await askGeminiWithLangGraph({ user, message });
