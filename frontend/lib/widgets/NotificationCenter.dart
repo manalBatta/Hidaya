@@ -690,6 +690,10 @@ class _NotificationCenterState extends State<NotificationCenter> {
               ? '${url}connections/accept'
               : '${url}connections/ignore');
 
+      print('FinalEndpoint: $finalEndpoint'); // Debug print
+      print('matchedUserId: ${data['matchedUserId']}'); // Debug print
+      print('currentUserId: ${data['currentUserId']}'); // Debug print
+
       final uri = Uri.parse(finalEndpoint).replace(
         queryParameters: {
           'userA': data['matchedUserId'], // matchedUserId
@@ -697,12 +701,17 @@ class _NotificationCenterState extends State<NotificationCenter> {
         },
       );
 
+      print('URI: $uri'); // Debug print
+
       final response = await http.get(
         uri,
         headers: {'Authorization': 'Bearer $token'},
       );
 
+      print('Response: ${response.body}'); // Debug print
+
       if (response.statusCode == 200) {
+        print('Connection action successful'); // Debug print
         final message =
             action == 'accept'
                 ? 'Connection accepted successfully!'
