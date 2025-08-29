@@ -674,14 +674,15 @@ class _NotificationCenterState extends State<NotificationCenter> {
     try {
       final token = await AuthUtils.getValidToken(context);
       if (token == null) {
-        _showErrorSnackBar(context, 'Authentication required');
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Authentication required')));
+        }
         return;
       }
 
       final endpoint = action == 'accept' ? acceptConnection : ignoreConnection;
-      print('Endpoint: $endpoint'); // Debug print
-      print('AcceptConnection: $acceptConnection'); // Debug print
-      print('IgnoreConnection: $ignoreConnection'); // Debug print
 
       // Fallback if variables are null
       final finalEndpoint =
@@ -690,10 +691,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
               ? '${url}connections/accept'
               : '${url}connections/ignore');
 
-      print('FinalEndpoint: $finalEndpoint'); // Debug print
-      print('matchedUserId: ${data['matchedUserId']}'); // Debug print
-      print('currentUserId: ${data['currentUserId']}'); // Debug print
-
       final uri = Uri.parse(finalEndpoint).replace(
         queryParameters: {
           'userA': data['matchedUserId'], // matchedUserId
@@ -701,49 +698,36 @@ class _NotificationCenterState extends State<NotificationCenter> {
         },
       );
 
-      print('URI: $uri'); // Debug print
-
       final response = await http.get(
         uri,
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      print('Response: ${response.body}'); // Debug print
-
       if (response.statusCode == 200) {
-        print('Connection action successful'); // Debug print
         final message =
             action == 'accept'
                 ? 'Connection accepted successfully!'
                 : 'Connection ignored';
-        _showSuccessSnackBar(context, message);
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
       } else {
-        _showErrorSnackBar(context, 'Failed to $action connection');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to $action connection')),
+          );
+        }
       }
     } catch (e) {
       print('Error handling connection action: $e');
-      _showErrorSnackBar(context, 'An error occurred');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('An error occurred')));
+      }
     }
-  }
-
-  void _showSuccessSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.islamicGreen600,
-        duration: Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
-      ),
-    );
   }
 }
 
