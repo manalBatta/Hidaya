@@ -576,14 +576,24 @@ class _NotificationCenterState extends State<NotificationCenter> {
         print(' Notification: $notification');
         break;
       case 'user_match':
-        // Handle user match notification - show connection popup
-        showConnectionPopup(context, data);
+        // Handle user match notification - fetch user details and show popup
+        _handleUserMatchNotification(context, data);
         break;
       default:
         // Handle other notification types if needed
         print('Unknown notification type: $type');
         break;
     }
+  }
+
+  // Function to handle user match notification
+  Future<void> _handleUserMatchNotification(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) async {
+    // Create data object with required fields
+    final popupData = {'userId': data['matchedUserId']};
+    showConnectionPopup(context, popupData);
   }
 
   // Function to show connection popup
@@ -614,42 +624,8 @@ class _NotificationCenterState extends State<NotificationCenter> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'You have a connection request from:',
+                'You have a connection request!',
                 style: TextStyle(fontSize: 16),
-              ),
-              SizedBox(height: 10),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.grey100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppColors.islamicGreen600,
-                      child: Text(
-                        (data['displayName'] ?? 'User')
-                            .substring(0, 1)
-                            .toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        data['displayName'] ?? 'Another User',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
               SizedBox(height: 15),
               Text(
