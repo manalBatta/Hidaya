@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:frontend/utils/auth_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import '../providers/UserProvider.dart';
 
 class NotificationCenter extends StatefulWidget {
   @override
@@ -591,9 +593,8 @@ class _NotificationCenterState extends State<NotificationCenter> {
     BuildContext context,
     Map<String, dynamic> data,
   ) async {
-    // Create data object with required fields
-    final popupData = {'userId': data['matchedUserId']};
-    showConnectionPopup(context, popupData);
+    // Pass the entire notification data to the popup
+    showConnectionPopup(context, data);
   }
 
   // Function to show connection popup
@@ -671,24 +672,23 @@ class _NotificationCenterState extends State<NotificationCenter> {
     String action,
   ) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = await AuthUtils.getValidToken(context);
       if (token == null) {
         _showErrorSnackBar(context, 'Authentication required');
         return;
       }
 
-      final apiBaseUrl = dotenv.env['API_BASE_URL'];
-      final endpoint =
-          action == 'accept' ? '/connections/accept' : '/connections/ignore';
-
-      final response = await http.post(
-        Uri.parse('$apiBaseUrl$endpoint'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
+      final endpoint = action == 'accept' ? acceptConnection : ignoreConnection;
+      final uri = Uri.parse(endpoint).replace(
+        queryParameters: {
+          'userA': data['matchedUserId'], // matchedUserId
+          'userB': data['currentUserId'], // current user
         },
-        body: jsonEncode({'otherUserId': data['userId']}),
+      );
+
+      final response = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
