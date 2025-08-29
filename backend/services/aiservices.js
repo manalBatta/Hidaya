@@ -490,7 +490,7 @@ async function sendMatchNotification(userA, userB) {
         } have much in common. Would you like to connect and remind one another of Allah along this journey?`,
         data: {
           matchedUserId: userA,
-          currentUserId: userBDetails.userId,
+          currentUserId: userB,
           matchType: "initial",
         },
       });
