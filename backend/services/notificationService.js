@@ -112,35 +112,9 @@ async function sendOneSignalPush(options) {
   const { playerId, title, message, data } = options;
 
   try {
-    // Build action buttons for user_match type
+    // For user_match notifications, add custom action to trigger popup
     const isUserMatch = data?.type === "user_match";
-    const apiBase = process.env.API_BASE_URL || "";
-    console.log("apiBase", apiBase);
-    const webButtons = isUserMatch
-      ? [
-          {
-            id: "accept_connection",
-            text: "Accept Connection",
-            url: `${apiBase}/connections/accept?userA=${encodeURIComponent(
-              data?.matchedUserId || ""
-            )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
-          },
-          {
-            id: "ignore_connection",
-            text: "Ignore",
-            url: `${apiBase}/connections/ignore?userA=${encodeURIComponent(
-              data?.matchedUserId || ""
-            )}&userB=${encodeURIComponent(data?.currentUserId || "")}`,
-          },
-        ]
-      : undefined;
-
-    const mobileButtons = isUserMatch
-      ? [
-          { id: "accept_connection", text: "Accept Connection", icon: "" },
-          { id: "ignore_connection", text: "Ignore", icon: "" },
-        ]
-      : undefined;
+    const customAction = isUserMatch ? "show_connection_popup" : undefined;
 
     const response = await axios.post(
       `https://onesignal.com/api/v1/notifications`,
@@ -149,11 +123,10 @@ async function sendOneSignalPush(options) {
         include_player_ids: [playerId],
         headings: { en: title },
         contents: { en: message },
-        data: data,
-        // Buttons for mobile apps
-        buttons: mobileButtons,
-        // Buttons for web push
-        web_buttons: webButtons,
+        data: {
+          ...data,
+          action: customAction, // Custom action for frontend to handle
+        },
         priority: 10,
       },
       {

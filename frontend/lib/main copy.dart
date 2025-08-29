@@ -23,11 +23,183 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import 'package:frontend/widgets/Admin/AdminPanel.dart';
 import 'package:frontend/constants/colors.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+// Global variable to store pending connection data
+Map<String, dynamic>? _pendingConnectionData;
 
 Future<void> resetAppState() async {
   // Clear SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   await prefs.clear();
+}
+
+// Global function to show connection popup
+void showConnectionPopup(BuildContext context, Map<String, dynamic> data) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Row(
+          children: [
+            Icon(Icons.people, color: AppColors.islamicGreen600),
+            SizedBox(width: 10),
+            Text(
+              'Connection Request',
+              style: TextStyle(
+                color: AppColors.islamicGreen600,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have a connection request from:',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 10),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.grey100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppColors.islamicGreen600,
+                    child: Text(
+                      (data['displayName'] ?? 'User')
+                          .substring(0, 1)
+                          .toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      data['displayName'] ?? 'Another User',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 15),
+            Text(
+              'Would you like to connect and remind one another of Allah along this journey?',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _handleConnectionAction(context, data, 'ignore');
+            },
+            child: Text('Ignore', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _handleConnectionAction(context, data, 'accept');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.islamicGreen600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Accept Connection',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Handle connection actions (accept/ignore)
+Future<void> _handleConnectionAction(
+  BuildContext context,
+  Map<String, dynamic> data,
+  String action,
+) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null) {
+      _showErrorSnackBar(context, 'Authentication required');
+      return;
+    }
+
+    final url =
+        action == 'accept'
+            ? '${dotenv.env['API_BASE_URL']}/connections/accept'
+            : '${dotenv.env['API_BASE_URL']}/connections/ignore';
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'userA': data['matchedUserId'],
+        'userB': data['currentUserId'],
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final message =
+          action == 'accept'
+              ? 'Connection accepted successfully!'
+              : 'Connection ignored';
+      _showSuccessSnackBar(context, message);
+    } else {
+      _showErrorSnackBar(context, 'Failed to $action connection');
+    }
+  } catch (e) {
+    print('Error handling connection action: $e');
+    _showErrorSnackBar(context, 'Network error occurred');
+  }
+}
+
+void _showSuccessSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.green,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+}
+
+void _showErrorSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
 }
 
 void main() async {
@@ -123,6 +295,16 @@ void main() async {
             print('Navigate to questions page - $count missed questions');
             // You can implement navigation logic here
             break;
+
+          case 'user_match':
+            // Show connection popup when notification is clicked
+            if (data['action'] == 'show_connection_popup') {
+              print('Showing connection popup for user match');
+              // Store the data to show popup when app is opened
+              // The popup will be shown from the main app widget
+              _pendingConnectionData = data;
+            }
+            break;
         }
       }
     });
@@ -156,6 +338,11 @@ class _HidayaAppState extends State<HidayaApp> {
     _tokenCheckTimer = Timer.periodic(Duration(minutes: 5), (timer) {
       _checkTokenPeriodically();
     });
+
+    // Check for pending connection data after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPendingConnectionData();
+    });
   }
 
   @override
@@ -178,6 +365,13 @@ class _HidayaAppState extends State<HidayaApp> {
       } catch (e) {
         print('Error during periodic token check: $e');
       }
+    }
+  }
+
+  void _checkPendingConnectionData() {
+    if (_pendingConnectionData != null) {
+      showConnectionPopup(context, _pendingConnectionData!);
+      _pendingConnectionData = null; // Clear after showing
     }
   }
 
