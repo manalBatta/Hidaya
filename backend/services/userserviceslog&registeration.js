@@ -211,37 +211,6 @@ class UserServices {
     }
   }
 
-  static async getPendingNotifications(userId) {
-    try {
-      const user = await UserModel.findOne({ userId });
-      if (!user) {
-        throw new Error("User not found");
-      }
-      return (user.notifications || []).filter(
-        (notification) => notification.pending === true
-      );
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  static async markNotificationAsShown(userId, notificationId) {
-    try {
-      const result = await UserModel.updateOne(
-        { userId, "notifications.id": notificationId },
-        { $set: { "notifications.$.pending": false } }
-      );
-
-      if (result.modifiedCount === 0) {
-        throw new Error("Notification not found");
-      }
-
-      return result;
-    } catch (err) {
-      throw err;
-    }
-  }
-
   static async findVolunteers() {
     try {
       return await UserModel.find({ role: "volunteer" });
