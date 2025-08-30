@@ -590,7 +590,7 @@ class _QuestionCardState extends State<QuestionCard> {
     });
   }
 
-  void _handleReportSuccess(String answerId) {
+    void _handleReportSuccess(String answerId) {
     setState(() {
       final answerIndex = allAnswers.indexWhere(
         (a) => a['answerId'] == answerId,
@@ -605,8 +605,43 @@ class _QuestionCardState extends State<QuestionCard> {
       }
     });
 
-    if (widget.onReportAnswerSuccess != null) {
-      widget.onReportAnswerSuccess!();
+    // Refresh the question data to get the new top answer
+    _refreshQuestionData();
+
+    // Add a small delay to ensure the server has processed the report
+    // before calling the parent's refresh callback
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (widget.onReportAnswerSuccess != null) {
+        widget.onReportAnswerSuccess!();
+      }
+    });
+  }
+
+  // Add method to refresh question data
+  Future<void> _refreshQuestionData() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+
+      final questionId = widget.question['questionId'];
+      final apiUrl = Uri.parse('$questions/$questionId');
+
+      final response = await http.get(
+        apiUrl,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          // Update the question data with fresh data from server
+          widget.question['topAnswer'] = data['topAnswer'];
+          widget.question['topAnswerId'] = data['topAnswerId'];
+        });
+      }
+    } catch (e) {
+      // Silently handle errors to avoid disrupting user experience
+      print('Error refreshing question data: $e');
     }
   }
 
@@ -1092,7 +1127,7 @@ class _QuestionCardState extends State<QuestionCard> {
                       question['timeAgo']?.toString(),
                     ),
                     // Move the flag icon here, only for users
-                    if (userRole == 'user')
+                    if (userRole == 'user' && !isOwner)
                       IconButton(
                         icon: Icon(
                           Icons.flag_outlined,

@@ -1061,6 +1061,7 @@ Question: "$questionText"
 
   //Done deep checking
   void _getMyQuestions() async {
+    // Fetch my questions and expect flagged questions
     try {
       final token = await AuthUtils.getValidToken(context);
       if (token == null) {
@@ -1089,6 +1090,8 @@ Question: "$questionText"
             List<Map<String, dynamic>> updatedMyQuestions = [];
             for (var question in questions) {
               // askedBy is a String or Map in backend, convert to Map for UI
+              //expect flagged questions
+              
               final askedByRaw = question['askedBy'];
               Map<String, dynamic> askedBy;
               if (askedByRaw is String) {
@@ -2251,21 +2254,37 @@ Question: "$questionText"
   }
 
   Widget _buildMyQuestionsTab() {
+     final visibleQuestions = _myQuestions
+      .where((q) => q['isFlagged'] != true) 
+      .toList();
     return Padding(
       padding: EdgeInsets.all(16),
       child:
-          _myQuestions.isEmpty
+          visibleQuestions.isEmpty
               ? _buildEmptyState(
                 'No questions asked yet',
                 'Start by asking your first question',
               )
               : ListView.builder(
-                itemCount: _myQuestions.length,
+                itemCount: visibleQuestions.length,
                 itemBuilder: (context, index) {
-                  final question = _myQuestions[index];
+                  final question = visibleQuestions[index];
                   return QuestionCard(
                     question: question,
                     onRefresh: refreshAllTabs,
+                    onReportSuccess: () {
+                      if (!mounted) return;
+                      setState(() {
+                        final id = question['questionId'];
+                        final originalIndex = _myQuestions.indexWhere(
+                          (q) => q['questionId'] == id,
+                        );
+                        if (originalIndex != -1) {
+                          _myQuestions.removeAt(originalIndex);
+                        }
+                      });
+                    },
+
                   );
                 },
               ),
@@ -2437,6 +2456,7 @@ Question: "$questionText"
   String previousOutput = '';
 
   try {
+      print("DEBUG >>> Starting promptStream call...");
     Gemini.instance
         .promptStream(parts: [Part.text(prompt)])
         .listen(
@@ -2460,6 +2480,7 @@ Question: "$questionText"
             }
           },
           onDone: () {
+                    print("DEBUG >>> Final buffer: ${buffer.toString()}");
             if (!completer.isCompleted) {
               completer.complete(buffer.toString());
             }
