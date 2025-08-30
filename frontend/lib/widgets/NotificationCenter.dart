@@ -659,7 +659,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
                         Text(
                           'Email: ',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 14,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -687,9 +687,8 @@ class _NotificationCenterState extends State<NotificationCenter> {
                               data['connectedUserEmail'] ??
                                   'No email available',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 14,
                                 color: AppColors.islamicGreen600,
-                                decoration: TextDecoration.underline,
                               ),
                             ),
                           ),
