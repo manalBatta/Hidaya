@@ -244,15 +244,15 @@ async function getLastSession(userId) {
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
 
   if (error) {
     console.error("Error fetching last session:", error);
     return null;
   }
 
-  return data; // session row (id, user_id, created_at, etc.)
+  // Return the first session if it exists, otherwise null
+  return data && data.length > 0 ? data[0] : null;
 }
 
 async function createNewSupabaseSession(userId) {

@@ -317,7 +317,7 @@ class _ImmersiveAIChatState extends State<ImmersiveAIChat>
           _typingText = cleanResponse.substring(0, i);
         });
         _scrollToBottom();
-        await Future.delayed(const Duration(milliseconds: 10));
+        await Future.delayed(const Duration(milliseconds: 3));
       } else {
         return;
       }

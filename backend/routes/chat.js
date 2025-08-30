@@ -21,10 +21,11 @@ router.post("/start", async (req, res) => {
     console.log("User ID:", userId);
 
     const user = await User.findOne({ userId });
-    console.log("User found:", user ? "Yes" : "No");
+    console.log("User found:", user);
     console.log("User ai_session_id:", user?.ai_session_id);
 
-    let session = await getLastSession(userId);
+    let session = await getLastSession(user._id);
+    console.log("user id to fetch last session:", user._id);
     console.log("Last session found:", session ? "Yes" : "No");
     console.log("Session ID:", session?.id);
 
