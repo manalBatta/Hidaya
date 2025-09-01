@@ -408,6 +408,24 @@ class _SignInPageState extends State<SignInPage> {
                               },
                             ),
 
+                            const SizedBox(height: 8),
+
+                                                         // Forgot Password button
+                             Align(
+                               alignment: Alignment.centerRight,
+                               child: TextButton(
+                                 onPressed: _showForgotPasswordDialog,
+                                 child: Text(
+                                   'Forgot Password?',
+                                   style: TextStyle(
+                                     color: AppColors.islamicGreen600,
+                                     fontWeight: FontWeight.w600,
+                                     fontSize: 14,
+                                   ),
+                                 ),
+                               ),
+                             ),
+
                             const SizedBox(height: 24),
 
                             // Sign In button
@@ -508,6 +526,162 @@ class _SignInPageState extends State<SignInPage> {
           ],
         ),
       ),
+    );
+  }
+
+   void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ForgotPasswordDialog(
+        scaffoldMessenger: ScaffoldMessenger.of(context),
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
+
+}
+class ForgotPasswordDialog extends StatefulWidget {
+  final ScaffoldMessengerState scaffoldMessenger;
+
+  const ForgotPasswordDialog({super.key, required this.scaffoldMessenger});
+
+  @override
+  _ForgotPasswordDialogState createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendResetLink() async {
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = widget.scaffoldMessenger;
+    if (!mounted) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse(forgotPassword),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'email': _emailController.text}),
+      );
+      
+      if (!mounted) return;
+
+      final data = jsonDecode(response.body);
+      
+      if (response.statusCode == 200) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(data['message'] ?? 'Password reset link sent to your email.'),
+            backgroundColor: AppColors.islamicGreen600,
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(data['message'] ?? 'Failed to send reset link. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Network error. Please check your connection and try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    // Pop the dialog after a short delay
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.islamicWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.islamicGreen200),
+      ),
+      title: const Text(
+        'Forgot Password',
+        style: TextStyle(
+          color: AppColors.islamicGreen800,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Enter your email address and we will send you a link to reset your password.',
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                labelStyle: TextStyle(
+                  color: AppColors.islamicGreen700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty || !value.contains('@')) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(
+              color: AppColors.islamicGreen600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.islamicGreen500,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              _sendResetLink();
+            }
+          },
+          child: const Text('Send Reset Link'),
+        ),
+      ],
     );
   }
 }

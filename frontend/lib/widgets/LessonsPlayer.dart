@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 
 class LessonStep {
   final String title;
@@ -48,6 +49,7 @@ class LessonPlayer extends StatefulWidget {
 class _LessonPlayerState extends State<LessonPlayer> {
   int currentStep = 0;
   bool isCompleted = false;
+  Map<int, bool> _mediaLoaded = {}; // Track loaded media for each step
 
   double get progress =>
       ((currentStep + 1) / widget.lessonData.steps.length) * 100;
@@ -59,6 +61,20 @@ class _LessonPlayerState extends State<LessonPlayer> {
     super.initState();
     if (widget.isOpen) {
       _resetState();
+          // Preload all images immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadAllImages();
+    });
+    }
+    
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preload all images when dependencies change (widget becomes available)
+    if (widget.isOpen && widget.lessonData.steps.isNotEmpty) {
+      _preloadAllImages();
     }
   }
 
@@ -81,7 +97,11 @@ class _LessonPlayerState extends State<LessonPlayer> {
               ? 0
               : math.max(0, math.min(widget.initialStepIndex, maxIndex));
       isCompleted = false;
+      _mediaLoaded.clear(); // Clear loaded media tracking
     });
+    
+    // Preload media for current and next steps
+    _preloadMedia();
   }
 
   void _handleNext() {
@@ -92,6 +112,9 @@ class _LessonPlayerState extends State<LessonPlayer> {
         currentStep++;
       }
     });
+    
+    // Preload media for next steps after navigation
+    _preloadMedia();
   }
 
   void _handlePrevious() {
@@ -114,6 +137,48 @@ class _LessonPlayerState extends State<LessonPlayer> {
       currentStep = stepIndex;
       isCompleted = false;
     });
+    
+    // Preload media for the clicked step and next steps
+    _preloadMedia();
+  }
+
+  // Preload media for current and upcoming steps
+  void _preloadMedia() {
+    if (widget.lessonData.steps.isEmpty) return;
+    
+    // Preload current step and next 2 steps
+    final stepsToPreload = <int>[];
+    stepsToPreload.add(currentStep);
+    
+    if (currentStep + 1 < widget.lessonData.steps.length) {
+      stepsToPreload.add(currentStep + 1);
+    }
+    if (currentStep + 2 < widget.lessonData.steps.length) {
+      stepsToPreload.add(currentStep + 2);
+    }
+    
+    // Mark steps as loaded (this will trigger image caching)
+    for (final stepIndex in stepsToPreload) {
+      if (!_mediaLoaded.containsKey(stepIndex)) {
+        _mediaLoaded[stepIndex] = true;
+      }
+    }
+  }
+
+  // Preload all images in the lesson for better performance
+  void _preloadAllImages() {
+    if (widget.lessonData.steps.isEmpty) return;
+    
+    for (int i = 0; i < widget.lessonData.steps.length; i++) {
+      final step = widget.lessonData.steps[i];
+      if (step.mediaType.toLowerCase() == 'image' && step.mediaUrl.isNotEmpty) {
+        // Preload image using CachedNetworkImage
+        precacheImage(
+          CachedNetworkImageProvider(step.mediaUrl),
+          context,
+        );
+      }
+    }
   }
 
   @override
@@ -263,45 +328,53 @@ class _LessonPlayerState extends State<LessonPlayer> {
                                             currentStepData.mediaType
                                                 .toLowerCase();
                                         if (mediaType == 'image') {
-                                          return Image.network(
-                                            currentStepData.mediaUrl,
+                                          return CachedNetworkImage(
+                                            imageUrl: currentStepData.mediaUrl,
                                             fit: BoxFit.contain,
-                                            errorBuilder:
-                                                (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) => Container(
-                                                  height: 300,
-                                                  color:
-                                                      AppColors.lessonsBorder,
-                                                  child: Center(
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .image_not_supported,
-                                                          size: 48,
-                                                          color:
-                                                              AppColors
-                                                                  .lessonsSubtitle,
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        Text(
-                                                          'Image not available',
-                                                          style: TextStyle(
-                                                            color:
-                                                                AppColors
-                                                                    .lessonsSubtitle,
-                                                          ),
-                                                        ),
-                                                      ],
+                                            placeholder: (context, url) => Container(
+                                              height: 300,
+                                              color: AppColors.lessonsBorder,
+                                              child: Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    CircularProgressIndicator(
+                                                      color: AppColors.lessonsHumanBadge,
                                                     ),
-                                                  ),
+                                                    SizedBox(height: 16),
+                                                    Text(
+                                                      'Loading image...',
+                                                      style: TextStyle(
+                                                        color: AppColors.lessonsSubtitle,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
+                                              ),
+                                            ),
+                                            errorWidget: (context, url, error) => Container(
+                                              height: 300,
+                                              color: AppColors.lessonsBorder,
+                                              child: Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 48,
+                                                      color: AppColors.lessonsSubtitle,
+                                                    ),
+                                                    SizedBox(height: 8),
+                                                    Text(
+                                                      'Image not available',
+                                                      style: TextStyle(
+                                                        color: AppColors.lessonsSubtitle,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           );
                                         } else if (mediaType == 'video') {
                                           return Container(

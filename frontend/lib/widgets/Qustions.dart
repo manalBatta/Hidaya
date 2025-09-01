@@ -1838,76 +1838,115 @@ Question: "$questionText"
     );
   }
 
-  Widget _buildRecentQuestions() {
-    return Card(
-      color: Colors.white.withOpacity(0.8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Color(0xFFBFE3D5)),
-      ),
-      elevation: 8,
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              children: [
-                Icon(Icons.question_answer, color: Color(0xFF104C34), size: 20),
-                Text(
-                  'Recent Community Questions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF104C34),
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.visible,
+ Widget _buildRecentQuestions() {
+  return Card(
+    color: Colors.white.withOpacity(0.8),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: BorderSide(color: Color(0xFFBFE3D5)),
+    ),
+    elevation: 8,
+    child: Padding(
+      padding: EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            children: [
+              Icon(Icons.question_answer, color: Color(0xFF104C34), size: 20),
+              Text(
+                'Recent Community Questions',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF104C34),
                 ),
-              ],
-            ),
-            SizedBox(height: 16),
-
-            Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              child: ListView.builder(
-                controller: _recentQuestionsScrollController,
-                itemCount:
-                    _recentQuestions
-                        .where((question) => question['isFlagged'] != true)
-                        .length,
-                itemBuilder: (context, index) {
-                  final filteredQuestions =
-                      _recentQuestions
-                          .where((question) => question['isFlagged'] != true)
-                          .toList();
-                  final question = filteredQuestions[index];
-                  return QuestionCard(
-                    question: question,
-                    onReportSuccess: () {
-                      setState(() {
-                        debugPrint("🚩 Marking question as flagged at index");
-                        final originalIndex = _recentQuestions.indexWhere(
-                          (q) =>
-                              (q['questionId'] ?? q['_id']) ==
-                              (question['questionId'] ?? question['_id']),
-                        );
-                        if (originalIndex != -1) {
-                          _recentQuestions[originalIndex]['isFlagged'] = true;
-                        }
-                      });
-                    },
-                  );
-                },
+                softWrap: true,
+                overflow: TextOverflow.visible,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
+            ],
+          ),
+          SizedBox(height: 16),
+
+          Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: ListView.builder(
+              controller: _recentQuestionsScrollController,
+              itemCount: _recentQuestions
+                  .where((question) => 
+                      question['isFlagged'] != true && 
+                      (question['topAnswer'] == null || question['topAnswer']['isFlagged'] != true))
+                  .length,
+              itemBuilder: (context, index) {
+                final filteredQuestions = _recentQuestions
+                    .where((question) => 
+                        question['isFlagged'] != true && 
+                        (question['topAnswer'] == null || question['topAnswer']['isFlagged'] != true))
+                    .toList();
+                final question = filteredQuestions[index];
+                return QuestionCard(
+                  question: question,
+                  onReportSuccess: () {
+                    setState(() {
+                      debugPrint("🚩 Marking question as flagged at index");
+                      final originalIndex = _recentQuestions.indexWhere(
+                        (q) =>
+                            (q['questionId'] ?? q['_id']) ==
+                            (question['questionId'] ?? question['_id']),
+                      );
+                      if (originalIndex != -1) {
+                        _recentQuestions[originalIndex]['isFlagged'] = true;
+                      }
+                    });
+                  },
+     onReportAnswerSuccess: () {
+  final originalIndex = _recentQuestions.indexWhere(
+    (q) =>
+        (q['questionId'] ?? q['_id']) ==
+        (question['questionId'] ?? question['_id']),
+  );
+
+  if (originalIndex != -1 && _recentQuestions[originalIndex]['topAnswer'] != null) {
+    _recentQuestions[originalIndex] = {
+      ..._recentQuestions[originalIndex],
+      'topAnswer': {
+        ..._recentQuestions[originalIndex]['topAnswer'],
+        'isFlagged': true,
+      },
+      'lastModified': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    if (mounted) setState(() {}); 
   }
+},
+
+                  onUpdate: (updatedFields) {
+                    setState(() {
+                      final originalIndex = _recentQuestions.indexWhere(
+                        (q) =>
+                            (q['questionId'] ?? q['_id']) ==
+                            (question['questionId'] ?? question['_id']),
+                      );
+                      if (originalIndex != -1) {
+                        _recentQuestions[originalIndex] = {
+                          ..._recentQuestions[originalIndex],
+                          ...updatedFields,
+                        };
+                      }
+                    });
+                  },
+                  onRefresh: refreshAllTabs,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildTabbedInterface() {
     final userRole = userProvider?.user?['role'] ?? 'user';
@@ -2172,19 +2211,16 @@ Question: "$questionText"
                                 print(
                                   "✅ onUpdate triggered with: $updatedFields",
                                 );
-                                final questionId = question['questionId'];
-                                final originalIndex = _communityQuestions
-                                    .indexWhere(
-                                      (q) => q['questionId'] == questionId,
-                                    );
-                                if (originalIndex != -1) {
-                                  setState(() {
-                                    _communityQuestions[originalIndex].addAll(
-                                      updatedFields,
-                                    );
-                                  });
-                                  refreshAllTabs();
-                                }
+                                //Update the question in the list to show the new changes directly on the screen
+                                setState(() {
+                                  _communityQuestions[index].addAll(updatedFields);
+
+                                });
+                                //Use a helper function to refresh all tabs
+                                _refreshQuestion(index);//refresh the question to show the new changes directly on the screen
+                               refreshAllTabs();  
+                              
+              
                               },
                               onReportSuccess: () {
                                 final questionId = question['questionId'];
@@ -2199,23 +2235,39 @@ Question: "$questionText"
                                   });
                                 }
                               },
-                              onReportAnswerSuccess: () {
-                                _printCommunityQuestions();
-                                final questionId = question['questionId'];
-                                final originalIndex = _communityQuestions
-                                    .indexWhere(
-                                      (q) => q['questionId'] == questionId,
-                                    );
+                          onReportAnswerSuccess: () {
+   _printCommunityQuestions();
+   final questionId = question['questionId'];
+   final originalIndex = _communityQuestions
+       .indexWhere(
+         (q) => q['questionId'] == questionId,
+       );
 
-                                if (originalIndex != -1) {
-                                  setState(() {
-                                    _communityQuestions[originalIndex]['topAnswer']['isFlagged'] =
-                                        true;
-                                  });
-                                }
-
-                                refreshAllTabs();
-                              },
+   if (originalIndex != -1) {    
+     setState(() {
+       // Ensure the structure exists
+       if (_communityQuestions[originalIndex]['topAnswer'] == null) {
+         _communityQuestions[originalIndex]['topAnswer'] = {};
+       }
+       _communityQuestions[originalIndex]['topAnswer']['isFlagged'] = true;
+       
+       // Force immediate UI update by marking the entire question as modified
+       _communityQuestions[originalIndex] = {
+         ..._communityQuestions[originalIndex],
+         'lastModified': DateTime.now().millisecondsSinceEpoch,
+       };
+     });
+     
+     _refreshQuestion(originalIndex);
+   }
+   
+   refreshAllTabs();
+   
+   // Force additional UI refresh to ensure changes are visible
+   if (mounted) {
+     setState(() {});
+   }
+ },
                             );
                           },
                         ),
@@ -2333,42 +2385,59 @@ Question: "$questionText"
     );
   }
 
-  Widget _buildFavoritesTab() {
-    final filteredFavorites =
-        _favoriteQuestions.where((q) => q['isFlagged'] != true).toList();
+Widget _buildFavoritesTab() {
+  final filteredFavorites =
+      _favoriteQuestions.where((q) => q['isFlagged'] != true).toList();
 
-    return Padding(
-      padding: EdgeInsets.all(16),
-      child:
-          filteredFavorites.isEmpty
-              ? _buildEmptyState(
-                'No favorite questions',
-                'Save questions you find helpful',
-              )
-              : ListView.builder(
-                controller: _favoritesScrollController,
-                itemCount: filteredFavorites.length,
-                itemBuilder: (context, index) {
-                  return QuestionCard(
-                    question: filteredFavorites[index],
-                    onReportSuccess: () {
-                      if (!mounted) return;
-                      setState(() {
-                        final id = filteredFavorites[index]['questionId'];
-                        final originalIndex = _favoriteQuestions.indexWhere(
-                          (q) => q['questionId'] == id,
-                        );
-                        if (originalIndex != -1) {
-                          _favoriteQuestions[originalIndex]['isFlagged'] = true;
-                        }
-                      });
-                    },
-                    onRefresh: refreshAllTabs,
-                  );
+  return Padding(
+    padding: EdgeInsets.all(16),
+    child: filteredFavorites.isEmpty
+        ? _buildEmptyState(
+            'No favorite questions',
+            'Save questions you find helpful',
+          )
+        : ListView.builder(
+            controller: _favoritesScrollController,
+            itemCount: filteredFavorites.length,
+            itemBuilder: (context, index) {
+              final question = filteredFavorites[index];
+
+              return QuestionCard(
+                question: question,
+                onReportSuccess: () {
+                  if (!mounted) return;
+                  setState(() {
+                    final id = question['questionId'] ?? question['_id'];
+                    final originalIndex = _favoriteQuestions.indexWhere(
+                      (q) => (q['questionId'] ?? q['_id']) == id,
+                    );
+                    if (originalIndex != -1) {
+                      _favoriteQuestions[originalIndex]['isFlagged'] = true;
+                    }
+                  });
                 },
-              ),
-    );
-  }
+               onUpdate: (updatedFields) {
+               if (!mounted) return;
+                setState(() {
+               final questionId = filteredFavorites[index]['questionId'] ??
+              filteredFavorites[index]['_id'];
+
+                final originalIndex = _favoriteQuestions.indexWhere(
+                (q) => (q['questionId'] ?? q['_id']) == questionId,
+                  );
+
+             if (originalIndex != -1) {
+              _favoriteQuestions[originalIndex].addAll(updatedFields);
+             }
+            });
+           refreshAllTabs();
+             },
+                onRefresh: refreshAllTabs,
+              );
+            },
+          ),
+  );
+}
 
   Widget _buildEmptyState(String title, String subtitle) {
     return Center(
@@ -2435,12 +2504,21 @@ Question: "$questionText"
     print('Response body: ${response.body}');
     if (response.statusCode == 200) {
       final updatedQuestion = jsonDecode(response.body);
+      print(' 😭😭😭😭 Updated question: $updatedQuestion');
       setState(() {
         //_myAnswers[index]['question'] = updatedQuestion;
         _myAnswers[index]['topAnswer'] = updatedQuestion['topAnswer'];
       });
     }
   }
+   
+
+   
+
+
+
+
+  
 }
 
 Future<String?> generateAIAnswerGemini(String questionText) async {

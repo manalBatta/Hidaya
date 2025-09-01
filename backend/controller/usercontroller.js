@@ -581,13 +581,40 @@ export async function resetpassword(req, res, next) {
               max-width: 400px;
               width: 100%;
             }
-            input[type="password"] {
+            .password-container {
+              position: relative;
+              width: 100%;
+              margin-bottom: 20px;
+            }
+            input[type="password"], input[type="text"] {
               padding: 12px;
               width: 100%;
               font-size: 16px;
-              margin-bottom: 20px;
               border: 1px solid #ccc;
               border-radius: 6px;
+              box-sizing: border-box;
+            }
+            .password-toggle {
+              position: absolute;
+              right: 12px;
+              top: 50%;
+              transform: translateY(-50%);
+              background: none;
+              border: none;
+              cursor: pointer;
+              color: #666;
+              width: 20px;
+              height: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .password-toggle:hover {
+              color: #333;
+            }
+            .eye-icon {
+              font-size: 18px;
+              font-weight: bold;
             }
             button {
               padding: 12px 20px;
@@ -611,13 +638,32 @@ export async function resetpassword(req, res, next) {
         <body>
           <div class="container">
             <h2>Reset Your Password</h2>
-            <input type="password" id="newPassword" placeholder="Enter new password" />
+                         <div class="password-container">
+               <input type="password" id="newPassword" placeholder="Enter new password" />
+                                               <button type="button" class="password-toggle" onclick="togglePassword()">
+                  <span class="eye-icon">👁️</span>
+                </button>
+             </div>
             <button onclick="submitPassword()">Reset Password</button>
             <div class="message" id="message"></div>
           </div>
 
           <script>
   const token = "${token}"; // ← خزن التوكن كقيمة ثابتة
+  
+  function togglePassword() {
+    const passwordInput = document.getElementById("newPassword");
+    const toggleButton = document.querySelector(".password-toggle");
+    
+    if (passwordInput.type === "password") {
+      passwordInput.type = "text";
+      toggleButton.innerHTML = '<span class="eye-icon">🙈</span>';
+    } else {
+      passwordInput.type = "password";
+      toggleButton.innerHTML = '<span class="eye-icon">👁️</span>';
+    }
+  }
+  
   async function submitPassword() {
     const newPassword = document.getElementById("newPassword").value;
     const messageEl = document.getElementById("message");
