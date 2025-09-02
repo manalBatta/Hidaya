@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/utils/auth_utils.dart';
 import 'package:frontend/widgets/PrayerTimesWidget.dart';
 import 'package:frontend/widgets/Qustions.dart';
+import 'package:frontend/widgets/Welcomingpage.dart';
 import 'HomePage.dart';
 import 'LessonsPage.dart';
 import 'ProfilePage.dart';
@@ -33,6 +34,16 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       label: 'Home',
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
+      page: ChangeNotifierProvider(
+  create: (_) => OnboardingProvider(),
+  child: const OnboardingPage(),
+),
+    ),
+    NavigationItem(
+      id: 'onboarding',
+      label: 'Chating with AI',
+      icon: Icons.chat,
+      activeIcon: Icons.chat,
       page: HomePage(),
     ),
     NavigationItem(
