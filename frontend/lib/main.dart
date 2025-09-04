@@ -136,7 +136,6 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => userProvider),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        
       ],
       child: HidayaApp(),
     ),

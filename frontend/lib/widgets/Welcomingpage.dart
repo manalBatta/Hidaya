@@ -75,7 +75,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final isDarkMode = Provider.of<OnboardingProvider>(context).isDarkMode;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppColors.grey900 : Colors.white,
+      backgroundColor:
+          isDarkMode
+              ? AppColors.grey900
+              : const Color.fromARGB(255, 248, 243, 222),
       body: Stack(
         children: [
           SafeArea(
@@ -105,7 +108,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             textStyle: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                              color:
+                                  isDarkMode ? Colors.white70 : Colors.black87,
                             ),
                           ),
                           TyperAnimatedText(
@@ -113,7 +117,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             textStyle: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                              color:
+                                  isDarkMode ? Colors.white70 : Colors.black87,
                             ),
                           ),
                           TyperAnimatedText(
@@ -121,7 +126,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             textStyle: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                              color:
+                                  isDarkMode ? Colors.white70 : Colors.black87,
                             ),
                           ),
                           TyperAnimatedText(
@@ -129,7 +135,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             textStyle: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                              color:
+                                  isDarkMode ? Colors.white70 : Colors.black87,
                             ),
                           ),
                         ],
@@ -137,15 +144,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  Text(
-                    "What you'll discover",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -155,7 +154,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         icon: Icons.menu_book,
                         title: "Read about Hidaya",
                         description: "Learn the basics of Islam in an easy way",
-                        color: isDarkMode ? AppColors.islamicGreen700 : const Color(0xFFE6F7EE),
+                        color:
+                            isDarkMode
+                                ? AppColors.islamicGreen700
+                                : const Color(0xFFE6F7EE),
                         iconColor: AppColors.islamicGreen700,
                         onTap: scrollToAbout,
                         isDarkMode: isDarkMode,
@@ -163,42 +165,67 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       FeatureCard(
                         icon: Icons.question_answer,
                         title: "Answers to Common Questions",
-                        description: "Ask questions and get answers from certified volunteers",
-                        color: isDarkMode ? AppColors.homeGreenDarker : const Color(0xFFEAF1FF),
+                        description:
+                            "Ask questions and get answers from certified volunteers",
+                        color:
+                            isDarkMode
+                                ? AppColors.homeGreenDarker
+                                : const Color(0xFFEAF1FF),
                         iconColor: Colors.blue,
                         onTap: () {
-                          Provider.of<NavigationProvider>(context, listen: false).setMainTabIndex(2);
+                          Provider.of<NavigationProvider>(
+                            context,
+                            listen: false,
+                          ).setMainTabIndex(2);
                         },
                         isDarkMode: isDarkMode,
                       ),
                       FeatureCard(
                         icon: Icons.school,
                         title: "Lessons",
-                        description: "Practical lessons to deepen understanding ",
-                        color: isDarkMode ? AppColors.islamicGreen700 : const Color(0xFFFFF0F0),
+                        description:
+                            "Practical lessons to deepen understanding ",
+                        color:
+                            isDarkMode
+                                ? AppColors.islamicGreen700
+                                : const Color(0xFFFFF0F0),
                         iconColor: Colors.red,
                         onTap: () {
-                          Provider.of<NavigationProvider>(context, listen: false).setMainTabIndex(4);
+                          Provider.of<NavigationProvider>(
+                            context,
+                            listen: false,
+                          ).setMainTabIndex(4);
                         },
                         isDarkMode: isDarkMode,
                       ),
                       FeatureCard(
                         icon: Icons.favorite,
                         title: "Stories",
-                        description: "Inspiring real stories about people who follow the path of Allah and learn from their experiences",
-                        color: isDarkMode ? AppColors.islamicGreen700 : const Color(0xFFFFF0F0),
+                        description:
+                            "Inspiring real stories about people who follow the path of Allah and learn from their experiences",
+                        color:
+                            isDarkMode
+                                ? AppColors.islamicGreen700
+                                : const Color(0xFFFFF0F0),
                         iconColor: Colors.red,
                         onTap: () {
-                          Provider.of<NavigationProvider>(context, listen: false).setMainTabIndex(3);
+                          Provider.of<NavigationProvider>(
+                            context,
+                            listen: false,
+                          ).setMainTabIndex(3);
                         },
                         isDarkMode: isDarkMode,
                       ),
                       FeatureCard(
                         icon: Icons.emoji_emotions,
                         title: "Islamic Jokes",
-                        description: "Enjoy light-hearted humor about Islam for fun",
-                        color: isDarkMode ? AppColors.islamicGreen700 : const Color(0xFFFFF8E1),
-                        iconColor: Colors.orange,
+                        description:
+                            "Enjoy light-hearted humor about Islam for fun",
+                        color:
+                            isDarkMode
+                                ? AppColors.islamicGreen700
+                                : AppColors.islamicCream,
+                        iconColor: AppColors.islamicGreen700,
                         onTap: scrollToJokes,
                         isDarkMode: isDarkMode,
                       ),
@@ -209,7 +236,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     key: _aboutKey,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? AppColors.grey800 : Colors.green.shade50,
+                      color:
+                          isDarkMode ? AppColors.grey800 : Colors.green.shade50,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Column(
@@ -238,7 +266,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     key: _jokesKey,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? AppColors.grey800 : Colors.orange.shade50,
+                      color:
+                          isDarkMode
+                              ? AppColors.grey800
+                              : AppColors.islamicGreen200,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Column(
@@ -248,14 +279,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange,
+                            color: AppColors.islamicGreen700,
                           ),
                         ),
                         SizedBox(height: 12),
-                        JokeCard(text: "Why did the student bring a notebook to the mosque? 👉To take notes on good deeds!"),
-                        JokeCard(text: "Why did the date go to the mosque? 👉To meet the Ramadan sweets!"),
-                        JokeCard(text: "Why did the student take his prayer mat to school? 👉 So he’d always have a place to prostrate when he got high grades!"),
-                        JokeCard(text: "One guy asked his friend: What’s the difference between you and an alarm clock? 👉 He replied: The alarm wakes me up for prayer… but you stay asleep!"),
+                        JokeCard(
+                          text:
+                              "Why did the student bring a notebook to the mosque? 👉To take notes on good deeds!",
+                        ),
+                        JokeCard(
+                          text:
+                              "Why did the date go to the mosque? 👉To meet the Ramadan sweets!",
+                        ),
+                        JokeCard(
+                          text:
+                              "Why did the student take his prayer mat to school? 👉 So he’d always have a place to prostrate when he got high grades!",
+                        ),
+                        JokeCard(
+                          text:
+                              "One guy asked his friend: What’s the difference between you and an alarm clock? 👉 He replied: The alarm wakes me up for prayer… but you stay asleep!",
+                        ),
                       ],
                     ),
                   ),
@@ -316,7 +359,11 @@ class _FeatureCardState extends State<FeatureCard> {
               color: widget.isDarkMode ? AppColors.grey800 : Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
               ],
             ),
             child: Column(
@@ -343,7 +390,8 @@ class _FeatureCardState extends State<FeatureCard> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: widget.isDarkMode ? Colors.grey[300] : Colors.black54,
+                    color:
+                        widget.isDarkMode ? Colors.grey[300] : Colors.black54,
                   ),
                 ),
               ],
@@ -362,6 +410,7 @@ class JokeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.white,
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 3,
