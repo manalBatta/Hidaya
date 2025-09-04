@@ -35,13 +35,13 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
       page: ChangeNotifierProvider(
-  create: (_) => OnboardingProvider(),
-  child: const OnboardingPage(),
-),
+        create: (_) => OnboardingProvider(),
+        child: const OnboardingPage(),
+      ),
     ),
     NavigationItem(
       id: 'onboarding',
-      label: 'Chating with AI',
+      label: 'AI Chat',
       icon: Icons.chat,
       activeIcon: Icons.chat,
       page: HomePage(),
