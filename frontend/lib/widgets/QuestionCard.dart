@@ -590,7 +590,7 @@ class _QuestionCardState extends State<QuestionCard> {
     });
   }
 
-  void _handleReportSuccess(String answerId) {
+    void _handleReportSuccess(String answerId) {
     setState(() {
       final answerIndex = allAnswers.indexWhere(
         (a) => a['answerId'] == answerId,
@@ -605,8 +605,43 @@ class _QuestionCardState extends State<QuestionCard> {
       }
     });
 
-    if (widget.onReportAnswerSuccess != null) {
-      widget.onReportAnswerSuccess!();
+    // Refresh the question data to get the new top answer
+    _refreshQuestionData();
+
+    // Add a small delay to ensure the server has processed the report
+    // before calling the parent's refresh callback
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (widget.onReportAnswerSuccess != null) {
+        widget.onReportAnswerSuccess!();
+      }
+    });
+  }
+
+  // Add method to refresh question data
+  Future<void> _refreshQuestionData() async {
+    try {
+      final token = await AuthUtils.getValidToken(context);
+      if (token == null) return;
+
+      final questionId = widget.question['questionId'];
+      final apiUrl = Uri.parse('$questions/$questionId');
+
+      final response = await http.get(
+        apiUrl,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          // Update the question data with fresh data from server
+          widget.question['topAnswer'] = data['topAnswer'];
+          widget.question['topAnswerId'] = data['topAnswerId'];
+        });
+      }
+    } catch (e) {
+      // Silently handle errors to avoid disrupting user experience
+      print('Error refreshing question data: $e');
     }
   }
 
@@ -856,7 +891,7 @@ class _QuestionCardState extends State<QuestionCard> {
                         // Edit button for owner
                         if (canEdit)
                           IconButton(
-                            icon: Icon(Icons.edit, color: Colors.blue[700]),
+                            icon: Icon(Icons.edit, color: AppColors.islamicGreen500),
                             tooltip: 'Edit Question',
                             onPressed: () async {
                               final TextEditingController editController =
@@ -1092,7 +1127,7 @@ class _QuestionCardState extends State<QuestionCard> {
                       question['timeAgo']?.toString(),
                     ),
                     // Move the flag icon here, only for users
-                    if (userRole == 'user')
+                    if (userRole == 'user' && !isOwner)
                       IconButton(
                         icon: Icon(
                           Icons.flag_outlined,
@@ -1797,10 +1832,58 @@ class _QuestionCardState extends State<QuestionCard> {
                                         });
                                         return;
                                       }
-                                      // Call API to update answer
+                                                                             // Call API to update answer
+                                       try {
+                                         final url = Uri.parse(
+                                           '$adminUpdateAnswerUrl/$answerId',
+                                         );
+                                         final response = await http.put(
+                                           url,
+                                           headers: {'Content-Type': 'application/json'},
+                                           body: jsonEncode({'text': newAnswerText}),
+                                         );
+                                         
+                                         print('Response status: ${response.statusCode}');
+                                         print('Response body: ${response.body}');
 
-                                      isEditing = true;
-                                      Navigator.of(context).pop();
+                                         if (response.statusCode == 200 || response.statusCode == 204) {
+                                           // Handle successful response
+                                           Map<String, dynamic>? updatedAnswer;
+                                           if (response.body.isNotEmpty) {
+                                             updatedAnswer = jsonDecode(response.body);
+                                           }
+                                           
+                                           if (mounted) {
+                                             setState(() {
+                                               if (updatedAnswer != null) {
+                                                 topAnswer['text'] = updatedAnswer['text'];
+                                                 topAnswer['upvotesCount'] = updatedAnswer['upvotesCount'];
+                                                 topAnswer['createdAt'] = updatedAnswer['createdAt'];
+                                                 topAnswer['topAnswer'] = updatedAnswer['topAnswer'];
+                                               } else {
+                                                 topAnswer['text'] = newAnswerText;
+                                               }
+                                             });
+                                             print(topAnswer);
+                                             print(updatedAnswer);
+                                           }
+                                           //show the new top answer directly on the screen with out refresh the page
+                                         widget.onUpdate?.call(updatedAnswer!);
+                                           Navigator.of(context).pop();
+                                           ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+                                             SnackBar(content: Text('Answer updated successfully!')),
+                                           );
+                                         } else {
+                                           setState(() {
+                                             errorText = 'Failed to update answer.';
+                                           });
+                                         }
+                                       } catch (e) {
+                                         setState(() {
+                                           errorText = 'An error occurred while updating the answer.';
+                                         });
+                                         print('Error updating answer: $e');
+                                       }
                                     },
                                     child: Text('Save'),
                                   ),
@@ -1827,6 +1910,7 @@ class _QuestionCardState extends State<QuestionCard> {
                             scaffoldContext: scaffoldContext,
                             onReportSuccess:
                                 () => _handleReportSuccess(answerId),
+                                
                           ),
                     );
                   },
@@ -1945,36 +2029,55 @@ class _QuestionCardState extends State<QuestionCard> {
                         });
                         return;
                       }
-                      // Call API to update answer
-                      try {
-                        final token = await AuthUtils.getValidToken(context);
-                        final url = Uri.parse('adminUpdateAnswerUrl/$answerId');
-                        final response = await http.put(
-                          url,
-                          headers: {'Content-Type': 'application/json'},
-                          body: jsonEncode({'text': newText}),
-                        );
-                        if (response.statusCode == 200 ||
-                            response.statusCode == 204) {
-                          setState(() {
+                                             // Call API to update answer
+                       try {
+                         final token = await AuthUtils.getValidToken(context);
+                         final url = Uri.parse('$adminUpdateAnswerUrl/$answerId');
+                         final response = await http.put(
+                           url,
+                           headers: {'Content-Type': 'application/json'},
+                           body: jsonEncode({'text': newText}),
+                         );
+                        debugPrint('Hello world ${response.statusCode}');
+                        debugPrint('Hello world ${response}');
+
+                                                  if (response.statusCode == 200 ||
+                              response.statusCode == 204) {
+                                  Map<String, dynamic>? updatedAnswer;
+                                           if (response.body.isNotEmpty) {
+                                             updatedAnswer = jsonDecode(response.body);
+                                           }
+                                           
+                                           if (mounted) {
+                                           setState(() {
+                          if (updatedAnswer != null) {
+                            answer['text'] = updatedAnswer['text'];
+                            answer['upvotesCount'] = updatedAnswer['upvotesCount'];
+                            answer['createdAt'] = updatedAnswer['createdAt'];
+                            answer['topAnswer'] = updatedAnswer['topAnswer'];
+                          } else {
                             answer['text'] = newText;
-                          });
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Answer updated successfully!'),
-                            ),
-                          );
-                        } else {
-                          setState(() {
-                            errorText = 'Failed to update answer.';
-                          });
-                        }
-                      } catch (e) {
-                        setState(() {
-                          errorText = 'Error: $e';
+                          }
                         });
-                      }
+                                           }
+                           //show the new top answer directly on the screen with out refresh the page
+                            widget.onUpdate?.call(updatedAnswer!);
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+                              SnackBar(
+                                content: Text('Answer updated successfully!'),
+                              ),
+                            );
+                         } else {
+                           setState(() {
+                             errorText = 'Failed to update answer.';
+                           });
+                         }
+                       } catch (e) {
+                         setState(() {
+                           errorText = 'Error: $e';
+                         });
+                       }
                     },
                     child: Text('Save'),
                   ),
