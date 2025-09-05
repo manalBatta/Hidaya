@@ -90,3 +90,7 @@ final adminFlags = url + "admin/flags";
 /* 'accept' ? '/connections/accept' : '/connections/ignore'; */
 final acceptConnection = url + "connections/accept";
 final ignoreConnection = url + "connections/ignore";
+
+//for joke
+final adminJokesUrl = url + "admin/jokes";
+final jokesUrl = url + "jokes";

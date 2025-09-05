@@ -3,6 +3,7 @@ import moment from "moment";
 import AdminServices from "../services/adminservices.js";
 import Question from "../models/Questions.js";
 import UserServices from "../services/userserviceslog&registeration.js";
+import JokesServices from "../services/jokesServices.js";
 import e from "express";
 
 /*const fakeusers=[
@@ -487,3 +488,112 @@ export const deleteFlagByAdmin = async (req, res) => {
     res.status(500).json({ success: false, message: "Deleting flag failed" });
   }
 };
+
+// ==================== JOKES MANAGEMENT ====================
+
+export const getAllJokesForAdmin = async (req, res) => {
+  try {
+    const result = await JokesServices.getAllJokesForAdmin();
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in getAllJokesForAdmin:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to retrieve jokes" 
+    });
+  }
+};
+
+export const createJoke = async (req, res) => {
+  try {
+    const { content, reson } = req.body;
+
+    if (!content || !reson ) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "reson, content are required" 
+      });
+    }
+
+    const jokeData = {
+      content,
+      reson
+    };
+
+    const result = await JokesServices.createJoke(jokeData);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("Error in createJoke:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to create joke" 
+    });
+  }
+};
+
+export const updateJoke = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (!id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Joke ID is required" 
+      });
+    }
+
+    const result = await JokesServices.updateJoke(id, updateData);
+    
+    if (!result.success) {
+      return res.status(result.message === "Joke not found" ? 404 : 500).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in updateJoke:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to update joke" 
+    });
+  }
+};
+
+export const deleteJoke = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Joke ID is required" 
+      });
+    }
+
+    const result = await JokesServices.deleteJoke(id);
+    
+    if (!result.success) {
+      return res.status(result.message === "Joke not found" ? 404 : 500).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in deleteJoke:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete joke" 
+    });
+  }
+};
+
+

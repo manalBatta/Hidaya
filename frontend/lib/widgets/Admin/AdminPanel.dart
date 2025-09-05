@@ -6,6 +6,7 @@ import 'package:frontend/widgets/Admin/AdminDashboard.dart';
 import 'package:frontend/widgets/Admin/AdminQuestions.dart';
 import 'package:frontend/widgets/Admin/AdminUsersPage.dart';
 import 'package:frontend/widgets/Admin/AdminStoriesPage.dart';
+import 'package:frontend/widgets/Admin/AdminJokesPage.dart';
 import 'package:frontend/widgets/Admin/FlagsAdminPage.dart';
 import 'package:frontend/widgets/NotificationCenter.dart';
 import 'AddStoryPage.dart';
@@ -99,6 +100,12 @@ class _AdminPanelState extends State<AdminPanel> {
           route: '/admin/stories/add',
         ),
       ],
+    ),
+    NavigationItem(
+      id: 'jokes',
+      label: 'Islamic Jokes',
+      icon: Icons.emoji_emotions_outlined,
+      route: '/admin/jokes',
     ),
     /* NavigationItem(
       id: 'mosques',
@@ -700,6 +707,8 @@ class _AdminPanelState extends State<AdminPanel> {
         return AddStoryPage(
           onBackToStories: () => _navigateToRoute('/admin/stories'),
         );
+      case '/admin/jokes':
+        return AdminJokesPage();
       case '/admin/flags':
         return FlagsAdminPage();
       case '/admin/notifications':

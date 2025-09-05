@@ -76,8 +76,12 @@ import {
   rejectFlag,
   dismissFlag,
   deleteFlagByAdmin,
+  getAllJokesForAdmin,
+  createJoke,
+  updateJoke,
+  deleteJoke,
 } from "../controller/AdminController.js";
-
+import JokesServices from "../services/jokesServices.js";
 router.post("/register", register);
 router.post("/login", login);
 router.put("/profile", authMiddleware, updateprofile);
@@ -177,4 +181,32 @@ router.post("/admin/addlesson", addlesson);
 router.put("/admin/updatelesson/:id", updatelesson);
 //delete lesson by admin
 router.delete("/admin/deletelesson/:id", deletelesson);
+
+// ==================== JOKES ROUTES ====================
+// Admin routes for jokes management
+router.get("/admin/jokes", getAllJokesForAdmin);
+router.post("/admin/jokes", createJoke);
+router.put("/admin/jokes/:id", updateJoke);
+router.delete("/admin/jokes/:id", deleteJoke);
+
+
+// Public routes for users to view jokes
+router.get("/jokes", async (req, res) => {
+  try {
+    const result = await JokesServices.getJokesForUsers();
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in public jokes route:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to retrieve jokes" 
+    });
+  }
+});
+
 export default router;

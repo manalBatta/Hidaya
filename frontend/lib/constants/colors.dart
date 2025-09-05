@@ -186,4 +186,17 @@ class AppColors {
 
   // Prayer times colors
   static const prayerGreen = Color(0xFF2D7A47);
+
+  // Dress Code Cyan shades
+  static const Color dressCodeBackground = Color(0xFFE0F7FA); // فاتح
+  static const Color dressCodeSlider = Color(0xFFB2EBF2); // متوسط
+  static const Color dressCodeTitle = Color(0xFF0097A7); // أغمق
+  static const Color dressCodeText = Color(0xFF00838F); // وصف
+  static const Color dressCodeArrow = Color(0xFF006064); // الأسهم
+
+  // Lessons card
+  static const Color lessonsCircle = Color(0xFF64B5F6); // أزرق هادئ
+  static const Color lessonsIcon = Color(0xFF1565C0); // أغمق من الدائرة
+
+ 
 }
