@@ -11,34 +11,27 @@
 - **Real-time Notifications**: Get notified when your questions receive answers
 
 ### 🤖 **AI-Powered Islamic Assistant**
-- **Contextual AI Responses**: Get Islamic guidance based on Quran and Hadith
-- **Multilingual Support**: Ask questions in Arabic, English, and other languages
-- **Semantic Search**: Advanced search through Islamic texts using AI embeddings
+- **Contextual AI Responses**: Get Islamic guidance 
 - **Personalized Learning**: AI adapts to your learning preferences and history
 
 ### 📚 **Educational Content**
 - **Interactive Lessons**: Structured Islamic education modules
 - **Progress Tracking**: Monitor your learning journey and achievements
 - **Video Content**: Multimedia lessons with certified Islamic educators
-- **Certificates**: Earn completion certificates for educational milestones
 
 ### 📅 **Meeting Scheduling**
 - **One-on-One Sessions**: Schedule private consultations with Islamic counselors
 - **Zoom Integration**: Seamless video calling for remote meetings
-- **Flexible Timing**: Choose from volunteer-provided time slots
-- **Topic-Specific**: Request meetings for specific Islamic topics
+- **Flexible Timing**: Choose from User-provided time slots
 
 ### 📖 **Inspirational Stories**
 - **Islamic Stories**: Collection of inspiring Islamic narratives
-- **Community Sharing**: Share and discover stories from the community
 - **Bookmarking**: Save your favorite stories for later reading
-- **Social Features**: Like and share meaningful content
+- **Social Features**: Like meaningful content
 
 ### 🕐 **Prayer & Worship Tools**
 - **Prayer Times**: Location-based prayer time calculations
-- **Qibla Direction**: Find the direction of prayer anywhere in the world
-- **Prayer Reminders**: Customizable notifications for prayer times
-- **Islamic Calendar**: Track important Islamic dates and events
+- **Friday Reminders**: Customizable notifications for Friday quots
 
 ## 📚 Documentation
 
@@ -51,8 +44,6 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Frontend Documentation
 - **[Frontend Components](docs/FRONTEND_COMPONENTS.md)** - Flutter widgets and components guide
 
-### AI & ML Documentation
-- **[Python Modules](docs/PYTHON_MODULES.md)** - AI/ML components and semantic search utilities
 
 ## 🚀 Quick Start
 
