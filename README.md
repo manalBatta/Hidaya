@@ -50,7 +50,6 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Prerequisites
 - Flutter SDK 3.7.2+
 - Node.js 18+
-- Python 3.8+
 - MongoDB 5.0+
 
 ### 1. Clone Repository
@@ -73,12 +72,6 @@ flutter pub get
 flutter run -d chrome  # For web development
 ```
 
-### 4. Python Services
-```bash
-cd Python
-pip install -r requirements.txt
-python search_example.py
-```
 
 ---
 
