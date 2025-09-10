@@ -76,6 +76,26 @@ class AuthUtils {
     }
   }
 
+  /// Get valid token from preferences without context (for service calls)
+  static Future<String?> getValidTokenFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null || token.isEmpty) {
+        return null;
+      }
+
+      if (isTokenExpired(token)) {
+        return null;
+      }
+
+      return token;
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<void> logout(context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');

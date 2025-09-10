@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 
 //final url = 'http://192.168.100.189:5000/';
-//final url = 'http://localhost:5000/';
-final String url = "https://hidaya-vq2k.onrender.com/";
+final url = 'http://localhost:5000/';
+//final String url = "https://hidaya-vq2k.onrender.com/";
 final registeration = url + "register";
 final login = url + "login";
 final profile = url + "profile"; //to update profile
@@ -18,6 +18,7 @@ final upvotedAnswerUrl = url + 'upvotedAnswer';
 final myAnswersUrl = url + "myAnwers";
 final startChat = url + 'chat/start';
 final sendChat = url + 'chat/send';
+final streamTokenUrl = url + 'chat/stream-token';
 
 final deleteQuestionUrl =
     url +
@@ -90,3 +91,7 @@ final adminFlags = url + "admin/flags";
 /* 'accept' ? '/connections/accept' : '/connections/ignore'; */
 final acceptConnection = url + "connections/accept";
 final ignoreConnection = url + "connections/ignore";
+
+
+//'$baseUrl/chat/ensure-user'
+final ensureUser = url + "chat/ensure-user";

@@ -12,6 +12,21 @@ import {
   saveChatMessage,
   fetchRecentMessages,
 } from "../services/aiservices.js";
+import { verifyToken } from "../services/authMiddleware.js";
+import { StreamChat } from "stream-chat";
+
+// Initialize Stream Chat server client once
+const streamClient = (() => {
+  const apiKey = process.env.STREAM_API_KEY;
+  const apiSecret = process.env.STREAM_API_SECRET;
+  if (!apiKey || !apiSecret) {
+    console.warn(
+      "Stream Chat API key/secret missing. Set STREAM_API_KEY and STREAM_API_SECRET in .env"
+    );
+    return null;
+  }
+  return StreamChat.getInstance(apiKey, apiSecret);
+})();
 
 router.post("/start", async (req, res) => {
   const { userId } = req.body;
@@ -113,6 +128,82 @@ router.post("/send", async (req, res) => {
   } catch (error) {
     console.error("Error in /send route:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Issue Stream Chat user token for the authenticated user
+router.post("/stream-token", verifyToken, async (req, res) => {
+  try {
+    if (!streamClient) {
+      return res
+        .status(500)
+        .json({ error: "Stream Chat is not configured on the server" });
+    }
+
+    const authUserId = req.userId || req.user?._id;
+    if (!authUserId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Fetch display name if available
+    const user = await User.findOne({ userId: authUserId });
+    const displayName = user?.displayName || authUserId;
+
+    // Ensure user exists in Stream and get a token
+    await streamClient.upsertUser({ id: authUserId, name: displayName });
+    const token = streamClient.createToken(authUserId);
+
+    return res.json({
+      token,
+      userId: authUserId,
+      name: displayName,
+      apiKey: process.env.STREAM_API_KEY,
+    });
+  } catch (error) {
+    console.error("Error issuing Stream token:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Ensure user exists in Stream Chat (for other users)
+router.post("/ensure-user", verifyToken, async (req, res) => {
+  try {
+    if (!streamClient) {
+      return res
+        .status(500)
+        .json({ error: "Stream Chat is not configured on the server" });
+    }
+
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    // Check if user exists in our database
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    const displayName = user.displayName || user.userId || userId;
+
+    // Ensure user exists in Stream Chat
+    await streamClient.upsertUser({ 
+      id: userId, 
+      name: displayName,
+      // Add any other user properties you want to sync
+      image: user.profilePicture || undefined,
+    });
+
+    return res.json({ 
+      success: true, 
+      message: "User ensured in Stream Chat",
+      userId: userId,
+      name: displayName
+    });
+  } catch (error) {
+    console.error("Error ensuring user in Stream Chat:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 

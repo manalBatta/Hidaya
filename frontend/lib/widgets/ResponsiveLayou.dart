@@ -12,6 +12,9 @@ import '../providers/NavigationProvider.dart';
 import 'package:frontend/constants/colors.dart';
 import 'package:frontend/widgets/Stories/Story.dart';
 import 'NearbyMosquesPage.dart';
+import 'package:frontend/widgets/chat/chat_list.dart';
+import 'package:frontend/services/stream_chat_service.dart';
+import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 class ResponsiveLayout extends StatefulWidget {
   final String userRole;
@@ -73,6 +76,13 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout>
       icon: Icons.location_on_outlined,
       activeIcon: Icons.location_on,
       page: NearbyMosquesPage(),
+    ),
+    NavigationItem(
+      id: 'chat',
+      label: 'Chat',
+      icon: Icons.chat_bubble_outline,
+      activeIcon: Icons.chat_bubble,
+      page: _ChatPage(),
     ),
     NavigationItem(
       id: 'profile',
@@ -825,4 +835,76 @@ class AdminMenuItem {
   final IconData icon;
 
   AdminMenuItem({required this.id, required this.label, required this.icon});
+}
+
+class _ChatPage extends StatefulWidget {
+  @override
+  _ChatPageState createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<_ChatPage> {
+  StreamChatService? _chatService;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeChat();
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      final service = await StreamChatService.initialize(context);
+      if (mounted) {
+        setState(() {
+          _chatService = service;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initialize chat: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_chatService == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text('Failed to load chat'),
+              SizedBox(height: 16),
+              ElevatedButton(onPressed: _initializeChat, child: Text('Retry')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RestorationScope(
+      restorationId: 'main_chat',
+      child: StreamChat(
+        client: _chatService!.client,
+        child: ChatListScreen(
+          client: _chatService!.client,
+          streamService: _chatService,
+        ),
+      ),
+    );
+  }
 }

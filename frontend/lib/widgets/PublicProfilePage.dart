@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import 'package:frontend/services/meeting_request_service.dart';
 import 'package:frontend/utils/auth_utils.dart';
+import 'package:frontend/services/stream_chat_service.dart';
+import 'package:stream_chat_flutter/stream_chat_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/UserProvider.dart';
 
 class PublicProfilePage extends StatelessWidget {
   final Map<String, dynamic> user;
@@ -177,6 +181,29 @@ class PublicProfileView extends StatelessWidget {
             ),
           ],
 
+          // Start Chat button (for all users)
+          SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _startChatWithUser(context),
+              icon: Icon(Icons.chat, color: Colors.white),
+              label: Text(
+                'Start Chat',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.islamicGreen500,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 1,
+              ),
+            ),
+          ),
+
           // Meeting Requests Section
           SizedBox(height: 24),
           _MeetingRequestsSection(
@@ -250,6 +277,120 @@ class PublicProfileView extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _startChatWithUser(BuildContext context) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Initialize Stream Chat service
+      final chatService = await StreamChatService.initialize(context);
+
+      if (chatService == null) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to initialize chat')),
+        );
+        return;
+      }
+
+      // Get the target user ID
+      final targetUserId = user['id']?.toString() ?? user['userId']?.toString();
+      if (targetUserId == null) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('User ID not found')));
+        return;
+      }
+
+      // Get current user ID
+      final currentUserId = context.read<UserProvider>().userId;
+      if (currentUserId == targetUserId) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot chat with yourself')),
+        );
+        return;
+      }
+
+      // Ensure the other user exists in Stream Chat before creating channel
+      final userExists = await chatService.ensureUserExists(targetUserId);
+      if (!userExists) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to start chat. User not found.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Create or get the channel with shorter ID
+      final channelId = _generateShortChannelId(currentUserId, targetUserId);
+      final channel = chatService.client.channel(
+        'messaging',
+        id: channelId,
+        extraData: {
+          'members': [currentUserId, targetUserId],
+        },
+      );
+
+      // Watch the channel
+      await channel.watch();
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Navigate to chat
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder:
+              (_) => StreamChat(
+                client: chatService.client,
+                child: StreamChannel(
+                  channel: channel,
+                  child: RestorationScope(
+                    restorationId: 'public_profile_chat',
+                    child: Scaffold(
+                      appBar: const StreamChannelHeader(),
+                      body: const StreamMessageListView(),
+                      bottomNavigationBar: SafeArea(
+                        child: StreamMessageInput(
+                          // Disable restoration to prevent the assertion error
+                          restorationId: null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error starting chat: $e')));
+    }
+  }
+
+  String _generateShortChannelId(String userId1, String userId2) {
+    // Sort user IDs to ensure consistent channel ID regardless of order
+    final sortedIds = [userId1, userId2]..sort();
+
+    // Create a hash of the combined user IDs
+    final combined = '${sortedIds[0]}_${sortedIds[1]}';
+    final hash = combined.hashCode.abs();
+
+    // Return a short channel ID (max 64 chars)
+    return 'chat_$hash';
   }
 }
 
