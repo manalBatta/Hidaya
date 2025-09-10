@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  agora_rtc_engine
   app_links
   connectivity_plus
   desktop_drop
@@ -10,7 +11,9 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   gal
   geolocator_windows
+  iris_method_channel
   media_kit_video
+  permission_handler_windows
   record_windows
   share_plus
   syncfusion_pdfviewer_windows
